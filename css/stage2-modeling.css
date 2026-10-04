@@ -1,0 +1,1173 @@
+/* ==========================================================================
+   AŞAMA 2: MODELLE (TANECİK LABORATUVARI) — MEBİ TASARIM SİSTEMİ STİLLERİ
+   Yönerge Sayfa 9-18 ve MEBİ Etkileşimli İçerik Tasarım Dili standartlarına tam uyumludur.
+   Aydınlık (Light) ve Karanlık (Dark) modları MEBİ nötr belirteçleriyle eşzamanlı destekler.
+   ========================================================================== */
+
+/* Ana Çalışma Kartı (Tam Genişlikli MEBİ 3D Kart) */
+.stage2-scaffold-card {
+  background: var(--mebi-bg-surface);
+  border: 1px solid var(--mebi-border);
+  border-radius: 20px;
+  box-shadow: 0 8px 0 var(--mebi-border), 0 20px 40px -10px rgba(15, 23, 42, 0.15);
+  width: calc(100% - 48px);
+  max-width: 1300px;
+  height: calc(100vh - 150px);
+  max-height: 840px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  position: relative;
+  transition: background-color 0.35s ease, border-color 0.35s ease, box-shadow 0.35s ease;
+}
+
+[data-theme="dark"] .stage2-scaffold-card {
+  background: #222226;
+  border-color: #38383e;
+  box-shadow: 0 8px 0 #121214, 0 24px 50px -10px rgba(0, 0, 0, 0.85);
+}
+
+/* Kart Başlığı / Header */
+.stage2-header {
+  padding: 14px 24px;
+  background: var(--mebi-bg-subtle);
+  border-bottom: 1px solid var(--mebi-border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-shrink: 0;
+}
+
+[data-theme="dark"] .stage2-header {
+  background: #2b2b30;
+  border-bottom-color: #38383e;
+}
+
+.stage2-header-left {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.stage2-header-icon {
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  background: var(--mebi-primary-light);
+  color: var(--mebi-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  font-weight: 800;
+  box-shadow: 0 2px 6px rgba(30, 64, 175, 0.15);
+}
+
+[data-theme="dark"] .stage2-header-icon {
+  background: #38383e;
+  color: #f4f4f5;
+  box-shadow: none;
+}
+
+.stage2-title-group h2 {
+  font-size: 16.5px;
+  font-weight: 800;
+  color: var(--mebi-text-main);
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.stage2-title-group p {
+  font-size: 12.5px;
+  color: var(--mebi-text-secondary);
+  margin: 2px 0 0 0;
+}
+
+.stage2-header-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* 2 Panelli Ana Izgara Düzeni (Left: 350px Genişletilmiş Havuz, Center: 1fr, Sağ: Çekmece) */
+.stage2-grid-body {
+  display: grid;
+  grid-template-columns: 350px 1fr;
+  gap: 16px;
+  padding: 16px;
+  flex: 1;
+  overflow: hidden;
+  background: var(--mebi-bg-body);
+  position: relative;
+}
+
+[data-theme="dark"] .stage2-grid-body {
+  background: #161619;
+}
+
+/* Ortak Panel Kutuları */
+.stage2-panel {
+  background: var(--mebi-bg-surface);
+  border: 1px solid var(--mebi-border);
+  border-radius: 16px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 4px 0 var(--mebi-border);
+  transition: all 0.25s ease;
+}
+
+[data-theme="dark"] .stage2-panel {
+  background: #222226;
+  border-color: #38383e;
+  box-shadow: 0 4px 0 #18181b;
+}
+
+.stage2-panel-head {
+  padding: 12px 16px;
+  background: var(--mebi-bg-subtle);
+  border-bottom: 1px solid var(--mebi-border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+}
+
+[data-theme="dark"] .stage2-panel-head {
+  background: #2b2b30;
+  border-bottom-color: #38383e;
+}
+
+.stage2-panel-title {
+  font-size: 13.5px;
+  font-weight: 800;
+  color: var(--mebi-text-main);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+}
+
+.stage2-panel-scroll {
+  padding: 14px;
+  overflow-y: auto;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* ==========================================================================
+   SOL PANEL: TANECİK VE İYON HAVUZU
+   ========================================================================== */
+.pool-section-title {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--mebi-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+/* Kimyasal Tür / İyon Rozetleri */
+.species-tokens-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.species-token-card {
+  padding: 8px 10px;
+  border-radius: 12px;
+  border: 1px solid var(--mebi-border);
+  background: var(--mebi-bg-subtle);
+  box-shadow: 0 3px 0 var(--mebi-border);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: grab;
+  user-select: none;
+  transition: all 0.15s ease;
+  position: relative;
+}
+
+[data-theme="dark"] .species-token-card {
+  background: #2b2b30;
+  border-color: #38383e;
+  box-shadow: 0 3px 0 #18181b;
+}
+
+.species-token-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--mebi-border-hover);
+  box-shadow: 0 5px 0 var(--mebi-border);
+}
+
+.species-token-card:active {
+  transform: translateY(2px);
+  box-shadow: 0 1px 0 var(--mebi-border);
+  cursor: grabbing;
+}
+
+.species-card-thumb-box {
+  width: 58px;
+  height: 58px;
+  min-width: 58px;
+  border-radius: 12px;
+  background: var(--mebi-bg-surface);
+  border: 1px solid var(--mebi-border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+[data-theme="dark"] .species-card-thumb-box {
+  background: #1c1c1f;
+  border-color: #333338;
+}
+
+.species-3d-thumb {
+  width: 54px;
+  height: 54px;
+  object-fit: contain;
+}
+
+.species-card-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.species-formula-badge {
+  font-size: 13.5px;
+  font-weight: 800;
+  color: var(--mebi-primary);
+  letter-spacing: 0.3px;
+  display: inline-block;
+}
+
+.species-atoms-desc {
+  font-size: 10px;
+  color: var(--mebi-text-secondary);
+  line-height: 1.35;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.species-atoms-desc strong {
+  color: var(--mebi-text-main);
+  font-weight: 700;
+}
+
+/* Atom Parçaları (3B Atomik Küreler) */
+.atom-spheres-row {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 7px;
+}
+
+.atom-sphere-chip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: 10px;
+  border: 1px solid var(--mebi-border);
+  background: var(--mebi-bg-subtle);
+  box-shadow: 0 2px 0 var(--mebi-border);
+  cursor: default;
+  transition: all 0.15s ease;
+  user-select: none;
+}
+
+[data-theme="dark"] .atom-sphere-chip {
+  background: #2b2b30;
+  border-color: #38383e;
+  box-shadow: 0 2px 0 #18181b;
+}
+
+.atom-sphere-chip:hover {
+  border-color: var(--mebi-border-hover);
+  transform: translateY(-1px);
+}
+
+.atom-sphere-visual {
+  position: relative;
+  width: 38px;
+  height: 38px;
+  min-width: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.atom-3d-img {
+  width: 38px;
+  height: 38px;
+  object-fit: contain;
+}
+
+.atom-sphere-dot {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 900;
+  color: #ffffff;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+}
+
+.atom-on-sphere-label {
+  display: none;
+}
+
+.atom-name-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--mebi-text-main);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.atom-sphere-chip:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 3px 0 var(--mebi-border);
+}
+
+.atom-dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 1px solid rgba(0, 0, 0, 0.15);
+  box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.6);
+}
+
+.atom-label {
+  font-size: 11.5px;
+  font-weight: 800;
+  color: var(--mebi-text-main);
+}
+
+/* Kademeli Destek Düzeyleri (Scaffolding Levels) */
+.scaffold-levels-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.scaffold-level-item {
+  padding: 8px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--mebi-border);
+  background: var(--mebi-bg-subtle);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+[data-theme="dark"] .scaffold-level-item {
+  background: #2b2b30;
+  border-color: #38383e;
+}
+
+.scaffold-level-item:hover {
+  border-color: var(--mebi-border-hover);
+}
+
+.scaffold-level-item.is-active {
+  background: var(--mebi-primary-light);
+  border-color: var(--mebi-primary-border);
+}
+
+[data-theme="dark"] .scaffold-level-item.is-active {
+  background: #38383e;
+  border-color: #52525b;
+}
+
+.scaffold-level-text {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--mebi-text-main);
+}
+
+.scaffold-level-badge {
+  font-size: 10px;
+  font-weight: 800;
+  padding: 2px 6px;
+  border-radius: 6px;
+  background: var(--mebi-bg-surface);
+  color: var(--mebi-text-secondary);
+  border: 1px solid var(--mebi-border);
+}
+
+[data-theme="dark"] .scaffold-level-badge {
+  background: #222226;
+  border-color: #38383e;
+}
+
+/* Destek İpucu Bildirim Kartı */
+.scaffold-hint-banner {
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--mebi-warning-light);
+  border: 1px solid var(--mebi-warning-border);
+  color: #92400e;
+  font-size: 11.5px;
+  line-height: 1.45;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+[data-theme="dark"] .scaffold-hint-banner {
+  background: rgba(245, 158, 11, 0.12);
+  border-color: rgba(245, 158, 11, 0.3);
+  color: #fde68a;
+}
+
+/* ==========================================================================
+   ORTA PANEL: MODELİNİ OLUŞTUR (3 EVRELİ ZAMAN ÇİZELGESİ)
+   ========================================================================== */
+.stage2-center-body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.timeline-phase-card {
+  background: var(--mebi-bg-subtle);
+  border: 1px solid var(--mebi-border);
+  border-radius: 14px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  position: relative;
+  box-shadow: 0 2px 0 var(--mebi-border);
+  transition: all 0.2s ease;
+}
+
+[data-theme="dark"] .timeline-phase-card {
+  background: #27272b;
+  border-color: #38383e;
+  box-shadow: 0 2px 0 #18181b;
+}
+
+.timeline-phase-card:focus-within,
+.timeline-phase-card.is-active-phase {
+  border-color: var(--mebi-primary);
+  box-shadow: 0 0 0 2px rgba(30, 64, 175, 0.15);
+}
+
+[data-theme="dark"] .timeline-phase-card.is-active-phase {
+  border-color: #52525b;
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.08);
+}
+
+.phase-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.phase-title-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.phase-num-pill {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--mebi-primary);
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+[data-theme="dark"] .phase-num-pill {
+  background: #38383e;
+  color: #ffffff;
+}
+
+.phase-title {
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--mebi-text-main);
+  margin: 0;
+}
+
+.phase-subtitle {
+  font-size: 11px;
+  color: var(--mebi-text-secondary);
+}
+
+/* Parçacık Bırakma / Çalışma Alanı */
+.phase-workspace-slot {
+  min-height: 80px;
+  background: var(--mebi-bg-surface);
+  border: 2px dashed var(--mebi-border);
+  border-radius: 12px;
+  padding: 10px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  position: relative;
+  transition: all 0.2s ease;
+}
+
+[data-theme="dark"] .phase-workspace-slot {
+  background: #222226;
+  border-color: #38383e;
+}
+
+.phase-workspace-slot.drag-over {
+  border-color: var(--mebi-primary);
+  background: var(--mebi-primary-light);
+}
+
+[data-theme="dark"] .phase-workspace-slot.drag-over {
+  background: #2b2b30;
+  border-color: #52525b;
+}
+
+.phase-empty-placeholder {
+  width: 100%;
+  text-align: center;
+  font-size: 11.5px;
+  color: var(--mebi-text-muted);
+  user-select: none;
+  pointer-events: none;
+  padding: 12px 0;
+}
+
+/* Yerleştirilmiş Tanecik Rozeti */
+.placed-particle-token {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px 4px 6px;
+  border-radius: 9999px;
+  background: var(--mebi-bg-subtle);
+  border: 1px solid var(--mebi-border);
+  box-shadow: 0 2px 0 var(--mebi-border);
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--mebi-text-main);
+  position: relative;
+  animation: popIn 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+[data-theme="dark"] .placed-particle-token {
+  background: #2b2b30;
+  border-color: #38383e;
+  box-shadow: 0 2px 0 #18181b;
+}
+
+@keyframes popIn {
+  from { transform: scale(0.6); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+.placed-particle-badge {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 800;
+  color: #ffffff;
+}
+
+.placed-particle-remove {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--mebi-border);
+  color: var(--mebi-text-secondary);
+  border: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  cursor: pointer;
+  margin-left: 2px;
+  transition: all 0.15s ease;
+}
+
+.placed-particle-remove:hover {
+  background: var(--mebi-danger);
+  color: #ffffff;
+}
+
+/* Hızlı Eylem Barı */
+.phase-quick-bar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
+.phase-mini-btn {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 6px;
+  border: 1px solid var(--mebi-border);
+  background: transparent;
+  color: var(--mebi-text-secondary);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.phase-mini-btn:hover {
+  background: var(--mebi-bg-surface);
+  color: var(--mebi-text-main);
+  border-color: var(--mebi-border-hover);
+}
+
+/* ==========================================================================
+   SAĞDAN AÇILAN KORUNMA KONTROLÜ ÇEKMECESİ (SLIDE-OUT DRAWER)
+   ========================================================================== */
+
+/* Çekmecenin Sol Kenarına Bitişik Dikey Açılır Buton (Vertical Tab) */
+.stage2-drawer-vtab {
+  position: absolute;
+  top: 50px;
+  left: 0;
+  transform: translateX(-100%);
+  z-index: 55;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 16px 8px;
+  background: var(--mebi-primary, #3b82f6);
+  background-image: linear-gradient(180deg, #4f46e5 0%, #3b82f6 100%);
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-right: none;
+  border-top-left-radius: 14px;
+  border-bottom-left-radius: 14px;
+  cursor: pointer;
+  box-shadow: -6px 4px 18px rgba(30, 58, 138, 0.45), inset -1px 0 0 rgba(255, 255, 255, 0.2);
+  transition: all 0.25s cubic-bezier(0.2, 0, 0, 1);
+  user-select: none;
+  outline: none;
+}
+
+[data-theme="dark"] .stage2-drawer-vtab {
+  background: #27272a;
+  background-image: linear-gradient(180deg, #3f3f46 0%, #27272a 100%);
+  border-color: #52525b;
+  border-right: none;
+  color: #f4f4f5;
+  box-shadow: -6px 6px 22px rgba(0, 0, 0, 0.8);
+}
+
+.stage2-drawer-vtab:hover {
+  transform: translateX(-100%) translateX(-4px);
+  box-shadow: -8px 6px 24px rgba(30, 58, 138, 0.6);
+}
+
+.vtab-icon {
+  font-size: 18px;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.35));
+}
+
+.vtab-title {
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+  transform: rotate(180deg);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: #ffffff;
+  white-space: nowrap;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+}
+
+.vtab-badge {
+  font-size: 9px;
+  font-weight: 800;
+  padding: 3px 6px;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.25);
+  color: #ffffff;
+  writing-mode: horizontal-tb;
+  letter-spacing: 0;
+  white-space: nowrap;
+}
+
+[data-theme="dark"] .vtab-badge {
+  background: #3f3f46;
+  color: #a1a1aa;
+}
+
+.vtab-arrow {
+  font-size: 12px;
+  font-weight: 900;
+  color: #ffffff;
+  transition: transform 0.25s ease;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.4));
+}
+
+/* Sağdan Açılan Çekmece Kartı (Slide-out Drawer) */
+.stage2-conservation-drawer {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 350px;
+  max-width: 90vw;
+  background: var(--mebi-bg-surface);
+  border-left: 1px solid var(--mebi-border);
+  box-shadow: -10px 0 35px rgba(15, 23, 42, 0.25);
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  transform: translateX(100%);
+  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  overflow: visible;
+}
+
+[data-theme="dark"] .stage2-conservation-drawer {
+  background: #222226;
+  border-left-color: #38383e;
+  box-shadow: -12px 0 45px rgba(0, 0, 0, 0.85);
+}
+
+.stage2-conservation-drawer.is-open {
+  transform: translateX(0);
+}
+
+.stage2-drawer-head {
+  padding: 14px 18px;
+  background: var(--mebi-bg-subtle);
+  border-bottom: 1px solid var(--mebi-border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+}
+
+[data-theme="dark"] .stage2-drawer-head {
+  background: #2b2b30;
+  border-bottom-color: #38383e;
+}
+
+.stage2-drawer-title-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.stage2-drawer-title {
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--mebi-text-main);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+}
+
+.stage2-drawer-sub {
+  font-size: 11px;
+  color: var(--mebi-text-secondary);
+  margin: 0;
+}
+
+.stage2-drawer-close-btn {
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  border: 1px solid var(--mebi-border);
+  background: var(--mebi-bg-surface);
+  color: var(--mebi-text-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 700;
+  transition: all 0.15s ease;
+}
+
+.stage2-drawer-close-btn:hover {
+  background: var(--mebi-danger-light);
+  color: var(--mebi-danger);
+  border-color: var(--mebi-danger);
+}
+
+/* Drawer Karartma Perdesi (Backdrop) */
+.stage2-drawer-backdrop {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.35);
+  z-index: 48;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+  backdrop-filter: blur(2px);
+}
+
+.stage2-drawer-backdrop.is-visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* ==========================================================================
+   3B MOLEKÜL VE İYON İNCELEME SAHNESİ (INSPECTOR)
+   ========================================================================== */
+.stage2-3d-inspector-wrap {
+  background: var(--mebi-bg-subtle);
+  border: 1px solid var(--mebi-border);
+  border-radius: 14px;
+  margin-bottom: 12px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 2px 0 var(--mebi-border);
+  flex-shrink: 0;
+}
+
+[data-theme="dark"] .stage2-3d-inspector-wrap {
+  background: #27272b;
+  border-color: #38383e;
+  box-shadow: 0 2px 0 #18181b;
+}
+
+.stage2-inspector-head {
+  padding: 8px 14px;
+  background: rgba(0, 0, 0, 0.02);
+  border-bottom: 1px solid var(--mebi-border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+[data-theme="dark"] .stage2-inspector-head {
+  background: rgba(255, 255, 255, 0.02);
+  border-bottom-color: #38383e;
+}
+
+.stage2-inspector-title {
+  font-size: 11.5px;
+  font-weight: 800;
+  color: var(--mebi-text-main);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+}
+
+.stage2-3d-viewport-box {
+  position: relative;
+  width: 100%;
+  height: 130px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(circle at center, rgba(147, 197, 253, 0.12) 0%, rgba(0, 0, 0, 0.02) 70%);
+  cursor: grab;
+}
+
+[data-theme="dark"] .stage2-3d-viewport-box {
+  background: radial-gradient(circle at center, rgba(30, 58, 138, 0.22) 0%, rgba(0, 0, 0, 0.25) 70%);
+}
+
+.stage2-3d-viewport-box:active {
+  cursor: grabbing;
+}
+
+.stage2-3d-hint-overlay {
+  position: absolute;
+  left: 12px;
+  bottom: 6px;
+  font-size: 10px;
+  color: var(--mebi-text-secondary);
+  background: rgba(255, 255, 255, 0.85);
+  padding: 2px 8px;
+  border-radius: 6px;
+  pointer-events: none;
+}
+
+[data-theme="dark"] .stage2-3d-hint-overlay {
+  background: rgba(30, 30, 36, 0.85);
+}
+
+/* 3B Önizleme Thumbnail'ları */
+.species-3d-thumb {
+  width: 44px;
+  height: 44px;
+  object-fit: contain;
+  filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.18));
+  transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.species-token-card:hover .species-3d-thumb {
+  transform: scale(1.15) rotate(4deg);
+}
+
+.placed-3d-thumb {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.15));
+  margin-right: 4px;
+}
+.rules-checklist-group {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.rule-check-item {
+  padding: 6px 10px;
+  border-radius: 9px;
+  border: 1px solid var(--mebi-border);
+  background: var(--mebi-bg-subtle);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.2s ease;
+}
+
+[data-theme="dark"] .rule-check-item {
+  background: #2b2b30;
+  border-color: #38383e;
+}
+
+.rule-check-icon {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 800;
+  flex-shrink: 0;
+}
+
+.rule-check-icon.is-pending {
+  background: var(--mebi-border);
+  color: var(--mebi-text-muted);
+}
+
+.rule-check-icon.is-success {
+  background: var(--mebi-success);
+  color: #ffffff;
+}
+
+.rule-check-icon.is-warning {
+  background: var(--mebi-warning);
+  color: #ffffff;
+}
+
+.rule-check-text {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--mebi-text-main);
+  line-height: 1.35;
+}
+
+/* Canlı Atom Sayacı HUD Tablosu */
+.atom-counter-hud {
+  border-radius: 10px;
+  border: 1px solid var(--mebi-border);
+  background: var(--mebi-bg-subtle);
+  overflow: hidden;
+}
+
+[data-theme="dark"] .atom-counter-hud {
+  background: #2b2b30;
+  border-color: #38383e;
+}
+
+.hud-table-head {
+  padding: 4px 8px;
+  background: rgba(0, 0, 0, 0.03);
+  border-bottom: 1px solid var(--mebi-border);
+  display: grid;
+  grid-template-columns: 44px 1fr 1fr 60px;
+  font-size: 9.5px;
+  font-weight: 800;
+  color: var(--mebi-text-secondary);
+  text-transform: uppercase;
+}
+
+[data-theme="dark"] .hud-table-head {
+  background: rgba(255, 255, 255, 0.03);
+  border-bottom-color: #38383e;
+}
+
+.hud-row {
+  padding: 4px 8px;
+  display: grid;
+  grid-template-columns: 44px 1fr 1fr 60px;
+  align-items: center;
+  font-size: 11px;
+  font-weight: 700;
+  border-bottom: 1px solid var(--mebi-border);
+}
+
+[data-theme="dark"] .hud-row {
+  border-bottom-color: #38383e;
+}
+
+.hud-row:last-child {
+  border-bottom: none;
+}
+
+.hud-atom-pill {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 800;
+  color: #ffffff;
+}
+
+.hud-status-badge {
+  font-size: 10px;
+  font-weight: 800;
+  padding: 2px 6px;
+  border-radius: 6px;
+  text-align: center;
+}
+
+.hud-status-badge.is-balanced {
+  background: var(--mebi-success-light);
+  color: var(--mebi-success);
+}
+
+[data-theme="dark"] .hud-status-badge.is-balanced {
+  background: rgba(16, 185, 129, 0.15);
+  color: #6ee7b7;
+}
+
+.hud-status-badge.is-unbalanced {
+  background: var(--mebi-danger-light);
+  color: var(--mebi-danger);
+}
+
+[data-theme="dark"] .hud-status-badge.is-unbalanced {
+  background: rgba(239, 68, 68, 0.15);
+  color: #fca5a5;
+}
+
+/* Modeli Test Et ve Değerlendirme Kartı (Sabit Alt Kısım) */
+.stage2-eval-box {
+  padding: 12px 14px;
+  background: var(--mebi-bg-subtle);
+  border-top: 1px solid var(--mebi-border);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+[data-theme="dark"] .stage2-eval-box {
+  background: #27272b;
+  border-top-color: #38383e;
+}
+
+.stage2-feedback-banner {
+  padding: 10px 14px;
+  border-radius: 12px;
+  font-size: 12px;
+  line-height: 1.45;
+  display: none;
+  animation: fadeIn 0.25s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.stage2-feedback-banner.is-success {
+  background: var(--mebi-success-light);
+  border: 1px solid var(--mebi-success-border);
+  color: #065f46;
+}
+
+[data-theme="dark"] .stage2-feedback-banner.is-success {
+  background: rgba(16, 185, 129, 0.15);
+  border-color: rgba(16, 185, 129, 0.35);
+  color: #a7f3d0;
+}
+
+.stage2-feedback-banner.is-warning {
+  background: var(--mebi-warning-light);
+  border: 1px solid var(--mebi-warning-border);
+  color: #92400e;
+}
+
+[data-theme="dark"] .stage2-feedback-banner.is-warning {
+  background: rgba(245, 158, 11, 0.15);
+  border-color: rgba(245, 158, 11, 0.35);
+  color: #fde68a;
+}
+
+/* Responsive Uyum (Tablet ve Küçük Ekranlar) */
+@media (max-width: 1080px) {
+  .stage2-grid-body {
+    grid-template-columns: 240px 1fr 260px;
+    gap: 10px;
+    padding: 10px;
+  }
+}
+
+@media (max-width: 860px) {
+  .stage2-scaffold-card {
+    height: auto;
+    max-height: 90vh;
+    overflow-y: auto;
+  }
+  .stage2-grid-body {
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+  }
+  .stage2-panel {
+    min-height: 280px;
+  }
+}

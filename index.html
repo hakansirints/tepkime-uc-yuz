@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="tr" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#315e50">
+  <title>Tepkimenin Üç Yüzü — Sanal Kimya Laboratuvarı</title>
+  <link rel="stylesheet" href="css/mebi-ui-kit.css">
+  <link rel="stylesheet" href="css/lab-layout.css">
+  <link rel="stylesheet" href="css/stage2-modeling.css">
+  <link rel="stylesheet" href="css/warm-lab.css">
+  <link rel="stylesheet" href="css/student-modeling.css">
+  <link rel="stylesheet" href="css/student-atom-trace.css">
+</head>
+<body data-stage="1">
+  <div id="labCanvasContainer" class="fullscreen-lab-canvas"></div>
+  <header class="m3-top-app-bar">
+    <div class="m3-brand-container">
+      <div class="m3-brand-icon" aria-hidden="true">⚗</div>
+      <div>
+        <span class="lab-eyebrow">SANAL KİMYA LABORATUVARI</span>
+        <h1 class="m3-app-title">Tepkimenin Üç Yüzü</h1>
+        <span id="activeStageTitle" hidden>1. Gözlem</span>
+        <span id="activeStageSubtitle" class="m3-app-sub">Gözlemle. Anlamlandır. Modelle.</span>
+      </div>
+    </div>
+    <nav class="m3-stepper-pills" aria-label="Aşama Navigasyonu">
+      <button class="m3-step-btn is-active" data-stage-id="1"><span class="step-number">01</span> Gözlem</button>
+      <span class="step-connector" aria-hidden="true"></span>
+      <button id="stepBtnStage2" class="m3-step-btn is-locked" data-stage-id="2" disabled title="Önce gözleminizi Kontrol Et ile doğrulayınız"><span class="step-number">02</span> Modelle <span id="step2LockIcon">🔒</span></button>
+    <button id="stepBtnStage3" class="m3-step-btn is-locked" data-stage-id="3" disabled><span class="step-number">03</span> Atomun izini sür</button></nav>
+    <div class="lab-header-tools">
+      <span id="activeStageBadge" class="lab-stage-badge">Aşama 1/3</span>
+      <button id="btnToggleAudio" class="m3-icon-btn" title="Ses Efektlerini Kapat/Aç" aria-label="Ses"><span id="audioIcon">🔊</span></button>
+      <button id="btnToggleTheme" class="m3-icon-btn" title="Karanlık/Aydınlık Mod" aria-label="Tema"><span id="themeIcon">◐</span></button>
+    </div>
+  </header>
+
+  <aside id="reactionExpandCard" class="m3-reaction-expandable-card is-expanded" aria-label="Tepkime seçimi">
+    <button id="btnReactionToggle" class="m3-reaction-header" aria-expanded="true" aria-controls="reactionListContent">
+      <span class="m3-reaction-title-wrap"><span class="lab-eyebrow">DENEY KOLEKSİYONU / 12</span><span class="m3-reaction-card-title">Tepkime seç</span><span id="reactionCardSubtext" class="m3-reaction-card-sub">İncelemek istediğin deneyi seç.</span></span>
+      <span class="m3-chevron-icon" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="m6 9 6 6 6-6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+    </button>
+    <div class="lab-selection-status"><span class="status-dot"></span><span id="reactionStatusBadge" class="mebi-badge">Masa Boş</span></div>
+    <div id="reactionListContent" class="m3-reaction-list-content"></div>
+    <div id="selectedMaterials" class="lab-materials" hidden>
+      <div><span class="lab-eyebrow">01 / REAKSİYON KABI · 250 mL</span><strong id="selectedFixedName"></strong><span id="selectedFixedState"></span></div>
+      <div><span class="lab-eyebrow">02 / EKLEYEN BEHER · 80 mL</span><strong id="selectedAddedName"></strong><span id="selectedAddedState"></span></div>
+    </div>
+    <div class="lab-panel-footer">Maddeler seçilen deneyin kaplarına yerleştirilir.</div>
+  </aside>
+
+  <aside id="stage1Container" class="m3-observation-card" aria-label="Deney defteri">
+    <div class="lab-notebook-heading"><span class="lab-eyebrow">DENEY DEFTERİ</span><span class="lab-notebook-mark" aria-hidden="true">01</span></div>
+    <div id="obsWaitingState">
+      <div class="m3-card-header"><h2 id="obsWaitingTitle" class="m3-card-title">Tepkime Bekleniyor</h2></div>
+      <p id="obsWaitingDesc" class="m3-card-sub"><span id="labHintText">Soldan bir tepkime seç. Maddeleri karıştır ve kapta meydana gelen değişimi gözlemle.</span></p>
+      <div class="lab-empty-illustration" aria-hidden="true"><span>⚗</span><i></i></div>
+      <div class="lab-observe-note"><span>GÖZLEM ODAĞIN</span><p>Karışımın görünümünü ve sıcaklık göstergesini dikkatle izle.</p></div>
+    </div>
+    <div id="obsActiveState" style="display:none">
+      <div class="m3-card-header"><h2 class="m3-card-title">Gözlemini tanımla</h2></div>
+      <p class="m3-card-sub">Maddeler karıştırıldığında kapta meydana gelen fiziksel değişimi tanımlayınız:</p>
+      <div class="m3-textfield-box">
+        <label class="sr-only" for="obsTextarea">Gözlemin</label>
+        <textarea id="obsTextarea" class="m3-textarea" placeholder="Kapta hangi değişimleri gözlemledin?" rows="5"></textarea>
+        <div class="m3-textfield-status"><span id="obsWordCounter">0 kelime</span><span id="obsCharCounter">0 / 300</span></div>
+      </div>
+      <div class="lab-observation-actions">
+        <button id="btnSubmitObservation" class="mebi-btn mebi-btn-primary" disabled><span class="mebi-btn-text">Gözlemi kontrol et <span aria-hidden="true">↗</span></span></button>
+        <button id="btnProceedStage2" class="mebi-btn mebi-btn-success" disabled title="Önce gözleminizi Kontrol Et ile doğrulayınız"><span class="mebi-btn-text">Tanecik laboratuvarına geç →</span></button>
+      </div>
+      <div id="obsFeedbackBox" class="mebi-observation-feedback" style="display:none"><span id="obsFeedbackBadge" class="feedback-badge">✓</span><p id="obsFeedbackText" class="feedback-body"></p></div>
+    </div>
+    <div id="obsCompletedState" style="display:none"><h3>Gözlem tamamlandı ✓</h3><p>Şimdi bu değişimi tanecik düzeyinde modelleyebilirsin.</p></div>
+    <div class="lab-experiment-actions">
+      <button id="btnAutoPour" class="mebi-btn mebi-btn-primary" disabled><span class="mebi-btn-text">Beheri dök ve karıştır <span aria-hidden="true">↗</span></span></button>
+      <button id="btnResetPour" class="mebi-btn mebi-btn-secondary" style="display:none"><span class="mebi-btn-text">↺ Baştan başlat / tekrar dök</span></button>
+    </div>
+  </aside>
+
+  <div class="m3-beaker-labels-strip">
+    <div id="fixedBeakerBadge" class="m3-beaker-tag"><span class="lab-vessel-index">01</span><div><div id="fixedBeakerLabel" class="m3-beaker-tag-title">Reaksiyon kabı</div><div id="fixedBeakerSub" class="m3-beaker-tag-sub">Boş</div><span id="fixedVolume" class="lab-volume">0 / 250 mL</span></div></div>
+    <div id="addedBeakerBadge" class="m3-beaker-tag"><span class="lab-vessel-index">02</span><div><div id="addedBeakerLabel" class="m3-beaker-tag-title">Ekleyen beher</div><div id="addedBeakerSub" class="m3-beaker-tag-sub">Boş</div><span id="addedVolume" class="lab-volume">0 / 80 mL</span></div></div>
+  </div>
+  <div id="digitalTempBadge" class="m3-floating-temp-badge">22.0 °C</div>
+
+  <div class="lab-scene-caption"><span class="lab-eyebrow">Deneyini hazırla</span><span>Beheri tut ve sola, yukarı sürükle · Tekerlek: yakınlaş</span></div>
+  <div class="m3-bottom-actions-strip">
+    <div class="m3-segmented-group" aria-label="Kamera Bakış Açısı">
+      <button id="btnCamDesk" class="m3-segment-btn is-active" aria-pressed="true">Masa</button>
+      <button id="btnCamCloseup" class="m3-segment-btn" aria-pressed="false">Yakın</button>
+      <button id="btnCamWide" class="m3-segment-btn" aria-pressed="false">Oda</button>
+    </div>
+    <span class="m3-strip-divider"></span>
+    <button id="btnCamReset" class="m3-icon-btn" title="Kamerayı sıfırla" aria-label="Kamerayı sıfırla">↺</button>
+  </div>
+  <div class="lab-table-palette" role="group" aria-label="Masa rengi">
+    <span>Masa</span>
+    <button data-table-color="#315e50" style="--swatch:#315e50" aria-label="Yeşil masa" aria-pressed="true"></button>
+    <button data-table-color="#3d4547" style="--swatch:#3d4547" aria-label="Antrasit masa" aria-pressed="false"></button>
+    <button data-table-color="#fff2d7" style="--swatch:#fff2d7" aria-label="Açık masa" aria-pressed="false"></button>
+  </div>
+  <div class="lab-mobile-tools"><button id="btnMobileReactions" aria-controls="reactionExpandCard" aria-expanded="false">Tepkimeler</button><button id="btnMobileNotebook" aria-controls="stage1Container" aria-expanded="false">Deney defteri</button></div>
+  <div id="stageScaffoldView" class="scaffold-overlay-panel" style="display:none"></div>
+
+  <script src="js/vendor/three.min.js"></script>
+  <script src="js/vendor/OrbitControls.js"></script>
+  <script src="js/vendor/RoundedBoxGeometry.js"></script>
+  <script src="js/data/reactions-data.js"></script>
+  <script src="js/core/audio-engine.js"></script>
+  <script src="js/core/theme-manager.js"></script>
+  <script src="js/core/state-machine.js"></script>
+  <script src="js/scene3d/particle-system.js"></script>
+  <script src="js/scene3d/thermometer.js"></script>
+  <script src="js/scene3d/glassware.js"></script>
+  <script src="js/scene3d/pour-controller.js"></script>
+  <script src="js/scene3d/warm-room.js"></script>
+  <script src="js/scene3d/lab-scene.js"></script>
+  <script src="js/stages/stage1-observation.js"></script>
+  <script src="js/stages/stage2-3d-particles.js"></script>
+  <script src="js/stages/stage2-modeling.js"></script>
+  <script src="js/stages/student-modeling.js"></script>
+  <script src="js/stages/student-atom-trace.js"></script>
+  <script src="js/stages/stage-scaffolds.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

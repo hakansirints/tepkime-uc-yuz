@@ -1,0 +1,715 @@
+/* ==========================================================================
+   TEPKİMENİN ÜÇ YÜZÜ - 3D LABORATUVAR & MATERIAL DESIGN 3 UYARLAMASI
+   MEBİ Tasarım Sisteminin Material Design 3 (M3) estetiği ile harmanlanmış düzeni.
+   ========================================================================== */
+
+/* 1. Tam Ekran Zemin ve 3D Kanvas */
+html, body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background-color: #121214;
+  color: var(--mebi-text-main);
+  font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+  user-select: none;
+}
+
+.fullscreen-lab-canvas {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 1;
+  outline: none;
+}
+
+/* 2. Material Design 3 Yüzen Üst Çubuk (M3 Top App Bar) */
+.m3-top-app-bar {
+  position: fixed;
+  top: 14px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: calc(100% - 48px);
+  max-width: 1300px;
+  height: 56px;
+  background: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(226, 232, 240, 0.8);
+  border-radius: 9999px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px;
+  box-shadow: 0 4px 20px rgba(15, 23, 42, 0.08), 0 1px 3px rgba(15, 23, 42, 0.05);
+  z-index: 50;
+  transition: all 0.3s cubic-bezier(0.2, 0, 0, 1);
+}
+
+[data-theme="dark"] .m3-top-app-bar {
+  background: rgba(28, 27, 31, 0.9);
+  border: 1px solid rgba(73, 69, 79, 0.5);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.6);
+}
+
+.m3-brand-container {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.m3-brand-icon {
+  width: 34px;
+  height: 34px;
+  background: linear-gradient(135deg, var(--mebi-primary), #0284c7);
+  border-radius: 9999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  font-weight: 800;
+  font-size: 17px;
+  box-shadow: 0 2px 6px rgba(30, 64, 175, 0.3);
+}
+
+.m3-app-title {
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--mebi-text-main);
+  margin: 0;
+  letter-spacing: -0.2px;
+}
+
+.m3-app-sub {
+  font-size: 10.5px;
+  color: var(--mebi-text-secondary);
+  font-weight: 600;
+  margin: 0;
+}
+
+/* 7 Aşama İlerleme Barı (Material 3 Segmented Pill) */
+.m3-stepper-pills {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  background: rgba(241, 245, 249, 0.85);
+  padding: 3px;
+  border-radius: 9999px;
+}
+
+[data-theme="dark"] .m3-stepper-pills {
+  background: rgba(43, 41, 48, 0.85);
+}
+
+.m3-step-btn {
+  padding: 5px 12px;
+  border-radius: 9999px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--mebi-text-secondary);
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.2, 0, 0, 1);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.m3-step-btn:hover {
+  color: var(--mebi-text-main);
+  background: rgba(255, 255, 255, 0.6);
+}
+
+[data-theme="dark"] .m3-step-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.m3-step-btn.is-active {
+  background: var(--mebi-primary);
+  color: #ffffff;
+  box-shadow: 0 2px 8px rgba(30, 64, 175, 0.35);
+}
+
+[data-theme="dark"] .m3-step-btn.is-active {
+  background: #38383e;
+  color: #ffffff;
+  border: 1px solid #52525b;
+}
+
+.m3-step-btn.is-completed {
+  color: var(--mebi-success);
+}
+
+.m3-step-btn.is-completed::after {
+  content: '✓';
+  font-size: 10px;
+}
+
+.m3-step-btn.is-locked {
+  opacity: 0.45;
+  cursor: not-allowed;
+  pointer-events: auto;
+}
+
+.m3-step-btn.is-locked:hover {
+  background: transparent !important;
+  color: var(--mebi-text-secondary) !important;
+}
+
+.m3-step-btn.is-unlocked {
+  opacity: 1;
+  cursor: pointer;
+  color: var(--mebi-primary);
+  font-weight: 800;
+}
+
+.is-pulse-ready {
+  animation: proceedPulse 1.6s infinite ease-in-out;
+}
+
+@keyframes proceedPulse {
+  0%, 100% { transform: scale(1); box-shadow: 0 4px 0 #15803d; }
+  50% { transform: scale(1.02); box-shadow: 0 4px 14px rgba(34, 197, 94, 0.45), 0 4px 0 #15803d; }
+}
+
+.m3-icon-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 9999px;
+  border: 0;
+  background: var(--mebi-bg-subtle);
+  color: var(--mebi-text-main);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background-color 0.2s ease, transform 0.1s ease;
+}
+
+.m3-icon-btn:hover {
+  background: #e2e8f0;
+}
+
+[data-theme="dark"] .m3-icon-btn:hover {
+  background: #323238;
+}
+
+.m3-icon-btn:active {
+  transform: scale(0.95);
+}
+
+/* 3. SOL TARAF: TEPKİME SEÇİMİ AÇILABİLİR KART (Madde 2 - Tıklanınca aşağı doğru uzayan kart) */
+.m3-reaction-expandable-card {
+  position: fixed;
+  left: 24px;
+  top: 84px;
+  width: 360px;
+  max-height: calc(100vh - 180px);
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border-radius: 20px;
+  border: 1px solid rgba(226, 232, 240, 0.85);
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.12), 0 2px 6px rgba(15, 23, 42, 0.04);
+  z-index: 40;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  transition: all 0.35s cubic-bezier(0.2, 0, 0, 1);
+}
+
+[data-theme="dark"] .m3-reaction-expandable-card {
+  background: rgba(28, 27, 31, 0.92);
+  border: 1px solid rgba(73, 69, 79, 0.5);
+  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.7);
+}
+
+/* Kart Başlığı (Tıklanabilir Toggle Alanı) */
+.m3-reaction-header {
+  padding: 16px 20px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid transparent;
+  transition: background 0.2s ease, border-color 0.2s ease;
+  user-select: none;
+}
+
+.m3-reaction-header:hover {
+  background: rgba(241, 245, 249, 0.6);
+}
+
+[data-theme="dark"] .m3-reaction-header:hover {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.m3-reaction-expandable-card.is-expanded .m3-reaction-header {
+  border-bottom: 1px solid var(--mebi-border);
+}
+
+.m3-reaction-title-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.m3-reaction-card-title {
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--mebi-text-main);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+}
+
+.m3-reaction-card-sub {
+  font-size: 12px;
+  color: var(--mebi-text-secondary);
+  font-weight: 500;
+  margin: 0;
+}
+
+.m3-chevron-icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 9999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--mebi-bg-subtle);
+  color: var(--mebi-text-main);
+  font-size: 12px;
+  transition: transform 0.3s cubic-bezier(0.2, 0, 0, 1);
+}
+
+.m3-reaction-expandable-card.is-expanded .m3-chevron-icon {
+  transform: rotate(180deg);
+}
+
+/* Aşağıya Doğru Uzayan Tepkime Seçenekleri Listesi */
+.m3-reaction-list-content {
+  max-height: 0;
+  overflow-y: auto;
+  transition: max-height 0.4s cubic-bezier(0.2, 0, 0, 1);
+  padding: 0 12px;
+}
+
+.m3-reaction-expandable-card.is-expanded .m3-reaction-list-content {
+  max-height: 480px;
+  padding: 12px;
+}
+
+.m3-reaction-tile {
+  width: 100%;
+  text-align: left;
+  padding: 10px 14px;
+  border-radius: 12px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--mebi-text-main);
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  margin-bottom: 6px;
+  transition: all 0.15s ease;
+}
+
+.m3-reaction-tile:hover {
+  background: var(--mebi-bg-subtle);
+  transform: translateX(2px);
+}
+
+.m3-reaction-tile.is-active {
+  background: var(--mebi-primary-light);
+  border-color: var(--mebi-primary-border);
+  box-shadow: 0 2px 8px rgba(30, 64, 175, 0.15);
+}
+
+[data-theme="dark"] .m3-reaction-tile.is-active {
+  background: #2b2b30;
+  border-color: #52525b;
+}
+
+.m3-tile-name {
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.m3-reaction-tile.is-active .m3-tile-name {
+  color: var(--mebi-primary);
+}
+
+[data-theme="dark"] .m3-reaction-tile.is-active .m3-tile-name {
+  color: #60a5fa;
+}
+
+.m3-tile-sub {
+  font-size: 11px;
+  color: var(--mebi-text-secondary);
+}
+
+/* 4. SAĞ TARAF: TEPKİME BEKLENİYOR / GÖZLEM KARTI (Madde 3) */
+.m3-observation-card {
+  position: fixed;
+  right: 24px;
+  top: 84px;
+  width: 360px;
+  max-height: calc(100vh - 180px);
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border-radius: 20px;
+  border: 1px solid rgba(226, 232, 240, 0.85);
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.12), 0 2px 6px rgba(15, 23, 42, 0.04);
+  padding: 20px;
+  z-index: 40;
+  overflow-y: auto;
+  box-sizing: border-box;
+  transition: all 0.35s cubic-bezier(0.2, 0, 0, 1);
+}
+
+[data-theme="dark"] .m3-observation-card {
+  background: rgba(28, 27, 31, 0.92);
+  border: 1px solid rgba(73, 69, 79, 0.5);
+  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.7);
+}
+
+.m3-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.m3-card-title {
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--mebi-text-main);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+}
+
+.m3-card-sub {
+  font-size: 12.5px;
+  color: var(--mebi-text-secondary);
+  line-height: 1.5;
+  margin: 0 0 12px 0;
+}
+
+/* Material 3 Çukur Textfield */
+.m3-textfield-box {
+  background: #f1f5f9;
+  border-radius: 14px;
+  padding: 12px;
+  border: 1px solid transparent;
+  transition: all 0.2s ease;
+}
+
+[data-theme="dark"] .m3-textfield-box {
+  background: #1e1e24;
+}
+
+.m3-textfield-box:focus-within {
+  border-color: var(--mebi-primary);
+  background: #ffffff;
+  box-shadow: 0 0 0 3px rgba(30, 64, 175, 0.15);
+}
+
+[data-theme="dark"] .m3-textfield-box:focus-within {
+  border-color: #60a5fa;
+  background: #141417;
+}
+
+.m3-textarea {
+  width: 100%;
+  border: 0;
+  background: transparent;
+  outline: none;
+  font-family: inherit;
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--mebi-text-main);
+  resize: vertical;
+  min-height: 75px;
+}
+
+.m3-textfield-status {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  color: var(--mebi-text-secondary);
+  margin-top: 4px;
+  font-weight: 600;
+}
+
+/* Material Chips */
+.m3-chips-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 10px 0;
+}
+
+.m3-chip {
+  padding: 5px 12px;
+  border-radius: 9999px;
+  border: 1px solid var(--mebi-border);
+  background: transparent;
+  color: var(--mebi-text-main);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.m3-chip:hover {
+  background: var(--mebi-bg-subtle);
+}
+
+.m3-chip.is-active {
+  background: var(--mebi-primary);
+  color: #ffffff;
+  border-color: var(--mebi-primary);
+  box-shadow: 0 2px 6px rgba(30, 64, 175, 0.3);
+}
+
+[data-theme="dark"] .m3-chip.is-active {
+  background: #3f3f46;
+  border-color: #52525b;
+}
+
+/* 5. SAYFANIN ALT ORTASINDAKİ YATAY EYLEM ŞERİDİ (Madde 1b: Başlık yok, sadece eylem düğmeleri) */
+.m3-bottom-actions-strip {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(226, 232, 240, 0.85);
+  border-radius: 9999px;
+  padding: 6px 12px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  box-shadow: 0 10px 35px rgba(15, 23, 42, 0.18), 0 2px 6px rgba(15, 23, 42, 0.06);
+  z-index: 50;
+  transition: all 0.3s cubic-bezier(0.2, 0, 0, 1);
+}
+
+[data-theme="dark"] .m3-bottom-actions-strip {
+  background: rgba(28, 27, 31, 0.94);
+  border: 1px solid rgba(73, 69, 79, 0.6);
+  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.75);
+}
+
+.m3-strip-divider {
+  width: 1px;
+  height: 24px;
+  background: var(--mebi-border);
+}
+
+/* Material 3 Segmented Button Group (Kamera Açıları) */
+.m3-segmented-group {
+  display: flex;
+  background: var(--mebi-bg-subtle);
+  border-radius: 9999px;
+  padding: 2px;
+}
+
+.m3-segment-btn {
+  padding: 6px 12px;
+  border-radius: 9999px;
+  border: 0;
+  background: transparent;
+  color: var(--mebi-text-secondary);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.m3-segment-btn:hover {
+  color: var(--mebi-text-main);
+}
+
+.m3-segment-btn.is-active {
+  background: #ffffff;
+  color: var(--mebi-text-main);
+  box-shadow: 0 1px 4px rgba(15, 23, 42, 0.12);
+}
+
+[data-theme="dark"] .m3-segment-btn.is-active {
+  background: #38383e;
+  color: #ffffff;
+}
+
+/* 6. YÜZEN DİJİTAL TERMOMETRE VE BEHER ETİKETLERİ */
+.m3-floating-temp-badge {
+  position: fixed;
+  top: 82px;
+  left: calc(50% - 90px);
+  transform: translateX(-50%);
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 2px solid rgba(2, 132, 199, 0.35);
+  border-radius: 9999px;
+  padding: 5px 16px;
+  font-size: 15px;
+  font-weight: 800;
+  color: #0284c7;
+  box-shadow: 0 6px 20px rgba(15, 23, 42, 0.12);
+  z-index: 30;
+  transition: all 0.3s ease;
+}
+
+[data-theme="dark"] .m3-floating-temp-badge {
+  background: rgba(28, 27, 31, 0.92);
+}
+
+.m3-beaker-labels-strip {
+  position: fixed;
+  bottom: 84px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 40px;
+  pointer-events: none;
+  z-index: 30;
+}
+
+.m3-beaker-tag {
+  background: rgba(15, 23, 42, 0.78);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 14px;
+  padding: 8px 16px;
+  text-align: center;
+  color: #ffffff;
+  min-width: 170px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
+}
+
+.m3-beaker-tag-title {
+  font-size: 13px;
+  font-weight: 800;
+  margin-bottom: 2px;
+}
+
+.m3-beaker-tag-sub {
+  font-size: 11px;
+  color: #94a3b8;
+  font-weight: 600;
+}
+
+/* 7. AŞAMA 2-7 İSKELETLERİ PANELİ (Modal / Overlay) */
+.scaffold-overlay-panel {
+  position: fixed;
+  inset: 76px 24px 84px 24px;
+  z-index: 60;
+  pointer-events: auto;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.mebi-scaffold-card {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(28px);
+  -webkit-backdrop-filter: blur(28px);
+  border-radius: 24px;
+  border: 1px solid var(--mebi-border);
+  box-shadow: 0 25px 60px rgba(15, 23, 42, 0.3);
+  padding: 28px;
+  max-width: 960px;
+  width: 100%;
+  max-height: 82vh;
+  overflow-y: auto;
+}
+
+[data-theme="dark"] .mebi-scaffold-card {
+  background: rgba(24, 24, 27, 0.95);
+  border-color: #38383e;
+  box-shadow: 0 30px 70px rgba(0, 0, 0, 0.95);
+}
+
+/* 8. GÖZLEM DEĞERLENDİRME & ONAY KUTUSU (Aşama 1 Sadeleştirilmiş Bildirim) */
+.mebi-observation-feedback {
+  border-radius: 12px;
+  padding: 10px 12px;
+  font-size: 13px;
+  line-height: 1.5;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  animation: fadeIn 0.25s ease;
+  transition: all 0.2s ease;
+}
+
+.mebi-observation-feedback.is-success {
+  background: rgba(16, 185, 129, 0.08);
+  border: 1px solid rgba(16, 185, 129, 0.35);
+  color: #065f46;
+}
+
+[data-theme="dark"] .mebi-observation-feedback.is-success {
+  background: rgba(16, 185, 129, 0.15);
+  border-color: rgba(16, 185, 129, 0.45);
+  color: #34d399;
+}
+
+.mebi-observation-feedback.is-warning {
+  background: rgba(245, 158, 11, 0.08);
+  border: 1px solid rgba(245, 158, 11, 0.35);
+  color: #92400e;
+}
+
+[data-theme="dark"] .mebi-observation-feedback.is-warning {
+  background: rgba(245, 158, 11, 0.15);
+  border-color: rgba(245, 158, 11, 0.45);
+  color: #fbbf24;
+}
+
+.mebi-observation-feedback .feedback-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  min-width: 22px;
+  border-radius: 50%;
+  font-size: 13px;
+  font-weight: 800;
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+.mebi-observation-feedback.is-success .feedback-badge {
+  background: #10b981;
+  color: #ffffff;
+}
+
+.mebi-observation-feedback.is-warning .feedback-badge {
+  background: #f59e0b;
+  color: #ffffff;
+}
+
+.mebi-observation-feedback .feedback-body {
+  margin: 0;
+  font-size: 12.5px;
+  font-weight: 500;
+  line-height: 1.45;
+  flex: 1;
+}
+
