@@ -4,7 +4,7 @@
     root.classList.add('mebi-activity');
     root.querySelectorAll('.glass-panel, .workshop-header').forEach(panel => panel.classList.add('mebi-card'));
     root.querySelectorAll('button').forEach(button => {
-      if (button.matches('[role="tab"], [data-item], .formula-card, .trace-formula-card')) return;
+      if (button.matches('[role="tab"], [data-item], .formula-card, .trace-formula-card, .cpk-hit')) return;
       button.classList.add('mebi-btn');
       button.classList.toggle('mebi-btn-primary', button.classList.contains('liquid-primary'));
       button.classList.toggle('mebi-btn-secondary', !button.classList.contains('liquid-primary'));

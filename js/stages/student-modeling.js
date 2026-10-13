@@ -9,7 +9,7 @@ function mountStudentModel(container, state) {
   let assessment = compatible ? clone(saved.assessment) : emptyAssessment();
   let records = compatible ? clone(saved.records) : { actions: [], checks: 0, errors: 0, firstAttempt: null, hintUses: 0, transferAttempts: 0 };
   let history = compatible ? clone(saved.history || []) : [], pending = null, disposed = false, touch = null;
-  let resultAction = null, nativeDrag = null;
+  let resultAction = null, nativeDrag = null, cpkViewer = null;
   let phoneView = 'model', question = 0, regionPage = 0;
   const atomNames = { H: 'Hidrojen', C: 'Karbon', O: 'Oksijen', N: 'Azot', Na: 'Sodyum', Cl: 'Klor', Ca: 'Kalsiyum', K: 'Potasyum', I: 'İyot', Pb: 'Kurşun', Ag: 'Gümüş', Cu: 'Bakır' };
   const titles = ['Tepkime öncesi', 'Tanecikler etkileşirken', 'Tepkime sonrası'];
@@ -36,7 +36,7 @@ function mountStudentModel(container, state) {
         <div class="landscape-only task-view-nav" id="fm-question-nav"><button id="fm-view-back" type="button">Modelime dön</button><button id="fm-question-prev" type="button">Önceki alan</button><span id="fm-question-count"></span><button id="fm-question-next" type="button">Sonraki alan</button><button id="fm-write-note" type="button">Cümle ekle</button></div>
         <div class="workshop-footer"><button id="fm-reset" type="button">Yeniden başla</button><button id="fm-next" type="button" class="liquid-primary">Modelimi kontrol et</button><button id="fm-trace" type="button" class="liquid-primary" hidden>Atomun izini sür</button></div>
       </div></section></div>
-    <dialog id="fm-result" class="liquid-dialog model-result" aria-labelledby="fm-result-title" aria-describedby="fm-result-message"><div class="model-result-heading"><span id="fm-result-symbol" class="result-symbol" aria-hidden="true"></span><button id="fm-result-close" type="button" aria-label="Sonuç kartını kapat">×</button></div><h3 id="fm-result-title"></h3><p id="fm-result-message"></p><div class="model-result-actions"><button id="fm-result-back" type="button">Modelime dön</button><button id="fm-result-action" type="button" class="liquid-primary"></button></div></dialog>
+    <dialog id="fm-result" class="liquid-dialog model-result" aria-labelledby="fm-result-title" aria-describedby="fm-result-message"><div class="model-result-heading"><span id="fm-result-symbol" class="result-symbol" aria-hidden="true"></span><button id="fm-result-close" type="button" aria-label="Sonuç kartını kapat">×</button></div><h3 id="fm-result-title"></h3><p id="fm-result-message"></p><div id="fm-cpk" hidden></div><div class="model-result-actions"><button id="fm-result-back" type="button">Modelime dön</button><button id="fm-result-action" type="button" class="liquid-primary"></button></div></dialog>
   </div>`;
   const root = container.querySelector('#formula-modeling'), el = id => root.querySelector('#fm-' + id);
   el('reaction').textContent = reaction.fixedVessel.name + ' + ' + reaction.addedVessel.name;
@@ -189,15 +189,21 @@ function mountStudentModel(container, state) {
     el('tabs').scrollIntoView({ block: 'nearest', behavior: 'auto' }); el('tab-' + active).focus({ preventScroll: true });
   }
   function showResult(status, title, message, action, label) {
+    stopCPK();
     const dialog = el('result'); dialog.dataset.status = status;
     el('result-symbol').textContent = status === 'correct' ? '✓' : status === 'incorrect' ? '×' : '!';
     el('result-title').textContent = title; el('result-message').textContent = message;
     el('result-action').textContent = label; el('result-back').hidden = action === 'fix';
     resultAction = { action, stage: active };
     if (!dialog.open) dialog.showModal();
+    if (status === 'correct' && active === 0 && action === 'advance' && plan.validate(frames[0],0)[0] === 'ok') {
+      dialog.classList.add('cpk-result'); el('cpk').hidden = false;
+      cpkViewer = CPKModelViewer.mount(el('cpk'), frames[0].items, plan.sourceNames);
+    }
     el('result-action').focus();
   }
-  function closeResult() { resultAction = null; el('result').close(); }
+  function stopCPK() { cpkViewer?.dispose(); cpkViewer = null; el('cpk').hidden = true; el('result').classList.remove('cpk-result'); }
+  function closeResult() { resultAction = null; stopCPK(); el('result').close(); }
   function continueResult() {
     const target = resultAction; closeResult(); if (!target || target.stage !== active) return;
     if (target.action === 'advance') advance();
@@ -456,7 +462,8 @@ function mountStudentModel(container, state) {
   el('liquid').onclick = () => setPhase('liquid'); el('gas').onclick = () => setPhase('g'); el('solid').onclick = () => setPhase('k');
   el('trace').onclick = () => { closeResult(); state.setStage(3); };
   el('result-close').onclick = closeResult; el('result-back').onclick = closeResult; el('result-action').onclick = continueResult;
-  el('result').addEventListener('cancel', () => { resultAction = null; });
+  el('result').addEventListener('cancel', () => { resultAction = null; stopCPK(); });
+  el('result').addEventListener('close', () => { if (!el('result').open) stopCPK(); });
   [['evidence', 'evidence'], ['cause', 'explanation'], ['stays', 'stays']].forEach(([id, field]) => el(id).onchange = () => {
     assessment[field] = el(id).value; assessment.transferOK = false; revokeCompletion();
     const correct = assessment[field] === (field === 'evidence' ? plan.evidence : field === 'explanation' ? plan.explanation : plan.staysAnswer);
@@ -471,7 +478,7 @@ function mountStudentModel(container, state) {
     if (LandscapeTasks.active() && !assessment.transferOK) showResult('incorrect', 'Yeni örneği yeniden incele', plan.transfer.guidance, 'fix', 'Seçimimi düzelt');
   };
   render();
-  return { frames: () => frames, validate: i => plan.validate(frames[i], i), add, select, moveSource, tryInteraction, chooseProposal, setPhase, remove, restore, undo, next, go, checkAll, reset, autoComplete,
+  return { frames: () => frames, cpk: () => cpkViewer, validate: i => plan.validate(frames[i], i), add, select, moveSource, tryInteraction, chooseProposal, setPhase, remove, restore, undo, next, go, checkAll, reset, autoComplete,
     dispose() { save(); disposed = true; unsubscribeViewport(); stopNativeDrag(); touch?.ghost?.remove(); cancelAnimationFrame(touch?.scroll); touch = null; closeResult(); } };
 }
 window.StudentStage2ModelingManager = class {

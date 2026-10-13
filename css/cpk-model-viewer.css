@@ -1,0 +1,53 @@
+/* The approved inspection card expands the existing successful result dialog. */
+#labAppFrame #fm-result.cpk-result[open] { width:min(1100px,calc(100vw - 32px),calc((100dvh - 32px) * 1.777778)); aspect-ratio:16/9; height:auto; max-height:calc(100dvh - 32px); min-height:0; display:flex; flex-direction:column; gap:8px; padding:20px; overflow:visible; }
+#labAppFrame #fm-result.cpk-result .model-result-heading { position:absolute; right:16px; top:12px; margin:0; height:40px; }
+#fm-result.cpk-result #fm-result-symbol { display:none; }
+#labAppFrame #fm-result.cpk-result #fm-result-title { margin:0; padding-right:48px; font-size:21px; line-height:28px; }
+#labAppFrame #fm-result.cpk-result #fm-result-message { margin:0; font-size:14px; line-height:20px; }
+#fm-result.cpk-result .model-result-actions { margin:0; flex:none; padding-bottom:4px; }
+#fm-cpk { flex:1; min-height:0; }
+#fm-cpk[hidden] { display:none; }
+.cpk-viewer { display:flex; flex-direction:column; gap:8px; height:100%; min-height:0; color:var(--mebi-text-main); font-family:var(--mebi-font-family,'Plus Jakarta Sans',sans-serif); }
+.cpk-viewer * { box-sizing:border-box; }
+.cpk-stage { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:12px; position:relative; flex:1; min-height:0; }
+.cpk-stage>canvas { position:absolute; inset:0; z-index:2; pointer-events:none; display:block; width:100%; height:100%; }
+.cpk-source { position:relative; min-width:0; min-height:0; border-radius:14px; background:#203647; color:#edf4f9; overflow:hidden; border:1px solid #536676; }
+.inquiry-workshop .cpk-source h4 { position:relative; z-index:3; text-align:center; color:#edf4f9; font-size:13px; line-height:18px; font-weight:500; margin:0; padding:10px 8px; min-height:38px; }
+.cpk-field { position:absolute; inset:46px 6px 6px; }
+.cpk-unit { position:absolute; min-width:0; background:transparent; z-index:3; }
+.cpk-viewer .cpk-hit { border:0; border-radius:0; background:transparent; box-shadow:none; display:block; padding:0; width:100%; height:100%; color:inherit; cursor:grab; touch-action:none; transform:none; }
+.cpk-viewer .cpk-hit:active { cursor:grabbing; }
+.cpk-hit:focus-visible { outline:2px solid #c9e4ff; outline-offset:2px; }
+.cpk-formula { position:absolute; left:50%; transform:translateX(-50%); white-space:nowrap; font-size:13px; line-height:18px; font-weight:400; color:#edf4f9; pointer-events:none; }
+.cpk-legend { display:flex; justify-content:center; gap:6px 12px; flex-wrap:wrap; font-size:12px; line-height:18px; flex:none; }
+.cpk-legend span { display:flex; align-items:center; gap:5px; }
+.cpk-legend i { display:inline-block; width:11px; height:11px; border-radius:50%; border:1px solid var(--mebi-border-color,#b8c5d2); }
+.cpk-controls { display:flex; align-items:center; gap:6px; flex-wrap:wrap; flex:none; }
+.cpk-controls .mebi-btn { min-height:44px; padding:7px 12px; font-size:13px; }
+.cpk-controls .cpk-touch-mode { display:none; }
+.cpk-controls .cpk-zoom { min-width:44px; padding:7px; }
+.cpk-controls .cpk-pages { display:flex; align-items:center; gap:5px; margin-left:auto; }
+.cpk-controls .cpk-pages[hidden] { display:none; }
+.cpk-pages span { white-space:nowrap; font-size:12px; }
+.cpk-help { margin-left:auto; font-size:12px; line-height:16px; color:var(--mebi-text-secondary); }
+.cpk-status { font-size:12px; line-height:16px; margin:0; min-height:16px; flex:none; }
+.cpk-viewer [hidden] { display:none !important; }
+@media(any-pointer:coarse) { .cpk-controls .cpk-touch-mode { display:inline-flex; } .cpk-help { display:none; } }
+@media(orientation:landscape) and (max-height:500px), (orientation:landscape) and (max-width:1366px) and (any-pointer:coarse) {
+  #labAppFrame #fm-result.cpk-result[open] { width:calc(100vw - 16px); height:min(calc(100dvh - 16px),calc(var(--visible-height,100dvh) - 16px)); max-height:min(calc(100dvh - 16px),calc(var(--visible-height,100dvh) - 16px)); aspect-ratio:auto; padding:10px 12px; gap:5px; }
+  #labAppFrame #fm-result.cpk-result .model-result-heading { right:10px; top:6px; height:32px; }
+  #labAppFrame #fm-result.cpk-result #fm-result-title { font-size:18px; line-height:24px; }
+  #labAppFrame #fm-result.cpk-result #fm-result-message { font-size:13px; line-height:18px; }
+  .cpk-viewer { gap:5px; }
+  .cpk-stage { gap:8px; }
+  .inquiry-workshop .cpk-source h4 { font-size:12px; line-height:16px; padding:5px 6px; min-height:30px; }
+  .cpk-field { inset:36px 4px 4px; }
+  .cpk-legend { display:none; }
+  #labAppFrame .cpk-controls .mebi-btn { min-height:44px; font-size:12px; padding:5px 9px; }
+  #labAppFrame .cpk-controls .cpk-zoom { min-width:44px; }
+  .cpk-controls { flex-wrap:nowrap; gap:4px; }
+  .cpk-help { display:none; }
+  .cpk-status { font-size:11px; line-height:14px; min-height:14px; }
+  #labAppFrame #fm-result.cpk-result .model-result-actions { padding:0; gap:8px; flex-direction:row; }
+  #labAppFrame #fm-result.cpk-result .model-result-actions .mebi-btn { min-height:44px; width:auto; padding:5px 12px; }
+}
