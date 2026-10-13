@@ -1,0 +1,91 @@
+/* Shared CPK materials, geometry and labels remain unchanged. */
+body[data-stage="2"] #labAppFrame #stageScaffoldView { overflow:hidden; }
+#labAppFrame #formula-modeling.editable-modeling { height:100%;min-height:0;display:flex;flex-direction:column;overflow:hidden;padding:12px;gap:8px; }
+#labAppFrame .editable-modeling .workshop-header { flex:none;padding:8px 12px;margin:0; }
+#labAppFrame .editable-modeling .workshop-header h2 { font-size:20px;line-height:26px;margin:0; }
+#labAppFrame .editable-modeling .workshop-header p { margin:3px 0 0;font-size:12px;line-height:18px; }
+#labAppFrame .editable-modeling .workshop-layout { flex:1;min-height:0;display:grid;grid-template-columns:210px minmax(0,1fr);gap:10px;align-items:stretch; }
+#labAppFrame .editable-modeling .formula-pool { display:flex;flex-direction:column;overflow:hidden;padding:10px;position:static;min-height:0; }
+#labAppFrame .editable-modeling #fm-pool-help { margin:4px 0;font-size:12px;line-height:18px; }
+#labAppFrame .editable-modeling #fm-pool { margin:6px 0;gap:5px;flex:none; }
+#labAppFrame .editable-modeling .formula-card { min-height:58px;padding:5px; }
+#labAppFrame .editable-modeling .formula-card .chemical-formula { font-size:23px; }
+#labAppFrame .editable-modeling .atom-pool { margin-top:8px;padding-top:8px; }
+#labAppFrame .editable-modeling .atom-pool h3 { font-size:13px;line-height:18px; }
+#labAppFrame .editable-modeling #fm-atoms { padding-top:6px;gap:4px; }
+#labAppFrame .editable-modeling #fm-atoms span { font-size:12px;padding:3px 5px; }
+#labAppFrame .editable-modeling .formula-workspace { display:flex;flex-direction:column;min-height:0;padding:8px;gap:5px;overflow:hidden; }
+#labAppFrame .editable-modeling #fm-panel { flex:1;display:flex;flex-direction:column;min-height:0;gap:5px; }
+#labAppFrame .editable-modeling #fm-tabs { flex:none;flex-wrap:nowrap;min-height:44px;padding:0; }
+#labAppFrame .editable-modeling #fm-tabs button { min-height:44px;flex:1;min-width:0;padding:5px;font-size:12px; }
+#labAppFrame .editable-modeling .workspace-heading,#labAppFrame .editable-modeling #fm-task { display:none; }
+#labAppFrame .editable-modeling #fm-region-nav { display:flex;flex:none;flex-wrap:nowrap;gap:5px; }
+#labAppFrame .editable-modeling #fm-region-nav button { flex:1;min-width:0;min-height:44px;font-size:12px;padding:4px; }
+#labAppFrame .editable-modeling #fm-region-nav button[aria-pressed="true"] { outline:2px solid var(--mebi-primary);outline-offset:-2px; }
+#labAppFrame .editable-modeling #fm-work { display:block;flex:1;min-height:0;padding:0;border:0;background:transparent; }
+#labAppFrame .editable-modeling #fm-feedback { display:none; }
+#labAppFrame .editable-modeling #fm-feedback-open { display:block!important;flex:none; }
+#labAppFrame .editable-modeling .workshop-footer { flex:none;display:flex;flex-wrap:nowrap;gap:5px;margin:0;padding:4px 0 0;min-height:48px; }
+#labAppFrame .editable-modeling .workshop-footer button { min-height:44px;font-size:12px;padding:5px 10px!important;white-space:normal; }
+#labAppFrame .editable-modeling .phase-actions { margin:0;flex:none; }
+#labAppFrame .editable-modeling .phase-actions[hidden] { display:none; }
+#labAppFrame .editable-modeling #fm-proposals { flex:1;min-height:0;margin:0;padding:5px; }
+#labAppFrame .editable-modeling #fm-proposal-options { display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:5px 0; }
+#labAppFrame .editable-modeling #fm-proposal-options button { font-size:12px;min-height:44px; }
+#labAppFrame .editable-modeling #fm-interaction-preview { display:none; }
+#labAppFrame .editable-modeling[data-view="model"] #fm-proposals { display:none; }
+#labAppFrame .editable-modeling[data-view="proposals"] #fm-work { display:none; }
+#labAppFrame .editable-modeling:is([data-view="model"],[data-view="proposals"]) :is(#fm-explanation,#fm-transfer) { display:none; }
+#labAppFrame .editable-modeling:is([data-view="explanation"],[data-view="note"],[data-view="transfer"]) .formula-pool { display:none; }
+#labAppFrame .editable-modeling:is([data-view="explanation"],[data-view="note"],[data-view="transfer"]) .workshop-layout { grid-template-columns:1fr; }
+#labAppFrame .editable-modeling:is([data-view="explanation"],[data-view="note"],[data-view="transfer"]) :is(#fm-work,#fm-region-nav,#fm-tabs,.phase-actions) { display:none!important; }
+#labAppFrame .editable-modeling:is([data-view="explanation"],[data-view="note"]) #fm-transfer,#labAppFrame .editable-modeling[data-view="transfer"] #fm-explanation { display:none; }
+#labAppFrame .editable-modeling #fm-explanation,#labAppFrame .editable-modeling #fm-transfer { flex:1;min-height:0;margin:0;padding:6px; }
+#labAppFrame .editable-modeling #fm-question-nav.show-view-nav { display:flex!important; }
+#labAppFrame .editable-modeling #fm-explanation label { margin:6px 0;font-size:14px; }
+#labAppFrame .editable-modeling #fm-explanation>p { display:none; }
+#labAppFrame .editable-modeling #fm-note { min-height:54px;resize:none; }
+#labAppFrame .editable-modeling #fm-transfer-task { font-size:13px;margin:4px 0; }
+#labAppFrame .editable-modeling .cpk-controls { flex-wrap:nowrap;gap:4px; }
+#labAppFrame .editable-modeling .cpk-controls .mebi-btn { min-height:44px;padding:4px 7px;font-size:12px; }
+#labAppFrame .editable-modeling .cpk-help { display:none; }
+#labAppFrame .editable-modeling #fm-region-nav .cpk-pages { display:flex;align-items:center;gap:3px;flex:none; }
+#labAppFrame .editable-modeling #fm-region-nav .cpk-pages[hidden] { display:none; }
+#labAppFrame .editable-modeling #fm-region-nav .cpk-pages button { flex:none;min-width:44px; }
+#labAppFrame .editable-modeling #fm-region-nav .cpk-pages span { font-size:11px;white-space:nowrap; }
+@media(max-width:700px) and (orientation:portrait) {
+ #labAppFrame #stageScaffoldView { height:calc(100dvh - 140px);aspect-ratio:auto; }
+ #labAppFrame .editable-modeling .workshop-layout { grid-template-columns:1fr;grid-template-rows:auto minmax(0,1fr); }
+ #labAppFrame .editable-modeling .formula-pool { padding:6px; }
+ #labAppFrame .editable-modeling #fm-pool { grid-template-columns:repeat(4,minmax(0,1fr)); }
+ #labAppFrame .editable-modeling .atom-pool,#labAppFrame .editable-modeling #fm-pool-help { display:none; }
+ #labAppFrame .editable-modeling .cpk-controls,#labAppFrame .editable-modeling .workshop-footer { flex-wrap:wrap; }
+}
+@media(orientation:landscape) and (max-height:500px) and (max-width:1024px),(orientation:landscape) and (max-width:1366px) and (any-pointer:coarse) {
+ #labAppFrame #formula-modeling.editable-modeling { padding:5px;gap:3px; }
+ #labAppFrame .editable-modeling .workshop-header { display:none; }
+ #labAppFrame .editable-modeling .workshop-header h2 { font-size:15px;line-height:22px; }
+ #labAppFrame .editable-modeling .workshop-header p { display:none; }
+ #labAppFrame .editable-modeling .workshop-layout { grid-template-columns:155px minmax(0,1fr);gap:5px; }
+ #labAppFrame .editable-modeling .formula-pool { padding:6px; }
+ #labAppFrame .editable-modeling .formula-workspace { padding:3px 5px;gap:3px; }
+ #labAppFrame .editable-modeling #fm-panel { gap:3px; }
+ #labAppFrame .editable-modeling #fm-tabs button { font-size:11px;line-height:14px;padding:3px; }
+ #labAppFrame .editable-modeling #fm-region-nav button { font-size:11px;line-height:14px; }
+ #labAppFrame .editable-modeling .formula-card { min-height:52px;padding:3px; }
+ #labAppFrame .editable-modeling .formula-card .chemical-formula { font-size:20px; }
+ #labAppFrame .editable-modeling .atom-pool h3 { display:none; }
+ #labAppFrame .editable-modeling .atom-pool { margin-top:3px;padding-top:3px; }
+ #labAppFrame .editable-modeling #fm-atoms span { font-size:11px;line-height:14px;padding:2px 3px; }
+ #labAppFrame .editable-modeling .workshop-footer { padding:2px 0 0;min-height:46px;gap:3px; }
+ #labAppFrame .editable-modeling .workshop-footer button { font-size:11px;padding:3px 6px!important; }
+ #labAppFrame .editable-modeling .cpk-status { display:none; }
+ #labAppFrame .editable-modeling .cpk-source h4 { padding:3px 5px;min-height:26px;font-size:11px;line-height:14px; }
+ #labAppFrame .editable-modeling .cpk-zone-status { display:none; }
+ #labAppFrame .editable-modeling .cpk-field { bottom:4px; }
+ #labAppFrame .editable-modeling .cpk-controls .mebi-btn { font-size:11px; }
+ #labAppFrame .editable-modeling #fm-pool .task-pages button { min-height:44px; }
+ #labAppFrame .editable-modeling #fm-view-controls { margin-top:auto; }
+ #labAppFrame .editable-modeling #fm-view-controls .cpk-controls { display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:3px; }
+ #labAppFrame .editable-modeling #fm-view-controls .cpk-controls .mebi-btn { width:100%;min-width:44px;min-height:44px;margin:0; }
+}

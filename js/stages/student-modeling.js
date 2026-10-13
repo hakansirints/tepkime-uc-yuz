@@ -1,7 +1,7 @@
 function mountStudentModel(container, state) {
   const { clone } = FormulaChemistry;
   const reaction = state.getReaction(), plan = InquiryChemistry.createPlan(reaction);
-  const blank = () => ({ items: [], selected: [], ok: false, feedback: '', tone: 'info', interaction: null, proposal: null, eligible: false, trialState: null });
+  const blank = () => ({ items: [], selected: [], placements: {}, productRegions: {}, ok: false, feedback: '', tone: 'info', interaction: null, proposal: null, eligible: false, trialState: null });
   const emptyAssessment = () => ({ evidence: '', explanation: '', stays: '', transfer: null, transferOK: false });
   const saved = state.modelingDraft, compatible = saved?.version === 7 && saved.reactionId === reaction.id;
   let frames = compatible ? clone(saved.frames) : [blank(), blank(), blank()];
@@ -10,12 +10,14 @@ function mountStudentModel(container, state) {
   let records = compatible ? clone(saved.records) : { actions: [], checks: 0, errors: 0, firstAttempt: null, hintUses: 0, transferAttempts: 0 };
   let history = compatible ? clone(saved.history || []) : [], pending = null, disposed = false, touch = null;
   let resultAction = null, nativeDrag = null, cpkViewer = null;
-  let phoneView = 'model', question = 0, regionPage = 0;
+  let phoneView = 'model', question = 0, regionPage = 0, targetRegion = 'source-0', workViewer = null, modelPoses = {};
+  if (compatible && !frames[1].placements) frames[1].placements = Object.fromEntries(frames[1].items.map(p => [p.id, frames[1].selected.includes(p.id) ? 'active' : 'stays']));
+  if(compatible&&frames[1].interaction&&!frames[1].productRegions)frames[1].productRegions=Object.fromEntries(frames[1].interaction.products.map(p=>[p.id,'active']));
   const atomNames = { H: 'Hidrojen', C: 'Karbon', O: 'Oksijen', N: 'Azot', Na: 'Sodyum', Cl: 'Klor', Ca: 'Kalsiyum', K: 'Potasyum', I: 'İyot', Pb: 'Kurşun', Ag: 'Gümüş', Cu: 'Bakır' };
   const titles = ['Tepkime öncesi', 'Tanecikler etkileşirken', 'Tepkime sonrası'];
   const tasks = [
-    'Havuzdan bir tür seç; sonra ait olduğu kaynak bölgeye yerleştir. Türleri bütün olarak kullan.',
-    'Değişime katılacağını düşündüğün türleri seç. Etkileşimini dene; sonra oluşum önerini seçip yeniden dene.',
+    'Hedef kaynağı seç; havuzdaki türe tıkla veya sürükle. Modeli tıklayarak havuza geri al.',
+    'Türleri etkileşime katılanlar ve değişmeden kalanlar olarak ayır; etkileşimini ve oluşum önerini sına.',
     'Türleri fiziksel hâllerine uygun bölgelere taşı ve modelini kontrol et.'
   ];
   container.innerHTML = `<div id="formula-modeling" class="liquid-workshop inquiry-workshop" lang="tr">
@@ -26,7 +28,7 @@ function mountStudentModel(container, state) {
       <div id="fm-returned" class="returned-species"></div>
     </aside><section class="glass-panel formula-workspace"><div id="fm-tabs" class="liquid-segments" role="tablist" aria-label="Modelleme adımları"></div>
       <div id="fm-panel" role="tabpanel"><div class="workspace-heading"><h3 id="fm-title"></h3><span class="muted" id="fm-progress"></span></div><p id="fm-task" class="muted"></p>
-        <div id="fm-region-nav" class="landscape-only task-view-nav"></div><div id="fm-work" class="inquiry-field"></div>
+        <div id="fm-region-nav" class="task-view-nav"></div><div id="fm-work" class="inquiry-field editable-model-field"></div>
         <section id="fm-proposals" class="inquiry-proposals" hidden><h4>Hangi oluşum gözlemini açıklayabilir?</h4><div id="fm-proposal-options" class="workshop-actions"></div></section>
         <div id="fm-interaction-preview" class="interaction-preview" hidden></div>
         <div class="workshop-actions phase-actions"><button id="fm-try" type="button" hidden>Etkileşimimi dene</button><button id="fm-liquid" type="button" hidden>Sıvı bölgesine taşı</button><button id="fm-gas" type="button" hidden>Gaz bölgesine taşı</button><button id="fm-solid" type="button" hidden>Katı yapı bölgesine taşı</button></div>
@@ -39,6 +41,8 @@ function mountStudentModel(container, state) {
     <dialog id="fm-result" class="liquid-dialog model-result" aria-labelledby="fm-result-title" aria-describedby="fm-result-message"><div class="model-result-heading"><span id="fm-result-symbol" class="result-symbol" aria-hidden="true"></span><button id="fm-result-close" type="button" aria-label="Sonuç kartını kapat">×</button></div><h3 id="fm-result-title"></h3><p id="fm-result-message"></p><div id="fm-cpk" hidden></div><div class="model-result-actions"><button id="fm-result-back" type="button">Modelime dön</button><button id="fm-result-action" type="button" class="liquid-primary"></button></div></dialog>
   </div>`;
   const root = container.querySelector('#formula-modeling'), el = id => root.querySelector('#fm-' + id);
+  root.classList.add('editable-modeling');
+  const viewerDock=document.createElement('div');viewerDock.id='fm-view-controls';root.querySelector('.formula-pool').append(viewerDock);
   el('reaction').textContent = reaction.fixedVessel.name + ' + ' + reaction.addedVessel.name;
   el('property-text').textContent = plan.properties;
   const smokeEvidence = document.createElement('option'); smokeEvidence.textContent = 'Beyaz sis / duman'; el('evidence').append(smokeEvidence);
@@ -99,12 +103,15 @@ function mountStudentModel(container, state) {
     pending = null; const f = frames[active];
     if (active === 1) { remember(); f.interaction = null; f.eligible = false; f.proposal = null; f.trialState = null; invalidate(); }
     f.selected = f.selected.includes(id) ? f.selected.filter(x => x !== id) : [...f.selected, id];
+    if (active === 1) f.placements = Object.fromEntries(f.items.map(p => [p.id, f.selected.includes(p.id) ? 'active' : 'stays']));
     feedback(f.selected.length ? `${f.selected.length} tür kartı seçtin. ${active === 1 ? 'Etkileşim önerini sınayabilirsin.' : 'Hedef bölgeyi seçebilir veya yerleştirmeyi geri alabilirsin.'}` : 'Seçim temizlendi.'); update();
   }
   function tryInteraction() {
     if (active !== 1) return;
+    if (frames[1].items.some(p => !frames[1].placements?.[p.id])) { feedback('Havuzdaki türleri iki alana yerleştir; değişmeden kalan türleri de koru.'); update(); return; }
     const f = frames[1], result = plan.tryInteraction(f.items, f.selected, f.proposal);
     remember(); invalidate(); f.eligible = ['proposal', 'proposal-wrong', 'ok'].includes(result[0]); f.interaction = result[2] || null;
+    f.productRegions=f.interaction?Object.fromEntries(f.interaction.products.map(p=>[p.id,'active'])):{};
     f.trialState = result[0] === 'ok' ? 'correct' : ['proposal', 'selection'].includes(result[0]) ? 'incomplete' : 'incorrect';
     phoneView = f.eligible && !f.interaction ? 'proposals' : 'model';
     if (['ok', 'proposal'].includes(result[0])) feedback(result[1], result[0] === 'ok' ? 'good' : 'info');
@@ -139,6 +146,46 @@ function mountStudentModel(container, state) {
     invalidate(); feedback('Tür havuza döndü. Aynı atomlarla yeniden yerleştirebilirsin.');
     record('havuza dönüş', 'aynı atom kimlikleri'); update(); return true;
   }
+  function regionDefinitions() {
+    return active === 0 ? plan.sourceNames.map((name,i)=>({id:'source-'+i,name,short:'Kaynak '+(i+1)}))
+      : active === 1 ? [{id:'active',name:frames[1].interaction?'Etkileşim sonucu':'Etkileşime katılanlar',short:frames[1].interaction?'Ürünler':'Etkileşen'},{id:'stays',name:'Değişmeden kalanlar',short:'Kalan'}]
+      : [{id:'liquid',name:'Sıvı / çözelti',short:'Çözelti'},{id:'g',name:'Gaz olarak ayrılanlar',short:'Gaz'},{id:'k',name:plan.kind==='smoke'?'Katı aerosol · beyaz sis':'Oluşan katı yapı',short:'Katı'}];
+  }
+  function poolItems() {
+    const f=frames[active];
+    return active===0?remaining():active===1?interactionStock().filter(p=>f.interaction?.products.some(x=>x.id===p.id)?!f.productRegions?.[p.id]:!f.placements?.[p.id]):(f.baseItems||[]).filter(p=>!f.items.some(x=>x.id===p.id&&x.phase!=='unplaced'));
+  }
+  function interactionStock(){const f=frames[1];if(!f.interaction)return f.items;const changed=new Set(f.interaction.reactants.map(p=>p.id));return [...f.items.filter(p=>!changed.has(p.id)),...f.interaction.products];}
+  function displayedItems(){const f=frames[active];if(active!==1)return f.items;return interactionStock().map(p=>({...p,workRegion:f.interaction?.products.some(x=>x.id===p.id)?f.productRegions?.[p.id]:f.placements?.[p.id]}));
+  }
+  function placeSpecies(formulaOrId,region=targetRegion) {
+    if(!regionDefinitions().some(r=>r.id===region))return false;
+    const p=poolItems().find(p=>p.id===formulaOrId||p.formula===formulaOrId);if(!p)return false;
+    if(active===0)return add(p.formula,Number(region.slice(-1)));
+    const f=frames[active];remember();invalidate();
+    if(active===1&&f.interaction?.products.some(x=>x.id===p.id)){f.productRegions[p.id]=region;feedback(region==='active'?'Ürün aynı atomlarla etkileşim sonucuna geri geldi.':'Bu tür yeni oluşan bir ürün mü, değişmeden kalan bir tür mü?',region==='active'?'good':'guidance');}
+    else if(active===1){f.placements[p.id]=region;f.selected=f.items.filter(x=>f.placements[x.id]==='active').map(x=>x.id);f.interaction=null;f.productRegions={};f.eligible=false;f.proposal=null;f.trialState=null;
+      const correct=(region==='active')===plan.activeInitial.some(x=>x.id===p.id);feedback(correct?'Tür yerleştirildi. Diğer türleri de koruyarak etkileşimini sına.':'Bu tür değişime doğrudan katılıyor mu? Gözlemini ve türün atomlarını düşün.',correct?'good':'guidance');
+    }else{let item=f.items.find(x=>x.id===p.id);if(!item){item=clone(p);f.items.push(item);}item.phase=region==='liquid'?(item.formula==='H₂O'?'s':'suda'):region;
+      const correct=item.phase===plan.finalItems.find(x=>x.id===p.id)?.phase;feedback(correct?'Tür uygun bölgede. Kalan türleri de yerleştir.':'Bu tür gaz olarak ayrılıyor mu, katı mı oluşturuyor, çözeltide mi kalıyor?',correct?'good':'guidance');
+    }record('3B türe yerleştirme','aynı atom kimlikleri');update();return true;
+  }
+  function returnSpecies(id) {
+    if(active===0)return returnToPool(id);
+    if(active===1&&frames[1].interaction?.products.some(p=>p.id===id)){
+      const f=frames[1];remember();invalidate();delete f.productRegions[id];feedback('Ürün havuza döndü. Aynı atomlarla yeniden yerleştirebilirsin.');record('ürünü havuza geri al','aynı atom kimlikleri');update();return true;
+    }
+    const f=frames[active],item=f.items.find(p=>p.id===id);if(!item)return false;
+    remember();invalidate();
+    if(active===1){delete f.placements[id];f.selected=f.selected.filter(x=>x!==id);f.interaction=null;f.eligible=false;f.proposal=null;f.trialState=null;}
+    else item.phase='unplaced';
+    feedback('Tür havuza döndü; aynı atomlarla yeniden yerleştirebilirsin.');record('3B havuza dönüş','aynı atom kimlikleri');update();return true;
+  }
+  function validateFrame(f,index) {
+    if(index===1&&f.items.some(p=>!f.placements?.[p.id]))return ['interaction','Bütün türleri yerleştir; değişmeden kalanları da koru.'];
+    if(index===1&&f.interaction?.products.some(p=>f.productRegions?.[p.id]!=='active'))return ['interaction','Yeni oluşan ürünleri etkileşim sonucu alanında göster; havuzdaki türleri de tamamla.'];
+    return plan.validate(f,index);
+  }
   function restore(id) {
     if (active !== 2) return;
     const f = frames[2], item = f.baseItems.find(p => p.id === id); if (!item || f.items.some(p => p.id === id)) return;
@@ -150,7 +197,7 @@ function mountStudentModel(container, state) {
     feedback('Son anlamlı işlem geri alındı; atomlar ve türler korundu.'); record('geri al', 'geri alındı'); update();
   }
   function next() {
-    const f = frames[active]; const result = plan.validate(f, active); records.checks++;
+    const f = frames[active]; const result = validateFrame(f, active); records.checks++;
     if (!records.firstAttempt) records.firstAttempt = clone({ stage: active, frames });
     f.ok = result[0] === 'ok';
     record('adım kontrolü', result[0]);
@@ -176,7 +223,7 @@ function mountStudentModel(container, state) {
     showResult('correct', 'Modellemeyi başarıyla tamamladın', 'Modelin, gözlem açıklaman ve yeni örnekteki seçimin tutarlı. Aynı atomların izini takip etmeye hazırsın.', 'finish', 'Atomun izini sür');
   }
   function advance() {
-    const f = frames[active]; if (active >= 2 || plan.validate(f, active)[0] !== 'ok') return;
+    const f = frames[active]; if (active >= 2 || validateFrame(f, active)[0] !== 'ok') return;
     remember();
     if (active === 0) frames[1].items = clone(f.items);
     else {
@@ -184,7 +231,7 @@ function mountStudentModel(container, state) {
       const final = [...clone(f.items.filter(p => !ids.has(p.id))), ...clone(f.interaction.products)];
       frames[2].baseItems = clone(final); frames[2].items = final.map(p => ({ ...p, phase: 'unplaced' }));
     }
-    active++; reached = active; pending = null; phoneView = 'model'; regionPage = 0;
+    active++; reached = active; pending = null; phoneView = 'model'; regionPage = 0; targetRegion=active===1?'active':'liquid'; modelPoses={};
     feedback(active === 1 ? 'Gözlemini açıklayan etkileşimi öner.' : 'Oluşan ve değişmeden kalan türleri hâllerine göre yerleştir.'); update();
     el('tabs').scrollIntoView({ block: 'nearest', behavior: 'auto' }); el('tab-' + active).focus({ preventScroll: true });
   }
@@ -196,7 +243,7 @@ function mountStudentModel(container, state) {
     el('result-action').textContent = label; el('result-back').hidden = action === 'fix';
     resultAction = { action, stage: active };
     if (!dialog.open) dialog.showModal();
-    if (status === 'correct' && action !== 'fix' && plan.validate(frames[active],active)[0] === 'ok') {
+    if (!root.classList.contains('editable-modeling') && status === 'correct' && action !== 'fix' && plan.validate(frames[active],active)[0] === 'ok') {
       dialog.classList.add('cpk-result'); el('cpk').hidden = false;
       let viewItems, labels, description;
       const present = p => ({ ...clone(p), aerosol: reaction.id === 'nh3_hcl' && p.formula === 'NH₄Cl' });
@@ -235,21 +282,23 @@ function mountStudentModel(container, state) {
   function explanationOK() { return assessment.evidence === plan.evidence && assessment.explanation === plan.explanation && assessment.stays === plan.staysAnswer; }
   function go(index) {
     if (index > reached || frames.slice(0, index).some((f, i) => plan.validate(f, i)[0] !== 'ok')) return;
-    active = index; pending = null; phoneView = 'model'; regionPage = 0; update();
+    active = index; pending = null; phoneView = 'model'; regionPage = 0; targetRegion=index===0?'source-0':index===1?'active':'liquid'; modelPoses={}; update();
   }
   function checkAll(show = true) {
-    const review = frames.map((f, i) => plan.validate(f, i));
+    const review = frames.map((f, i) => validateFrame(f, i));
     const valid = review.every(([code]) => code === 'ok') && explanationOK() && assessment.transferOK;
     if (!valid) { feedback('Model, gözlem açıklaması ve yeni örnek birlikte tamamlanmalı.', 'guidance'); update(); return false; }
     frames.forEach(f => f.ok = true); feedback('Üç modelin ve gözlem açıklaman tutarlı. Yeni örnekte de atomları ve değişmeden kalan türleri korudun.', 'good');
     save(); state.completeStage(2, { version: 7, reactionId: reaction.id, frames: clone(frames), explanation: clone(assessment), learningRecord: clone(records), assisted: records.hintUses > 0, testMode: Boolean(records.testMode) });
     render(); if (show) showResult('correct', 'Modellemeyi başarıyla tamamladın', 'Modelin ve gözlem açıklaman tutarlı. Aynı atomların izini takip etmeye hazırsın.', 'trace', 'Atomun izini sür'); return true;
   }
-  function reset() { frames = [blank(), blank(), blank()]; active = reached = 0; phoneView = 'model'; regionPage = 0; pending = null; history = []; assessment = emptyAssessment(); records = { actions: [], checks: 0, errors: 0, firstAttempt: null, hintUses: 0, transferAttempts: 0 }; revokeCompletion(); update(); }
+  function reset() { frames = [blank(), blank(), blank()]; active = reached = 0; phoneView = 'model'; regionPage = 0; targetRegion='source-0';modelPoses={};pending = null; history = []; assessment = emptyAssessment(); records = { actions: [], checks: 0, errors: 0, firstAttempt: null, hintUses: 0, transferAttempts: 0 }; revokeCompletion(); update(); }
   function autoComplete() {
     records.testMode = true;
     frames = [blank(), blank(), blank()]; frames[0].items = clone(plan.initial); frames[0].ok = true;
     frames[1].items = clone(plan.initial); frames[1].interaction = plan.tryInteraction(frames[1].items, plan.activeInitial.map(p => p.id), plan.options.find(o => o.correct).id)[2]; frames[1].ok = true;
+    frames[1].placements=Object.fromEntries(plan.initial.map(p=>[p.id,plan.activeInitial.some(x=>x.id===p.id)?'active':'stays']));
+    frames[1].productRegions=Object.fromEntries(frames[1].interaction.products.map(p=>[p.id,'active']));
     frames[2].items = clone(plan.finalItems); frames[2].baseItems = clone(plan.finalItems); active = reached = 2;
     assessment = { evidence: plan.evidence, explanation: plan.explanation, stays: plan.staysAnswer, transfer: plan.transfer.answer, transferOK: true };
     record('geliştirme kısayolu', 'testMode'); if (!checkAll(false)) throw new Error('Model doğrulanamadı.'); return true;
@@ -279,7 +328,11 @@ function mountStudentModel(container, state) {
       if (items.some(p => !expected.some(x => x.id === p.id && x.formula === p.formula && x.phase === p.phase))) return 'incorrect';
       return signature(items) === signature(expected) ? 'correct' : 'incomplete';
     }
-    if (active === 1) return frames[1].interaction && plan.validate(frames[1], 1)[0] === 'ok' ? 'correct' : frames[1].trialState === 'incorrect' ? 'incorrect' : 'incomplete';
+    if (active === 1) {
+      const expected=region==='active'?(frames[1].interaction?.products||plan.activeInitial):plan.spectators;
+      if(items.some(p=>!expected.some(x=>x.id===p.id)))return 'incorrect';
+      return signature(items)===signature(expected)?'correct':'incomplete';
+    }
     if (region === 'unplaced') return 'incomplete';
     const expected = plan.finalItems.filter(p => region === 'liquid' ? ['s', 'suda'].includes(p.phase) : p.phase === region);
     if (items.some(p => !expected.some(x => x.formula === p.formula && x.phase === p.phase))) return 'incorrect';
@@ -288,9 +341,10 @@ function mountStudentModel(container, state) {
   function currentModelStatus() {
     const f = frames[active];
     if (active === 0 && [0, 1].some(source => zoneStatus('source-' + source, f.items.filter(p => p.source === source), source) === 'incorrect')) return 'incorrect';
-    if (active === 1 && f.trialState === 'incorrect') return 'incorrect';
+    if (active === 1 && (f.trialState === 'incorrect'||f.items.some(p=>f.placements?.[p.id]&&(f.placements[p.id]==='active')!==plan.activeInitial.some(x=>x.id===p.id)))) return 'incorrect';
+    if(active===1&&f.interaction?.products.some(p=>f.productRegions?.[p.id]&&f.productRegions[p.id]!=='active'))return 'incorrect';
     if (active === 2 && f.items.some(p => p.phase !== 'unplaced' && p.phase !== plan.finalItems.find(x => x.formula === p.formula)?.phase)) return 'incorrect';
-    const code = plan.validate(f, active)[0];
+    const code = validateFrame(f, active)[0];
     if (code === 'ok') return 'correct';
     if (['empty', 'interaction'].includes(code)) return 'incomplete';
     if (code === 'inventory') {
@@ -314,7 +368,8 @@ function mountStudentModel(container, state) {
   }
   function drop(payload, region) {
     if (payload.active !== active) return;
-    if (active === 0 && region === 'pool' && payload.id) returnToPool(payload.id);
+    if (region === 'pool' && payload.id) returnSpecies(payload.id);
+    else if (payload.formula && regionDefinitions().some(r=>r.id===region)) placeSpecies(payload.formula,region);
     else if (active === 0 && /^source-[01]$/.test(region)) { const source = Number(region.slice(-1)); payload.formula ? add(payload.formula, source) : moveSource(source, payload.id); }
     else if (active === 2 && ['liquid', 'g', 'k', 'unplaced'].includes(region) && payload.id) setPhase(region, payload.id);
   }
@@ -328,7 +383,7 @@ function mountStudentModel(container, state) {
   root.addEventListener('dragleave', e => e.target.closest('[data-region]')?.classList.remove('drag-over'));
   root.addEventListener('drop', e => { stopNativeDrag(); const target = e.target.closest('[data-region]'); if (!target) return; e.preventDefault(); target.classList.remove('drag-over'); try { drop(JSON.parse(e.dataTransfer.getData('application/x-chem-species')), target.dataset.region); } catch { /* Ignore unrelated drop data. */ } });
   root.addEventListener('pointerdown', e => {
-    if (e.pointerType === 'mouse' || ![0, 2].includes(active)) return;
+    if (e.pointerType === 'mouse' || e.target.closest('.cpk-hit')) return;
     const button = e.target.closest('[data-formula], [data-item]'); if (!button || button.disabled) return;
     touch = { pointerId: e.pointerId, x: e.clientX, y: e.clientY, button, payload: { active, formula: button.dataset.formula, id: button.dataset.item } };
     button.setPointerCapture(e.pointerId);
@@ -358,36 +413,33 @@ function mountStudentModel(container, state) {
     if (disposed) return;
     const focused = document.activeElement, focusItem = root.contains(focused) && (focused.dataset.item || focused.dataset.formula);
     const f = frames[active];
+    if(workViewer){modelPoses=workViewer.poses?.()||modelPoses;workViewer.dispose();workViewer=null;}
+    viewerDock.replaceChildren();
     el('tabs').replaceChildren(); titles.forEach((title, i) => {
       const b = document.createElement('button'); b.type = 'button'; b.id = 'fm-tab-' + i; b.setAttribute('role', 'tab'); b.setAttribute('aria-selected', String(active === i)); b.setAttribute('aria-controls', 'fm-panel'); b.disabled = i > reached; b.textContent = `${i + 1} · ${title}${frames[i].ok ? ' ✓' : ''}`; b.onclick = () => go(i); el('tabs').append(b);
     });
     el('panel').setAttribute('aria-labelledby', 'fm-tab-' + active); el('title').textContent = titles[active]; el('task').textContent = tasks[active]; el('progress').textContent = `Adım ${active + 1} / 3`;
-    el('pool-title').textContent = 'Tanecik havuzu'; el('pool-help').textContent = 'Kartı seç → kaynak bölgeyi seç. Geri dönüş için türü havuza taşı.'; el('pool-help').hidden = active !== 0;
-    el('pool').dataset.region = 'pool'; el('pool').classList.toggle('passive-pool', active !== 0);
+    el('pool-title').textContent = 'Tanecik havuzu'; el('pool-help').textContent = 'Hedef alanı seç → türü tıkla. Modeli tıkla → havuza al.'; el('pool-help').hidden = false;
+    el('pool').dataset.region = 'pool'; el('pool').classList.remove('passive-pool');
     el('pool').replaceChildren();
-    plan.before.forEach(d => {
-      const b = document.createElement('button'); b.type = 'button'; b.className = 'formula-card'; b.disabled = active !== 0;
+    const stock=active===0?plan.initial:active===1?interactionStock():(f.baseItems||[]),available=poolItems();
+    [...new Set(stock.map(p=>p.formula))].forEach(formula => {
+      const d={formula,n:stock.filter(p=>p.formula===formula).length},left=available.filter(p=>p.formula===formula);
+      const b = document.createElement('button'); b.type = 'button'; b.className = 'formula-card'; b.disabled = !left.length;
       const label = document.createElement('span'); label.className = 'chemical-formula'; FormulaChemistry.renderFormula(label, d.formula);
-      const n = document.createElement('small'); n.textContent = active === 0 ? `${remaining(d.formula).length} / ${d.n} havuzda` : `${d.n} adet · ${plan.phaseLabels[d.phase]}`;
-      b.append(label, n); if (active === 0) { b.dataset.formula = d.formula; b.disabled = !remaining(d.formula).length && !f.items.some(p => p.formula === d.formula && f.selected.includes(p.id)); b.setAttribute('aria-pressed', String(pending === d.formula)); b.onclick = () => add(d.formula); if (remaining(d.formula).length) draggable(b, { formula: d.formula }); } el('pool').append(b);
+      const n = document.createElement('small'); n.textContent = `${left.length} / ${d.n} havuzda`;
+      b.append(label, n); b.dataset.formula=d.formula;b.onclick=()=>placeSpecies(d.formula);if(left.length)draggable(b,{formula:d.formula});el('pool').append(b);
     });
     el('atoms').replaceChildren(); Object.keys(plan.inventory).forEach(symbol => {
-      const name = document.createElement('span'); name.textContent = symbol; name.setAttribute('aria-label', atomNames[symbol] || symbol); el('atoms').append(name);
+      const name = document.createElement('span'); name.textContent = atomNames[symbol] || symbol; el('atoms').append(name);
     });
-    el('properties').hidden = active !== 1;
-    el('returned').replaceChildren(); if (active === 2) {
-      const missing = (f.baseItems || []).filter(p => !f.items.some(x => x.id === p.id));
-      if (missing.length) { const h = document.createElement('h3'); h.textContent = 'Geri alınan türler'; el('returned').append(h); missing.forEach(p => { const b = document.createElement('button'); b.type = 'button'; b.dataset.restore = p.id; b.textContent = p.formula + ' türünü geri getir'; b.onclick = () => restore(p.id); el('returned').append(b); }); }
-    }
-    el('work').replaceChildren(); el('work').classList.toggle('source-fields', active === 0); el('work').dataset.status = currentModelStatus();
-    if (active === 0) { zone(el('work'), 'source-0', plan.sourceNames[0], f.items.filter(p => p.source === 0), 0); zone(el('work'), 'source-1', plan.sourceNames[1], f.items.filter(p => p.source === 1), 1); }
-    else if (active === 1) zone(el('work'), 'mixture', reaction.id === 'caco3_hcl' ? 'Karışım · başlangıç katısının yüzeyinde etkileşim' : 'Karışım · etkileşim önerin', f.items);
-    else {
-      if (f.items.some(p => p.phase === 'unplaced')) zone(el('work'), 'unplaced', 'Hâlini belirleyeceğim türler', f.items.filter(p => p.phase === 'unplaced'));
-      if (plan.kind === 'gas' || f.items.some(p => p.phase === 'g')) zone(el('work'), 'g', 'Gaz bölgesi · sıvının üstü', f.items.filter(p => p.phase === 'g'));
-      if (plan.kind !== 'smoke' || f.items.some(p => ['s', 'suda'].includes(p.phase))) zone(el('work'), 'liquid', 'Sıvı / çözelti · ayrı iyonlar ve moleküller', f.items.filter(p => ['s', 'suda'].includes(p.phase)));
-      if (['solid', 'smoke'].includes(plan.kind) || f.items.some(p => p.phase === 'k')) zone(el('work'), 'k', plan.kind === 'smoke' ? 'Havada asılı katı tanecikler · beyaz sis' : 'Katı yapı · formül birimi (örgü/küme)', f.items.filter(p => p.phase === 'k'));
-    }
+    el('properties').hidden = true;
+    el('returned').replaceChildren();
+    el('work').replaceChildren();el('work').classList.remove('source-fields');el('work').dataset.status=currentModelStatus();
+    const regions=regionDefinitions();if(!regions.some(r=>r.id===targetRegion))targetRegion=regions[0].id;
+    const viewItems=displayedItems().filter(p=>active===0?true:active===1?Boolean(p.workRegion):p.phase!=='unplaced').map(p=>({...clone(p),source:active===0?p.source:regions.findIndex(r=>r.id===(active===1?p.workRegion:['s','suda'].includes(p.phase)?'liquid':p.phase)),aerosol:reaction.id==='nh3_hcl'&&p.formula==='NH₄Cl'}));
+    const statuses=regions.map((r,i)=>zoneStatus(r.id,viewItems.filter(p=>p.source===i),i));
+    workViewer=CPKModelViewer.mount(el('work'),viewItems,regions.map(r=>r.name),{phase:active,regions:regions.map(r=>r.id),statuses,visibleSource:LandscapeTasks.active()?regions.findIndex(r=>r.id===targetRegion):null,onActivate:returnSpecies,poses:modelPoses,description:'Tıkla: havuza geri al · Sol: döndür · Sağ: taşı · Tekerlek: yakınlaş / uzaklaş'});
     el('proposals').hidden = active !== 1 || !f.eligible;
     el('proposal-options').replaceChildren(); if (active === 1 && f.eligible) plan.options.forEach(o => {
       const b = document.createElement('button'); b.type = 'button'; b.dataset.proposal = o.id; b.setAttribute('aria-pressed', String(f.proposal === o.id)); b.textContent = (o.formulas.length ? o.formulas.join(' + ') + ' — ' : '') + o.label; b.onclick = () => chooseProposal(o.id); el('proposal-options').append(b);
@@ -418,19 +470,22 @@ function mountStudentModel(container, state) {
     if (active === 2 && !f.ok && ['explanation', 'note', 'transfer'].includes(phoneView)) phoneView = 'model';
     root.dataset.view = phoneView; root.dataset.step = active;
     const nav = el('region-nav'); nav.replaceChildren();
-    const regions = [...el('work').children];
-    regionPage = Math.min(regionPage, regions.length - 1);
-    regions.forEach((section, i) => {
-      section.hidden = phone && i !== regionPage;
-      if (phone && regions.length > 1) {
-        const b = document.createElement('button'); b.type = 'button'; b.textContent = active === 0 ? 'Kaynak ' + (i + 1) : ({ unplaced:'Bekleyen', liquid:'Sıvı', g:'Gaz', k:'Katı' }[section.dataset.region]);
-        b.setAttribute('aria-pressed', String(i === regionPage)); b.onclick = () => { regionPage = i; renderPhone(); }; nav.append(b);
-      }
-      LandscapeTasks.paginate(section.querySelector('.formula-items'), 3);
+    const regions = regionDefinitions();
+    regionPage=Math.max(0,regions.findIndex(r=>r.id===targetRegion));
+    regions.forEach((region,i)=>{
+      const own=displayedItems().filter(p=>active===0?p.source===i:active===1?p.workRegion===region.id:region.id==='liquid'?['s','suda'].includes(p.phase):p.phase===region.id);
+      const status=zoneStatus(region.id,own,i),b=document.createElement('button');b.type='button';b.dataset.targetRegion=region.id;if(active===0)b.dataset.source=i;b.dataset.status=status;b.textContent=region.short+' · '+own.length+' · '+({correct:'Doğru',incorrect:'Hatalı',incomplete:'Eksik'}[status]);b.setAttribute('aria-label',region.name+' — '+b.textContent);b.setAttribute('aria-pressed',String(i===regionPage));
+      b.onclick=()=>{targetRegion=region.id;regionPage=i;if(pending&&active===0){add(pending,i);return;}renderPhone();save();};nav.append(b);
     });
+    workViewer?.setSource(phone?regionPage:null);
+    LandscapeTasks.paginate(el('pool'),2);
+    if(workViewer?.controls){
+      if(phone){viewerDock.append(workViewer.controls);nav.append(workViewer.pages);}
+      else {workViewer.controls.append(workViewer.pages);workViewer.root.insertBefore(workViewer.controls,workViewer.root.querySelector('.cpk-status'));}
+    }
     LandscapeTasks.paginate(el('proposal-options'), 2);
     LandscapeTasks.paginate(el('transfer-options'), 1);
-    if (phone && active === 1 && f.eligible) {
+    if (active === 1 && f.eligible) {
       const b = document.createElement('button'); b.type = 'button'; b.textContent = phoneView === 'proposals' ? 'Türlere dön' : 'Oluşum önerim';
       b.onclick = () => { phoneView = phoneView === 'proposals' ? 'model' : 'proposals'; renderPhone(); }; nav.append(b);
     }
@@ -447,10 +502,10 @@ function mountStudentModel(container, state) {
     if (phone) container.scrollTop = 0;
     root.querySelector('.workshop-footer').prepend(el('feedback-open'));
     const actions = root.querySelector('.phase-actions'), footer = root.querySelector('.workshop-footer');
-    const actionMode = phone && ['model', 'proposals'].includes(phoneView) && f.selected.length && (active === 2 || active === 1 && !f.interaction);
-    actions.hidden = phone && !actionMode;
-    if (actionMode) { footer.append(actions); el('reset').hidden = true; el('next').hidden = true; }
-    else { el('panel').insertBefore(actions, el('feedback')); el('reset').hidden = false; }
+    const actionMode = active===1&&['model','proposals'].includes(phoneView);
+    actions.hidden = !actionMode;
+    el('liquid').hidden=el('gas').hidden=el('solid').hidden=true;
+    footer.append(actions);el('reset').hidden=phone&&actionMode;
     if (phone && phoneView === 'transfer') {
       root.querySelector('.workshop-footer').append(el('transfer-check'));
       el('transfer-check').hidden = assessment.transferOK;
@@ -458,7 +513,7 @@ function mountStudentModel(container, state) {
     } else {
       el('transfer').insertBefore(el('transfer-check'), el('transfer-feedback'));
       el('transfer-check').hidden = false;
-      el('next').hidden = actionMode || state.stages[2].status === 'completed';
+      el('next').hidden = state.stages[2].status === 'completed';
     }
   }
   const unsubscribeViewport = LandscapeTasks.subscribe(() => { if (!disposed) renderPhone(); });
@@ -491,8 +546,8 @@ function mountStudentModel(container, state) {
     if (LandscapeTasks.active() && !assessment.transferOK) showResult('incorrect', 'Yeni örneği yeniden incele', plan.transfer.guidance, 'fix', 'Seçimimi düzelt');
   };
   render();
-  return { frames: () => frames, cpk: () => cpkViewer, validate: i => plan.validate(frames[i], i), add, select, moveSource, tryInteraction, chooseProposal, setPhase, remove, restore, undo, next, go, checkAll, reset, autoComplete,
-    dispose() { save(); disposed = true; unsubscribeViewport(); stopNativeDrag(); touch?.ghost?.remove(); cancelAnimationFrame(touch?.scroll); touch = null; closeResult(); } };
+  return { frames: () => frames, cpk: () => workViewer, validate: i => validateFrame(frames[i], i), add, select, moveSource, tryInteraction, chooseProposal, setPhase, remove, restore, undo, next, go, checkAll, reset, autoComplete,placeSpecies,returnSpecies,
+    dispose() { save(); disposed = true; workViewer?.dispose();workViewer=null;unsubscribeViewport(); stopNativeDrag(); touch?.ghost?.remove(); cancelAnimationFrame(touch?.scroll); touch = null; closeResult(); } };
 }
 window.StudentStage2ModelingManager = class {
   constructor(state, container) { this.state = state; this.api = mountStudentModel(container, state); }

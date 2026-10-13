@@ -1,6 +1,6 @@
 # Tepkimenin Üç Yüzü
 
-MEBİ görünümünde etkileşimli kimya laboratuvarı. Öğrenci 12 tepkimeyi gözlemler, tanecik modelini kurar ve aynı atomların izini sürer. Üç modelleme adımının doğru sonuç kartları mat CPK türleriyle 3B incelenebilir: sol tuş döndürür, sağ tuş taşır, fare tekeri yakınlaştırır. Yatay telefonda dokunma kontrolleri ve tür sayfaları vardır.
+MEBİ görünümünde etkileşimli kimya laboratuvarı. Öğrenci 12 tepkimenin üç modelleme adımını doğrudan düzenlenebilir 3B CPK türleriyle kurar. Hedef alanı seçip havuzdaki formüle tıklamak veya sürüklemek türü ekler; modeli kısa tıklamak aynı türü havuza geri alır. Sol sürükleme döndürür, sağ sürükleme taşır, fare tekeri yakınlaştırır. Önceden onaylanan pürüzsüzlük, matlık, CPK renkleri ve ince atom etiketleri korunur. Ürünler yalnız doğru etkileşim ve oluşum önerisinden sonra aynı atomlarla gösterilir. Yatay telefonda alan sekmeleri, havuz/model sayfaları ve dokunmatik kontroller vardır.
 
 Yayın: https://hakansirints.github.io/tepkime-uc-yuz/
 
