@@ -13,8 +13,7 @@ class Stage1ObservationManager {
     this.initElements();
     this.initListeners();
     this.updateUI();
-    document.getElementById('obsViewExperiment').onclick = () => this.setView('experiment');
-    document.getElementById('obsViewWrite').onclick = () => { this.setView('write'); this.textarea.focus({ preventScroll: true }); };
+    LandscapeTasks.subscribe(() => this.updateUI());
   }
 
   initElements() {
@@ -52,6 +51,7 @@ class Stage1ObservationManager {
       this.textarea.addEventListener("input", () => {
         this.container.dataset.status = 'neutral';
         this.feedbackBox.style.display = 'none';
+        this.container.dataset.hasFeedback = 'false';
         if (this.state.stages[1].status === 'completed' && this.textarea.value.trim() !== this.state.stages[1].completedData?.userObservation) {
           this.state.invalidateObservation(); this.lockStage2Transition();
           this.feedbackBox.style.display = 'none';
@@ -73,9 +73,7 @@ class Stage1ObservationManager {
   updateUI() {
     const simState = this.state.simulationState;
     const stage = this.state.stages[1];
-    document.getElementById('obsViewWrite').hidden = simState !== 'reacted';
-    if (simState !== 'reacted') this.setView('experiment');
-    else if (!document.getElementById('observationLayout').dataset.view) this.setView('experiment');
+    this.setView();
 
     if (simState === "no_reaction") {
       if (this.waitingStateBox) this.waitingStateBox.style.display = "block";
@@ -110,7 +108,12 @@ class Stage1ObservationManager {
       if (this.completedStateBox) this.completedStateBox.style.display = stage.status === 'completed' ? 'block' : 'none';
       this.updateSubmitButtonState();
     }
+    if (LandscapeTasks.active() && simState !== 'reacted') this.obsWaitingDesc.textContent = simState === 'no_reaction'
+      ? 'Bir madde çifti seç. Karışımın görünümünü ve sıcaklığını izle.'
+      : simState === 'waiting_pour' ? 'Küçük beheri sola ve yukarı sürükle veya dökme düğmesini kullan.'
+      : 'Maddeler karışıyor. Kabarcık, katı ve sıcaklık değişimini izle.';
     this.updateSubmitButtonState();
+    cancelAnimationFrame(this.layoutFrame); this.layoutFrame = requestAnimationFrame(() => this.fitNotebook());
   }
 
   updateCounters() {
@@ -200,6 +203,7 @@ class Stage1ObservationManager {
     this.feedbackBox.style.display = "flex";
     const labels = { correct: 'Doğru', incorrect: 'Hatalı', incomplete: 'Eksik' };
     this.feedbackBox.dataset.status = type;
+    this.container.dataset.hasFeedback = 'true';
     this.container.dataset.status = type;
     this.setView('feedback');
     this.feedbackBox.setAttribute('role', 'status');
@@ -223,8 +227,18 @@ class Stage1ObservationManager {
     if (this.feedbackBox) this.feedbackBox.style.display = "none";
     this.lockStage2Transition();
     this.updateCounters();
+    this.container.dataset.hasFeedback = 'false';
   }
-  setView(view) { document.getElementById('observationLayout').dataset.view = view; }
+  // The notebook stays in the same source card throughout the observation stage.
+  setView() { document.getElementById('observationLayout').dataset.view = 'inline'; }
+  fitNotebook() {
+    if (!LandscapeTasks.active()) { this.textarea.style.removeProperty('height'); return; }
+    if (this.state.currentStage !== 1 || this.state.simulationState !== 'reacted') return;
+    const layout = document.getElementById('observationLayout').getBoundingClientRect(), card = this.container.getBoundingClientRect();
+    const current = this.textarea.getBoundingClientRect().height;
+    const available = layout.bottom - card.top - 4;
+    this.textarea.style.height = Math.max(44, Math.min(84, current + available - this.container.scrollHeight)) + 'px';
+  }
 }
 
 if (typeof window !== "undefined") {

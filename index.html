@@ -14,12 +14,16 @@
   <link rel="stylesheet" href="css/inquiry-modeling.css?v=20261013-c3ac1354d2">
   <link rel="stylesheet" href="css/mebi-design-system.css?v=20261013-f7668dbaa3">
   <link rel="stylesheet" href="css/responsive-material.css?v=20261013-b0385ac955">
-  <link rel="stylesheet" href="css/landscape-tasks.css?v=20261013-6e6f092ab1">
+  <link rel="stylesheet" href="css/landscape-tasks.css?v=20261013-5a24ca834c">
   <link rel="stylesheet" href="css/prompt-refinements.css?v=20261013-a1370a05f2">
+  <link rel="stylesheet" href="css/mobile-laboratory.css?v=20261013-45940178e4">
 </head>
 <body data-stage="1">
   <div id="labCanvasContainer" class="fullscreen-lab-canvas"></div>
   <div id="labBackdrop" class="lab-stage-backdrop" aria-hidden="true"></div>
+  <dialog id="orientationGate" class="orientation-gate" role="alertdialog" aria-modal="true" aria-labelledby="orientationTitle" aria-describedby="orientationDescription" hidden>
+    <div class="orientation-card"><span class="orientation-badge">▱ YATAY EKRAN MODU GEREKLİ</span><svg class="orientation-phone" viewBox="0 0 120 100" width="120" height="100" fill="none" aria-hidden="true"><rect x="13" y="25" width="94" height="52" rx="13" stroke="currentColor" stroke-width="3"/><rect x="26" y="33" width="70" height="36" rx="5" fill="currentColor" opacity=".1"/><path d="M20 45v12M45 13c17-10 36-7 46 5m-3-12 4 12-13-1" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg><h2 id="orientationTitle" tabindex="-1">Lütfen cihazını yatay çevir</h2><p id="orientationDescription">Deney masası ve tanecik modellerini kullanabilmek için telefonunu veya tabletini <strong>yatay ekran</strong> moduna getir.</p><p class="orientation-tip">Otomatik ekran döndürmeye izin ver. Cihazın yatay konuma geldiğinde etkinliğin kaldığı yerden açılır.</p></div>
+  </dialog>
   <main id="labAppFrame" class="lab-app-frame">
   <header class="m3-top-app-bar mebi-topbar">
     <div class="m3-brand-container">
@@ -38,19 +42,18 @@
     <div class="lab-header-tools">
       <div class="lab-settings-wrap">
         <button id="btnLabSettings" type="button" class="m3-icon-btn" aria-label="Laboratuvar ayarları" title="Laboratuvar ayarları" aria-expanded="false" aria-controls="labSettingsPanel">
-          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 7h16M4 17h16M8 4v6m8 4v6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m9.5 3-.6 2a8 8 0 0 0-1.5.9l-2-.4-2 3.5 1.4 1.5a8 8 0 0 0 0 1.8L3.4 14l2 3.5 2-.4a8 8 0 0 0 1.5.9l.6 2h4l.6-2a8 8 0 0 0 1.5-.9l2 .4 2-3.5-1.4-1.7a8 8 0 0 0 0-1.8l1.4-1.5-2-3.5-2 .4a8 8 0 0 0-1.5-.9l-.6-2h-4Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><circle cx="11.5" cy="11.5" r="3" stroke="currentColor" stroke-width="1.5"/></svg>
         </button>
         <section id="labSettingsPanel" class="lab-settings-panel" aria-label="Laboratuvar ayarları" hidden>
-          <div class="lab-settings-heading"><strong>Laboratuvar ayarları</strong><button id="btnCloseLabSettings" type="button" aria-label="Ayarları kapat">×</button></div>
+          <div class="lab-settings-heading"><strong>⚙ Ayarlar</strong><button id="btnCloseLabSettings" type="button" aria-label="Ayarları kapat">×</button></div>
+          <div class="lab-settings-quick"><button id="btnToggleAudio" type="button" aria-label="Ses açık" aria-pressed="true"><span id="audioIcon" aria-hidden="true">🔊</span><span id="audioLabel">Ses açık</span></button><button id="btnFullscreen" type="button" aria-label="Tam ekranı aç" aria-pressed="false"><span aria-hidden="true">⛶</span><span id="fullscreenLabel">Tam ekran</span></button><button id="btnToggleTheme" type="button" aria-label="Karanlık moda geç" aria-pressed="false"><span id="themeIcon" aria-hidden="true">☀</span><span id="themeLabel">Aydınlık</span></button></div>
           <div class="lab-settings-section"><span class="lab-settings-label">Kamera görünümü</span>
             <div class="lab-settings-views" role="group" aria-label="Kamera bakış açısı">
               <button id="btnCamDesk" type="button" class="is-active" aria-pressed="true">Masa</button>
-              <button id="btnCamCloseup" type="button" aria-pressed="false">Yakın</button>
               <button id="btnCamWide" type="button" aria-pressed="false">Oda</button>
             </div>
-            <button id="btnCamReset" type="button" class="lab-settings-reset">↺ Kamerayı sıfırla</button>
           </div>
-          <div class="lab-settings-section"><span class="lab-settings-label">Aydınlatma</span><button id="btnLabLighting" type="button" class="lab-settings-light" aria-pressed="false">☀ Laboratuvar: Aydınlık</button></div>
+          <div class="lab-settings-section"><span class="lab-settings-label">Laboratuvar ortamı</span><button id="btnLabLighting" type="button" class="lab-settings-light" aria-pressed="false">☀ Ortam: Aydınlık</button></div>
           <div class="lab-settings-section"><span class="lab-settings-label">Masa rengi</span>
             <div class="lab-settings-colors" role="group" aria-label="Masa rengi">
               <button type="button" data-table-color="#315e50" style="--swatch:#315e50" aria-label="Yeşil masa" aria-pressed="true"><span></span>Yeşil</button>
@@ -61,30 +64,26 @@
         </section>
       </div>
       <span id="activeStageBadge" class="lab-stage-badge">Aşama 1/3</span>
-      <button id="btnToggleAudio" class="m3-icon-btn" title="Ses Efektlerini Kapat/Aç" aria-label="Ses"><span id="audioIcon">🔊</span></button>
-      <button id="btnToggleTheme" class="m3-icon-btn" title="Karanlık/Aydınlık Mod" aria-label="Tema"><span id="themeIcon">◐</span></button>
     </div>
   </header>
 
   <section id="observationLayout" class="observation-layout" aria-label="Gözlem etkinliği">
+  <div id="experimentTitle" class="experiment-title" hidden><span>DENEY MASASI &amp; REAKSİYON DÜZENEĞİ</span><strong id="experimentMaterials"></strong></div>
   <aside id="reactionExpandCard" class="m3-reaction-expandable-card is-expanded" aria-label="Tepkime seçimi">
     <button id="btnReactionToggle" class="m3-reaction-header" aria-expanded="true" aria-controls="reactionPicker">
       <span class="m3-reaction-title-wrap"><span class="lab-eyebrow">DENEY KOLEKSİYONU / 12</span><span class="m3-reaction-card-title">Tepkime seç</span><span id="reactionCardSubtext" class="m3-reaction-card-sub">İncelemek istediğin deneyi seç</span></span>
-      <span class="reaction-list-icon" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M4 5h11M4 10h11M4 15h6m5-1 4 4 4-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+      <span class="reaction-list-icon" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="m7 10 5 5 5-5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
     </button>
     <div class="lab-selection-status"><span class="status-dot"></span><span id="reactionStatusBadge" class="mebi-badge">Masa Boş</span></div>
     <div id="selectedReactionPair" class="selected-reaction-pair"><p>Bir madde çifti seçerek başla.</p></div>
     <section id="reactionPicker" class="reaction-picker" aria-label="Madde çiftini seç" hidden>
-      <div class="reaction-picker-heading"><p id="reactionCompletionCount">0 / 12 tamamlandı</p><button id="btnCloseReactionPicker" type="button" aria-label="Madde listesini daralt" aria-expanded="true" aria-controls="reactionPicker"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 5h11M4 10h11M4 15h6m5 3 4-4 4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div>
+      <div class="reaction-picker-heading"><p id="reactionCompletionCount">0 / 12 tamamlandı</p></div>
       <div id="reactionListContent" class="m3-reaction-list-content"></div>
     </section>
   </aside>
 
-  <section class="lab-scene-window" aria-label="Deney masası">
-    <div class="lab-scene-caption"><span class="lab-eyebrow">Deneyini hazırla</span><span>Beheri sola ve yukarı sürükle veya dökme düğmesini kullan.</span></div>
-  </section>
+  <section class="lab-scene-window" aria-label="Deney masası"></section>
   <aside id="stage1Container" class="m3-observation-card mebi-card" aria-label="Deney defteri">
-    <div class="landscape-only observation-view-tools"><button id="obsViewExperiment" type="button">Deneye dön</button><button id="obsViewWrite" type="button" hidden>Gözlemimi yaz</button></div>
     <div id="obsWaitingState">
       <div class="m3-card-header"><h2 id="obsWaitingTitle" class="m3-card-title">Tepkime Bekleniyor</h2></div>
       <p id="obsWaitingDesc" class="m3-card-sub"><span id="labHintText">Soldan bir tepkime seç. Maddeleri karıştır ve kapta meydana gelen değişimi gözlemle.</span></p>
@@ -93,7 +92,7 @@
     </div>
     <div id="obsActiveState" style="display:none">
       <div class="m3-card-header"><h2 class="m3-card-title">Gözlemini tanımla</h2></div>
-      <p class="m3-card-sub">Maddeler karıştırıldığında kapta meydana gelen fiziksel değişimi tanımlayınız:</p>
+      <p class="m3-card-sub observation-instruction">Kapta meydana gelen değişimi gözlemle ve yaz.</p>
       <div class="m3-textfield-box">
         <label class="sr-only" for="obsTextarea">Gözlemin</label>
         <textarea id="obsTextarea" class="m3-textarea" placeholder="Kapta hangi değişimleri gözlemledin?" rows="4" maxlength="300"></textarea>
@@ -124,22 +123,22 @@
   </section>
 
   </main>
-  <script src="js/core/landscape-tasks.js?v=20261013-1cdd8a0046"></script>
+  <script src="js/core/landscape-tasks.js?v=20261013-b0d721d923"></script>
   <script src="js/vendor/three.min.js?v=20261013-9274bbcec8"></script>
   <script src="js/vendor/OrbitControls.js?v=20261013-02bb4ade71"></script>
   <script src="js/vendor/RoundedBoxGeometry.js?v=20261013-416a3f8b72"></script>
   <script src="js/data/reactions-data.js?v=20261013-59553306fe"></script>
   <script src="js/core/audio-engine.js?v=20261013-3eaf829c5a"></script>
-  <script src="js/core/theme-manager.js?v=20261013-b0c9730ce5"></script>
+  <script src="js/core/theme-manager.js?v=20261013-e00116e874"></script>
   <script src="js/core/state-machine.js?v=20261013-3f33123bbe"></script>
   <script src="js/scene3d/particle-system.js?v=20261013-39cc31a936"></script>
   <script src="js/scene3d/thermometer.js?v=20261013-638153baef"></script>
-  <script src="js/scene3d/glassware.js?v=20261013-23dea6a12a"></script>
+  <script src="js/scene3d/glassware.js?v=20261013-91bc07db08"></script>
   <script src="js/scene3d/pour-controller.js?v=20261013-0721d7544a"></script>
   <script src="js/scene3d/warm-room.js?v=20261013-027155dba2"></script>
-  <script src="js/scene3d/lab-scene.js?v=20261013-62e702b3fa"></script>
+  <script src="js/scene3d/lab-scene.js?v=20261013-2c873df43b"></script>
   <script src="js/core/observation-evaluator.js?v=20261013-45895c07d5"></script>
-  <script src="js/stages/stage1-observation.js?v=20261013-eeda31cf7f"></script>
+  <script src="js/stages/stage1-observation.js?v=20261013-f898599a9f"></script>
   <script src="js/data/species-registry.js?v=20261013-24c538c181"></script>
   <script src="js/core/formula-chemistry.js?v=20261013-61169453b2"></script>
   <script src="js/core/inquiry-chemistry.js?v=20261013-18fe3f3216"></script>
@@ -147,6 +146,6 @@
   <script src="js/stages/student-modeling.js?v=20261013-3f6619fc9e"></script>
   <script src="js/stages/student-atom-trace.js?v=20261013-9b9dc728c0"></script>
   <script src="js/stages/stage-scaffolds.js?v=20261013-1ff177bdd8"></script>
-  <script src="js/app.js?v=20261013-5cb47c7a85"></script>
+  <script src="js/app.js?v=20261013-99765a4888"></script>
 </body>
 </html>

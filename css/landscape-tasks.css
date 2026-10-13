@@ -26,7 +26,7 @@
 #stage1Container #obsTextarea:focus-visible { outline:1px solid var(--mebi-primary); outline-offset:2px; }
 .task-pages { grid-column:1/-1; width:100%; display:flex; align-items:center; justify-content:center; gap:8px; }
 .task-view-nav { gap:6px; align-items:center; flex-wrap:wrap; }
-@media (orientation:landscape) and (max-height:500px) and (max-width:1024px) {
+@media (orientation:landscape) and (max-height:500px) and (max-width:1024px), (orientation:landscape) and (max-width:1366px) and (any-pointer:coarse) {
   .landscape-only { display:flex !important; }
   .landscape-only[hidden] { display:none !important; }
   #labAppFrame { inset:var(--visible-top,0px) 6px auto; height:var(--visible-height,100dvh); padding:4px 0; gap:4px; overflow:hidden; }
@@ -52,29 +52,6 @@
   .selected-pair-label { margin-bottom:3px; }
   .reaction-material-name { font-size:12px; line-height:1.35; }
   .reaction-material-role { display:none; }
-  .lab-notebook-heading, #obsCompletedState, #obsWaitingDesc, #obsActiveState>.m3-card-sub { display:none !important; }
-  .observation-view-tools { justify-content:space-between; gap:8px; margin-bottom:8px; }
-  .observation-view-tools button { min-height:40px; padding:4px 10px; background:var(--mebi-bg-surface); color:var(--mebi-text-main); border:1px solid var(--mebi-border); border-radius:10px; font:600 12px/1.3 inherit; }
-  #obsWaitingTitle { font-size:15px; margin:6px 0 12px; }
-  #observationLayout[data-view="experiment"] #obsActiveState { display:none !important; }
-  #observationLayout[data-view="experiment"] #obsViewExperiment { display:none; }
-  #observationLayout[data-view="write"] #reactionExpandCard,
-  #observationLayout[data-view="feedback"] #reactionExpandCard { display:none; }
-  #observationLayout[data-view="write"] #stage1Container,
-  #observationLayout[data-view="feedback"] #stage1Container { grid-column:1/-1; width:min(620px,100%); justify-self:end; height:100%; }
-  #observationLayout:not([data-view="experiment"]) .lab-experiment-actions { display:none; }
-  #observationLayout[data-view="write"] #obsViewWrite { display:none; }
-  #observationLayout[data-view="write"] #btnProceedStage2 { display:none; }
-  #observationLayout[data-view="feedback"] .m3-textfield-box,
-  #observationLayout[data-view="feedback"] #btnSubmitObservation { display:none; }
-  #obsActiveState .m3-card-header { margin:0; }
-  #obsActiveState h2 { margin:0; font-size:16px; }
-  #stage1Container .m3-textfield-box { margin:5px 0; }
-  #stage1Container #obsTextarea { height:calc(var(--visible-height,100dvh) - 208px); min-height:52px; resize:none; }
-  #stage1Container .lab-observation-actions { gap:4px; }
-  #stage1Container .lab-observation-actions { margin:4px 0; }
-  #stage1Container .mebi-btn { min-height:40px; font-size:13px; padding:7px 10px; }
-  #obsFeedbackBox { margin:8px 0; padding:10px; font-size:14px; }
   #labAppFrame .activity-overlay { padding:0; overflow:hidden; }
   #labAppFrame #stageScaffoldView { width:100%; height:100%; aspect-ratio:auto; border-radius:14px; overflow:hidden; }
   #labAppFrame #formula-modeling { display:flex; flex-direction:column; height:100%; overflow:hidden; padding:6px; gap:4px; }

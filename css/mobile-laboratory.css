@@ -1,0 +1,62 @@
+/* Current prompt: one selection toggle, centered experiment caption and an inline notebook. */
+#btnReactionToggle .reaction-list-icon { width:30px; height:30px; background:var(--mebi-bg-subtle); color:var(--mebi-text-main); border-color:var(--mebi-border); border-radius:9px; }
+#labAppFrame .m3-top-app-bar { overflow:visible; z-index:120; }
+#btnReactionToggle[aria-expanded="true"] .reaction-list-icon svg { transform:rotate(180deg); }
+#reactionExpandCard .reaction-picker-heading { min-height:26px; border-bottom:0; }
+.experiment-title { position:absolute; top:4px; left:50%; transform:translateX(-50%); z-index:4; display:flex; flex-wrap:wrap; align-items:center; justify-content:center; gap:2px 10px; width:max-content; max-width:calc(100% - 16px); padding:6px 14px; border-radius:24px; background:var(--activity-glass); color:#007b99; backdrop-filter:blur(8px); text-align:center; font-size:12px; line-height:18px; }
+.experiment-title>span { font-size:10px; font-weight:700; }
+.experiment-title>strong { font-size:12px; font-weight:650; }
+[data-theme="dark"] .experiment-title { color:#7de0f5; }
+#labAppFrame #observationLayout.has-reaction { padding-top:var(--experiment-title-height,40px); }
+#labSettingsPanel { width:300px; padding:10px 12px; border-radius:18px; background:var(--activity-glass); backdrop-filter:blur(12px); max-height:calc(var(--visible-height,100dvh) - 76px); }
+#labSettingsPanel .lab-settings-heading { margin:0 0 8px; padding:0 0 6px; font-size:13px; }
+#labSettingsPanel .lab-settings-heading button { min-height:28px; height:28px; width:28px; }
+.lab-settings-quick { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:6px; }
+#labSettingsPanel .lab-settings-quick button { min-width:0; height:auto; width:100%; min-height:48px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px; font:600 11px/1.25 var(--mebi-font); border:1px solid var(--mebi-border); color:var(--mebi-text-main); background:var(--mebi-bg-surface); border-radius:10px; padding:4px; cursor:pointer; }
+#labSettingsPanel .lab-settings-quick button>span:first-child { font-size:18px; line-height:20px; }
+#labSettingsPanel button[aria-pressed="true"] { background:var(--mebi-success-light); border-color:var(--mebi-success); color:var(--mebi-text-main); }
+#labSettingsPanel .lab-settings-section { padding-top:7px; margin-top:7px; }
+#labSettingsPanel .lab-settings-label { font-size:10px; margin-bottom:4px; line-height:12px; }
+#labSettingsPanel .lab-settings-views { grid-template-columns:repeat(2,minmax(0,1fr)); }
+#labSettingsPanel .lab-settings-section button { min-height:32px; padding:4px 6px; font-size:12px; line-height:18px; }
+#labSettingsPanel .lab-settings-colors { gap:5px; }
+#labSettingsPanel .lab-settings-colors button { font-size:11px; padding:4px; flex-direction:row; justify-content:center; gap:4px; height:32px; }
+#labSettingsPanel .lab-settings-colors button span { width:12px; height:12px; }
+.orientation-gate { position:fixed; inset:0; margin:0; width:100%; height:100%; max-width:none; max-height:none; border:0; display:grid; place-items:center; padding:20px; z-index:1000; background:radial-gradient(ellipse at center,#384654,#172130); color:var(--mebi-text-main); pointer-events:auto; }
+.orientation-card { width:min(440px,100%); border-radius:28px; padding:24px; text-align:center; border:1px solid var(--mebi-border); background:radial-gradient(#52646e13 1px,transparent 1px),var(--mebi-bg-surface); background-size:16px 16px; box-shadow:0 9px 0 #e2e4df,0 20px 50px #0004; }
+.orientation-badge { display:inline-block; border-radius:30px; background:var(--mebi-bg-subtle); color:#bd6e07; padding:9px 14px; font-size:12px; font-weight:750; }
+.orientation-phone { display:block; margin:20px auto 12px; color:var(--mebi-text-secondary); }
+.orientation-card h2 { font-size:22px; line-height:1.3; margin:14px 0; outline:none; }
+.orientation-card p { margin:10px 0; font-size:15px; line-height:1.65; }
+.orientation-card .orientation-tip { margin-top:18px; padding:14px; border-radius:18px; background:var(--mebi-bg-subtle); font-size:13px; }
+body.portrait-blocked #labCanvasContainer { pointer-events:none; }
+@media(orientation:landscape) and (max-height:500px) and (max-width:1024px), (orientation:landscape) and (max-width:1366px) and (any-pointer:coarse) {
+  #labAppFrame #observationLayout { grid-template-columns:clamp(190px,22vw,210px) minmax(0,1fr) clamp(226px,27vw,300px); gap:6px; align-items:start; }
+  #labAppFrame #stage1Container { grid-column:3; grid-row:1; width:100%; height:auto; max-height:100%; justify-self:stretch; padding:8px; display:block; overflow:hidden; }
+  #labAppFrame #reactionExpandCard { display:block; }
+  #labAppFrame #reactionExpandCard.is-expanded { display:flex; }
+  #labAppFrame #obsWaitingDesc { display:block !important; margin:6px 0 10px; font-size:11px; line-height:15px; }
+  #labAppFrame #obsActiveState>.m3-card-sub { display:block !important; margin:4px 0; font-size:11px; line-height:15px; }
+  #labAppFrame #stage1Container[data-has-feedback="true"] .observation-instruction { display:none !important; }
+  #labAppFrame #obsWaitingTitle, #labAppFrame #obsActiveState h2 { font-size:14px; line-height:19px; margin:0; }
+  #labAppFrame #stage1Container .lab-experiment-actions { display:flex !important; margin-top:6px; padding-top:6px; gap:4px; }
+  #labAppFrame #stage1Container .m3-textfield-box { margin:4px 0; padding:5px 6px; }
+  #labAppFrame #stage1Container #obsTextarea { min-height:44px; height:70px; font-size:16px; line-height:20px; padding:5px; resize:none; }
+  #labAppFrame #stage1Container .m3-textfield-status { font-size:9px; line-height:12px; margin-top:1px; padding:0; }
+  #labAppFrame #stage1Container .mebi-btn { min-height:32px; padding:5px 7px; font-size:11px; line-height:16px; }
+  #labAppFrame #stage1Container .lab-observation-actions { margin:4px 0; gap:4px; }
+  #labAppFrame #obsFeedbackBox { margin:4px 0; padding:6px; gap:5px; font-size:11px; line-height:15px; }
+  #labAppFrame #obsFeedbackBox .feedback-body { font-size:11px; line-height:15px; margin:0; }
+  #labAppFrame #obsFeedbackBadge { width:20px; height:20px; min-width:20px; font-size:13px; }
+  #labAppFrame #obsCompletedState { display:none !important; }
+  .experiment-title { padding:3px 10px; line-height:14px; gap:0 7px; }
+  .experiment-title>span { font-size:9px; }
+  .experiment-title>strong { font-size:10px; line-height:14px; }
+  #labSettingsPanel { top:42px; right:0; max-height:calc(var(--visible-height,100dvh) - 54px); }
+  body.keyboard-space #experimentTitle { display:none; }
+  body.keyboard-space #labAppFrame #observationLayout.has-reaction { padding-top:0; }
+  body.keyboard-space #labAppFrame #stage1Container { grid-column:1/-1; width:100%; }
+  body.keyboard-space #labAppFrame #reactionExpandCard { display:none; }
+}
+@media(max-width:380px) { .orientation-card { padding:18px; } .orientation-card h2 { font-size:20px; } .orientation-card p { font-size:14px; } }
+@media(max-height:380px) { .orientation-gate { padding:12px; } .orientation-card { padding:12px 18px; } .orientation-phone { display:none; } .orientation-card h2 { margin:8px 0; font-size:18px; } .orientation-card p { margin:6px 0; font-size:12px; line-height:18px; } .orientation-card .orientation-tip { margin-top:8px; padding:8px; } }

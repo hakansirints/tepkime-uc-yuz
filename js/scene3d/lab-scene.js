@@ -19,7 +19,6 @@ class LabSceneEngine {
     this.camera=new THREE.PerspectiveCamera(40,1,.05,80);
     this.cameraPresets={
       desk:{pos:new THREE.Vector3(.10,2.40,3.20),target:new THREE.Vector3(0,1.78,.34),fov:40},
-      closeup:{pos:new THREE.Vector3(-.03,2.07,1.85),target:new THREE.Vector3(-.02,1.50,.34),fov:38},
       wide:{pos:new THREE.Vector3(3.8,3.45,5.5),target:new THREE.Vector3(0,1.6,-.9),fov:52}
     };
     const initial=window.matchMedia('(prefers-reduced-motion: reduce)').matches?'desk':'wide';
@@ -67,7 +66,7 @@ class LabSceneEngine {
     this.roomLights[0].intensity=dark?.65:.95; this.roomLights[1].intensity=dark?.50:1.35; this.roomLights[2].intensity=dark?.35:.50;
     this.renderer.toneMappingExposure=dark?.80:.92;
     const button=document.getElementById('btnLabLighting');
-    button.textContent=dark?'☾ Laboratuvar: Karanlık':'☀ Laboratuvar: Aydınlık';
+    button.textContent=dark?'☾ Ortam: Karanlık':'☀ Ortam: Aydınlık';
     button.setAttribute('aria-pressed',String(dark)); button.setAttribute('aria-label',dark?'Laboratuvarı aydınlık yap':'Laboratuvarı karanlık yap');
     try{localStorage.setItem('three-faces-laboratory-lighting',this.laboratoryLighting);}catch{}
   }
@@ -86,7 +85,7 @@ class LabSceneEngine {
       if(p<1) requestAnimationFrame(step);
     };
     requestAnimationFrame(step);
-    for(const [id,value] of [['btnCamDesk','desk'],['btnCamCloseup','closeup'],['btnCamWide','wide']]) {
+    for(const [id,value] of [['btnCamDesk','desk'],['btnCamWide','wide']]) {
       const button=document.getElementById(id); button.classList.toggle('is-active',key===value); button.setAttribute('aria-pressed',String(key===value));
     }
   }
@@ -136,7 +135,7 @@ class LabSceneEngine {
     const {progress,id}=this.drag; this.drag=null; this.controls.enabled=true;
     document.body.removeAttribute('data-grabbing'); document.body.removeAttribute('data-pour-ready'); this.readyRing.visible=false;
     const canvas=this.renderer.domElement; if(canvas.hasPointerCapture(id)) canvas.releasePointerCapture(id);
-    const hint=document.querySelector('.lab-scene-caption>span:last-child'); hint.textContent='Beheri tut ve sola, yukarı sürükle · Tekerlek: yakınlaş';
+    document.getElementById('obsWaitingDesc').textContent='Küçük beheri sola ve yukarı sürükle veya dökme düğmesini kullan.';
     if(!cancel&&progress>=.20) this.pourController.startAutomaticPour(progress);
     else this.glassware.setPourProgress(0);
   }
@@ -154,7 +153,6 @@ class LabSceneEngine {
     document.getElementById('observationLayout').addEventListener('scroll', () => this.onResize(), { passive: true });
     document.getElementById('btnAutoPour').addEventListener('click',()=>this.pourController.startAutomaticPour());
     document.getElementById('btnResetPour').addEventListener('click',()=>this.state.setReaction(this.state.selectedReactionId,{restart:true}));
-    document.getElementById('btnCamReset').addEventListener('click',()=>this.resetCamera());
     document.querySelectorAll('[data-table-color]').forEach(button=>button.addEventListener('click',()=>{
       this.environment.tableMaterial.color.set(button.dataset.tableColor).convertSRGBToLinear();
       document.querySelectorAll('[data-table-color]').forEach(b=>b.setAttribute('aria-pressed',String(b===button)));
@@ -179,7 +177,7 @@ class LabSceneEngine {
         const progress=Math.min(.22,distance/Math.min(this.container.clientWidth,this.container.clientHeight,520));
         this.drag.progress=progress; this.glassware.setPourProgress(progress);
         this.readyRing.visible=progress>=.20; document.body.dataset.pourReady=String(this.readyRing.visible);
-        document.querySelector('.lab-scene-caption>span:last-child').textContent=this.readyRing.visible?'Dökme açısı hazır · Bırakarak dök':'Beheri sola ve yukarı taşı';
+        document.getElementById('obsWaitingDesc').textContent=this.readyRing.visible?'Dökme açısı hazır. Beheri bırakarak dök.':'Beheri sola ve yukarı taşı.';
         return;
       }
       const ray=this.pointerRay(e);

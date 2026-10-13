@@ -38,6 +38,8 @@ class LabThemeManager {
       toggleBtn.setAttribute('title', isDark ? 'Aydınlık Moda Geç' : 'Karanlık Moda Geç');
       toggleBtn.setAttribute('aria-label', isDark ? 'Aydınlık Moda Geç' : 'Karanlık Moda Geç');
       toggleBtn.setAttribute('aria-pressed', String(isDark));
+      document.getElementById('themeLabel').textContent = isDark ? 'Karanlık' : 'Aydınlık';
+      document.getElementById('themeIcon').textContent = isDark ? '☾' : '☀';
     }
 
     if (notify) {

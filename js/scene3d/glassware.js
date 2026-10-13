@@ -125,7 +125,9 @@ class LabGlassware {
         if(window.labState.simulationState==='waiting_pour') {
           if(button) button.disabled=false;
           const description=document.getElementById('obsWaitingDesc');
-          if(description) description.textContent="İki beher de hazır. 'Beheri dök ve karıştır' düğmesini kullan veya küçük beheri sola ve yukarı sürükleyip uygun açıda bırak; karışımda oluşan değişimleri gözlemle.";
+          if(description) description.textContent=window.LandscapeTasks?.active()
+            ? 'Küçük beheri sola ve yukarı sürükle veya dökme düğmesini kullan.'
+            : "İki beher de hazır. 'Beheri dök ve karıştır' düğmesini kullan veya küçük beheri sola ve yukarı sürükleyip uygun açıda bırak; karışımda oluşan değişimleri gözlemle.";
         }
       }
     };

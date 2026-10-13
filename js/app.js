@@ -94,12 +94,14 @@ document.addEventListener("DOMContentLoaded", () => {
   function setReactionCardExpanded(expanded) {
     if (["pouring", "reacting"].includes(window.labState.simulationState)) return;
     btnReactionToggle.setAttribute('aria-expanded', String(expanded));
-    document.getElementById('btnCloseReactionPicker').setAttribute('aria-expanded', String(expanded));
     picker.hidden = !expanded;
     reactionExpandCard.classList.toggle('is-expanded', expanded);
     document.getElementById('selectedReactionPair').hidden = expanded;
   }
-  document.getElementById('btnCloseReactionPicker').onclick = () => setReactionCardExpanded(false);
+  const experimentTitle = document.getElementById('experimentTitle');
+  const observationLayout = document.getElementById('observationLayout');
+  const titleObserver = new ResizeObserver(() => observationLayout.style.setProperty('--experiment-title-height', experimentTitle.offsetHeight + 8 + 'px'));
+  titleObserver.observe(experimentTitle);
   function refreshCompletion() {
     const completed = window.labState.completedReactions;
     document.getElementById('reactionCompletionCount').textContent = `${Object.keys(completed).length} / 12 tamamlandı`;
@@ -173,6 +175,8 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   window.labState.on("reactionChange", (reaction) => {
+    experimentTitle.hidden = !reaction; observationLayout.classList.toggle('has-reaction', Boolean(reaction));
+    document.getElementById('experimentMaterials').textContent = reaction ? reaction.fixedVessel.name + ' + ' + reaction.addedVessel.name + ' deneyi' : '';
     updateGlasswareLabels(reaction);
     reactionExpandCard.classList.toggle('needs-selection', !reaction);
     reactionCardSubtext.textContent = reaction ? 'Başka bir deney seçmek için aç' : 'İncelemek istediğin deneyi seç';
@@ -295,10 +299,14 @@ document.addEventListener("DOMContentLoaded", () => {
   const btnToggleAudio = document.getElementById("btnToggleAudio");
   const audioIcon = document.getElementById("audioIcon");
   if (btnToggleAudio && audioIcon) {
+    const syncAudio = () => {
+      const enabled = !window.labAudio.isMuted;
+      audioIcon.textContent = enabled ? '🔊' : '🔇'; document.getElementById('audioLabel').textContent = enabled ? 'Ses açık' : 'Ses kapalı';
+      btnToggleAudio.setAttribute('aria-pressed', String(enabled)); btnToggleAudio.setAttribute('aria-label', enabled ? 'Sesi kapat' : 'Sesi aç');
+    };
+    syncAudio();
     btnToggleAudio.addEventListener("click", () => {
-      const isEnabled = window.labAudio.toggleMute();
-      audioIcon.textContent = isEnabled ? "🔊" : "🔇";
-      btnToggleAudio.setAttribute("title", isEnabled ? "Sesi Kapat" : "Sesi Aç");
+      window.labAudio.toggleMute(); syncAudio();
     });
   }
 
@@ -312,9 +320,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // 7. Alt Yatay Şerit: Kamera Segmentli Butonları (Madde 5)
   const btnCamDesk = document.getElementById("btnCamDesk");
-  const btnCamCloseup = document.getElementById("btnCamCloseup");
   const btnCamWide = document.getElementById("btnCamWide");
-  const camSegmentButtons = [btnCamDesk, btnCamCloseup, btnCamWide].filter(Boolean);
+  const camSegmentButtons = [btnCamDesk, btnCamWide].filter(Boolean);
 
   function setActiveCameraSegment(activeBtn, presetName) {
     camSegmentButtons.forEach(btn => btn.classList.remove("is-active"));
@@ -326,12 +333,21 @@ document.addEventListener("DOMContentLoaded", () => {
   if (btnCamDesk) {
     btnCamDesk.addEventListener("click", () => setActiveCameraSegment(btnCamDesk, "desk"));
   }
-  if (btnCamCloseup) {
-    btnCamCloseup.addEventListener("click", () => setActiveCameraSegment(btnCamCloseup, "closeup"));
-  }
   if (btnCamWide) {
     btnCamWide.addEventListener("click", () => setActiveCameraSegment(btnCamWide, "wide"));
   }
+  const fullscreenButton = document.getElementById('btnFullscreen');
+  const syncFullscreen = () => { const enabled = Boolean(document.fullscreenElement || document.webkitFullscreenElement); fullscreenButton.setAttribute('aria-pressed', String(enabled)); document.getElementById('fullscreenLabel').textContent = enabled ? 'Ekrandan çık' : 'Tam ekran'; fullscreenButton.setAttribute('aria-label', enabled ? 'Tam ekrandan çık' : 'Tam ekranı aç'); };
+  fullscreenButton.disabled = !document.documentElement.requestFullscreen && !document.documentElement.webkitRequestFullscreen;
+  if (fullscreenButton.disabled) fullscreenButton.title = 'Bu tarayıcı tam ekranı desteklemiyor.';
+  fullscreenButton.onclick = async () => {
+    try { if (document.fullscreenElement || document.webkitFullscreenElement) await (document.exitFullscreen || document.webkitExitFullscreen).call(document);
+      else await (document.documentElement.requestFullscreen || document.documentElement.webkitRequestFullscreen).call(document.documentElement); }
+    catch { document.getElementById('fullscreenLabel').textContent = 'Kullanılamıyor'; }
+    syncFullscreen();
+  };
+  document.addEventListener('fullscreenchange', syncFullscreen); document.addEventListener('webkitfullscreenchange', syncFullscreen);
+  syncFullscreen();
 
   // 8. Butonlara Genel Hover ve Klik Sesleri
   document.querySelectorAll("button, .mebi-btn, .m3-step-btn, .m3-chip").forEach(el => {
