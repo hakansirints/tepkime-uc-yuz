@@ -14,6 +14,10 @@ class Stage1ObservationManager {
     this.initListeners();
     this.updateUI();
     LandscapeTasks.subscribe(() => this.updateUI());
+    this.layoutObserver = new ResizeObserver(() => this.fitNotebook());
+    this.layoutObserver.observe(document.getElementById('observationLayout'));
+    this.layoutObserver.observe(document.getElementById('experimentTitle'));
+    document.fonts?.ready.then(() => this.fitNotebook());
   }
 
   initElements() {
@@ -113,6 +117,7 @@ class Stage1ObservationManager {
       : simState === 'waiting_pour' ? 'Küçük beheri sola ve yukarı sürükle veya dökme düğmesini kullan.'
       : 'Maddeler karışıyor. Kabarcık, katı ve sıcaklık değişimini izle.';
     this.updateSubmitButtonState();
+    this.fitNotebook();
     cancelAnimationFrame(this.layoutFrame); this.layoutFrame = requestAnimationFrame(() => this.fitNotebook());
   }
 
@@ -236,7 +241,7 @@ class Stage1ObservationManager {
     if (this.state.currentStage !== 1 || this.state.simulationState !== 'reacted') return;
     const layout = document.getElementById('observationLayout').getBoundingClientRect(), card = this.container.getBoundingClientRect();
     const current = this.textarea.getBoundingClientRect().height;
-    const available = layout.bottom - card.top - 4;
+    const available = layout.bottom - card.top - 8;
     this.textarea.style.height = Math.max(44, Math.min(84, current + available - this.container.scrollHeight)) + 'px';
   }
 }
