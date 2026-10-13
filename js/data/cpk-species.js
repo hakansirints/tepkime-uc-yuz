@@ -17,6 +17,18 @@
   specs['NH₃'] = { atoms:[['N',0,.10,0,.23],['H',0,-.30,.38,.135],['H',-.329,-.30,-.19,.135],['H',.329,-.30,-.19,.135]], bonds:[[0,1,1],[0,2,1],[0,3,1]], rotation:[.25,.35,0] };
   specs.HCl = { atoms:[['H',-.35,0,0,.145],['Cl',.25,0,0,.29]], bonds:[[0,1,1]], note:'Bu görevde HCl, çözeltinin üstündeki gaz molekülüdür.' };
   specs['CaCO₃'] = { atoms:[['Ca',-.95,-.05,.15,.30],...carbonate.map(([e,x,y,z,r])=>[e,x+.25,y,z,r])], bonds:carbonateBonds.map(([a,b,n])=>[a+1,b+1,n]), note:'Katı örgünün temsilî formül birimi; Ca ile karbonat arasında kovalent çubuk çizilmez.' };
+  specs['H₂O'] = { atoms:[['O',0,0,0,.195],['H',-.340,-.263,0,.12],['H',.340,-.263,0,.12]], bonds:[[0,1,1],[0,2,1]] };
+  specs['CO₂'] = { atoms:[['C',0,0,0,.24],['O',-.65,0,0,.215],['O',.65,0,0,.215]], bonds:[[0,1,2],[0,2,2]] };
+  specs['O₂'] = { atoms:[['O',-.30,0,0,.215],['O',.30,0,0,.215]], bonds:[[0,1,2]] };
+  const ammonium=[['N',0,0,0,.23],['H',.32,.32,.32,.13],['H',.32,-.32,-.32,.13],['H',-.32,.32,-.32,.13],['H',-.32,-.32,.32,.13]],ammoniumBonds=[[0,1,1],[0,2,1],[0,3,1],[0,4,1]];
+  specs['NH₄⁺'] = { atoms:ammonium,bonds:ammoniumBonds };
+  specs['NH₄Cl'] = { atoms:[...ammonium,['Cl',.98,0,0,.29]],bonds:ammoniumBonds,note:'Amonyum klorür katı aerosolunun temsilî formül birimi; NH₄⁺ içindeki N–H bağları gösterilir.' };
+  const ionicNote='Katı örgünün temsilî formül birimi; iyonlar arasında kovalent bağ çubuğu çizilmez.';
+  specs['PbI₂'] = { atoms:[['Pb',0,0,0,.31],['I',-.69,0,0,.29],['I',.69,0,0,.29]],bonds:[],note:ionicNote };
+  specs.AgCl = { atoms:[['Ag',-.34,0,0,.28],['Cl',.34,0,0,.29]],bonds:[],note:ionicNote };
+  specs.AgI = { atoms:[['Ag',-.34,0,0,.28],['I',.34,0,0,.29]],bonds:[],note:ionicNote };
+  specs['CuCO₃'] = { atoms:[['Cu',-.95,-.05,.15,.30],...carbonate.map(([e,x,y,z,r])=>[e,x+.25,y,z,r])],bonds:carbonateBonds.map(([a,b,n])=>[a+1,b+1,n]),note:'Katı örgünün temsilî formül birimi; karbonatın iç bağları gösterilir.' };
+  specs['Cu(OH)₂'] = { atoms:[['Cu',0,0,0,.28],['O',-.62,.18,0,.20],['H',-.95,-.09,0,.13],['O',.62,-.18,0,.20],['H',.95,.09,0,.13]],bonds:[[1,2,1],[3,4,1]],note:'Katı örgünün temsilî formül birimi; hidroksitlerin O–H bağları gösterilir.' };
   function get(formula) {
     const spec = specs[formula];
     return spec ? { ...spec, formula, charge:FormulaChemistry.chargeDetails(formula).charge } : null;

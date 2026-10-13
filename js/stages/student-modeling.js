@@ -196,9 +196,22 @@ function mountStudentModel(container, state) {
     el('result-action').textContent = label; el('result-back').hidden = action === 'fix';
     resultAction = { action, stage: active };
     if (!dialog.open) dialog.showModal();
-    if (status === 'correct' && active === 0 && action === 'advance' && plan.validate(frames[0],0)[0] === 'ok') {
+    if (status === 'correct' && action !== 'fix' && plan.validate(frames[active],active)[0] === 'ok') {
       dialog.classList.add('cpk-result'); el('cpk').hidden = false;
-      cpkViewer = CPKModelViewer.mount(el('cpk'), frames[0].items, plan.sourceNames);
+      let viewItems, labels, description;
+      const present = p => ({ ...clone(p), aerosol: reaction.id === 'nh3_hcl' && p.formula === 'NH₄Cl' });
+      if (active === 0) { viewItems=frames[0].items.map(present);labels=plan.sourceNames; }
+      else if (active === 1) {
+        const interaction=frames[1].interaction, changed=new Set(interaction.reactants.map(p=>p.id));
+        const result=[...frames[1].items.filter(p=>!changed.has(p.id)),...interaction.products];
+        viewItems=[...frames[1].items.map(p=>({...present(p),source:0})),...result.map(p=>({...present(p),source:1}))];
+        labels=['Etkileşim öncesi','Etkileşim sonucu'];description='Aynı atomlar iki ayrı anda gösterilir; hareket ve mesafeler temsilîdir.';
+      } else {
+        viewItems=frames[2].items.map(p=>({...present(p),source:['s','suda'].includes(p.phase)?0:1}));
+        labels=['Sıvı bölgesindeki türler',plan.kind==='smoke'?'Oluşan katı aerosol':plan.kind==='gas'?'Gaz olarak ayrılan türler':'Oluşan katı yapı'];
+        description=plan.kind==='smoke'?'Katı aerosol tanecikleri havada asılı hareket eder.':plan.kind==='gas'?'Gaz yukarı yönelir. Hareket ve mesafeler temsilîdir.':plan.kind==='solid'?'Çökelti tabanda kalır; çözünmüş iyonlar ayrı gösterilir.':'Oluşan su ve değişmeden kalan iyonlar gösterilir.';
+      }
+      cpkViewer = CPKModelViewer.mount(el('cpk'), viewItems, labels, {phase:active,description});
     }
     el('result-action').focus();
   }
