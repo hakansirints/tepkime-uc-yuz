@@ -29,7 +29,8 @@ class LabSceneEngine {
     this.renderer.toneMappingExposure=.92; this.renderer.outputEncoding=THREE.sRGBEncoding;
     this.container.appendChild(this.renderer.domElement); this.renderer.domElement.setAttribute('aria-label','İki beherli üç boyutlu deney masası');
     this.controls=new THREE.OrbitControls(this.camera,this.renderer.domElement);
-    this.controls.enableDamping=true; this.controls.dampingFactor=.07; this.controls.enablePan=false;
+    this.controls.enableDamping=true; this.controls.dampingFactor=.07; this.controls.enablePan=true;
+    this.controls.screenSpacePanning=true; this.controls.mouseButtons.RIGHT=THREE.MOUSE.PAN;
     this.controls.target.copy(this.cameraPresets[initial].target); this.controls.minDistance=1.2; this.controls.maxDistance=9;
     this.controls.maxPolarAngle=Math.PI*.47; this.controls.minPolarAngle=.35;
     this.controls.update(); this.onResize();

@@ -23,7 +23,6 @@ class Stage1ObservationManager {
   initElements() {
     this.waitingStateBox = document.getElementById("obsWaitingState");
     this.activeStateBox = document.getElementById("obsActiveState");
-    this.completedStateBox = document.getElementById("obsCompletedState");
 
     this.obsWaitingTitle = document.getElementById("obsWaitingTitle");
     this.obsWaitingDesc = document.getElementById("obsWaitingDesc");
@@ -76,13 +75,11 @@ class Stage1ObservationManager {
 
   updateUI() {
     const simState = this.state.simulationState;
-    const stage = this.state.stages[1];
     this.setView();
 
     if (simState === "no_reaction") {
       if (this.waitingStateBox) this.waitingStateBox.style.display = "block";
       if (this.activeStateBox) this.activeStateBox.style.display = "none";
-      if (this.completedStateBox) this.completedStateBox.style.display = "none";
       if (this.obsWaitingTitle) this.obsWaitingTitle.textContent = "Tepkime Bekleniyor";
       if (this.obsWaitingDesc) {
         this.obsWaitingDesc.textContent = "Deney masası başlangıçta boştur. Tepkime seçiminden bir tepkime seçtiğinizde reaktifler beherlere yerleştirilecek ve karışımdan sonra gözlem paneli aktifleşecektir.";
@@ -90,7 +87,6 @@ class Stage1ObservationManager {
     } else if (simState === "waiting_pour") {
       if (this.waitingStateBox) this.waitingStateBox.style.display = "block";
       if (this.activeStateBox) this.activeStateBox.style.display = "none";
-      if (this.completedStateBox) this.completedStateBox.style.display = "none";
       if (this.obsWaitingTitle) this.obsWaitingTitle.textContent = "Reaktifler Masada Hazır";
       if (this.obsWaitingDesc) {
         this.obsWaitingDesc.textContent = window.labScene?.glassware.isFilled
@@ -100,7 +96,6 @@ class Stage1ObservationManager {
     } else if (simState === "pouring" || simState === "reacting") {
       if (this.waitingStateBox) this.waitingStateBox.style.display = "block";
       if (this.activeStateBox) this.activeStateBox.style.display = "none";
-      if (this.completedStateBox) this.completedStateBox.style.display = "none";
       if (this.obsWaitingTitle) this.obsWaitingTitle.textContent = "Tepkime Gerçekleşiyor...";
       if (this.obsWaitingDesc) {
         this.obsWaitingDesc.textContent = "Maddeler karışıyor. Sıvı rengi, kabarcık veya çökelti oluşumu ve termometredeki sıcaklık değişimini dikkatle inceleyiniz.";
@@ -109,7 +104,6 @@ class Stage1ObservationManager {
       // Reaksiyon gerçekleşti (simState === 'reacted'): Gözlem paneli aktif!
       if (this.waitingStateBox) this.waitingStateBox.style.display = "none";
       if (this.activeStateBox) this.activeStateBox.style.display = "block";
-      if (this.completedStateBox) this.completedStateBox.style.display = stage.status === 'completed' ? 'block' : 'none';
       this.updateSubmitButtonState();
     }
     if (LandscapeTasks.active() && simState !== 'reacted') this.obsWaitingDesc.textContent = simState === 'no_reaction'

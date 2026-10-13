@@ -85,8 +85,6 @@ body:not([data-stage="1"]) .lab-stage-backdrop { opacity:1; }
 .m3-textarea { font-size:16px; width:100%; min-width:0; min-height:120px; resize:vertical; }
 .lab-observation-actions, .lab-experiment-actions { display:flex; flex-direction:column; gap:10px; }
 .lab-observation-actions>* , .lab-experiment-actions>* { width:100%; }
-#obsCompletedState { margin-top:12px; font-size:13px; }
-#obsCompletedState h3 { font-size:14px; color:var(--mebi-success); }
 .activity-overlay { grid-row:2; display:flex; justify-content:center; align-items:flex-start; min-height:0; container-type:size; padding:16px; pointer-events:none; }
 body[data-stage="1"] .activity-overlay { display:none; }
 #labAppFrame #stageScaffoldView {

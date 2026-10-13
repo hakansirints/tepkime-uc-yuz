@@ -51,7 +51,6 @@ body.portrait-blocked #labCanvasContainer { pointer-events:none; }
   #labAppFrame #obsFeedbackBox { margin:4px 0; padding:6px; gap:5px; font-size:11px; line-height:15px; }
   #labAppFrame #obsFeedbackBox .feedback-body { font-size:11px; line-height:15px; margin:0; }
   #labAppFrame #obsFeedbackBadge { width:20px; height:20px; min-width:20px; font-size:13px; }
-  #labAppFrame #obsCompletedState { display:none !important; }
   .experiment-title { padding:3px 10px; line-height:14px; gap:0 7px; }
   .experiment-title>span { font-size:9px; }
   .experiment-title>strong { font-size:10px; line-height:14px; }
