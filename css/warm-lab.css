@@ -191,14 +191,68 @@ body[data-pour-ready=true] .lab-scene-caption>span:last-child {color:#315e50; fo
   .lab-materials .lab-eyebrow {font-size:7px;}
   .lab-materials div>span:last-child {font-size:9px;}
 }
-@media(max-height:560px) and (min-width:650px) {
-  .is-expanded .m3-reaction-list-content {position:fixed; left:312px; top:73px; width:260px; max-height:calc(100dvh - 134px); background:var(--lab-paper); border:1px solid var(--lab-line); border-radius:12px; box-shadow:0 8px 25px #30402d20;}
+/* Reaction picker: one downward dropdown at every viewport size. */
+.m3-reaction-expandable-card {overflow:hidden; transition:max-height .25s ease; width:min(320px,calc(100vw - 40px));}
+.m3-reaction-expandable-card.is-expanded .m3-reaction-list-content {
+  max-height:var(--list-space,calc(100dvh - 310px)); box-sizing:border-box;
+  overflow:auto; flex-shrink:1; min-height:0; padding:10px;
+  overscroll-behavior:contain; scrollbar-gutter:stable;
 }
-@media(max-height:560px) and (min-width:650px) {
-  .m3-reaction-expandable-card {overflow:visible; backdrop-filter:none; -webkit-backdrop-filter:none; transform:none;}
+.m3-reaction-header,.lab-selection-status,.lab-panel-footer {flex-shrink:0;}
+.m3-reaction-expandable-card:not(.is-expanded) .lab-selection-status,
+.m3-reaction-expandable-card:not(.is-expanded) .lab-panel-footer {display:none;}
+.m3-reaction-tile {padding:12px; margin:0 0 10px; border:1px solid var(--lab-line); background:var(--lab-paper); border-radius:12px;}
+.m3-reaction-tile:last-child {margin-bottom:0;}
+.m3-reaction-tile:hover {border-color:#8da68e; background:var(--lab-paper);}
+.m3-reaction-tile.is-active {border:2px solid #527c62; padding:11px; background:var(--lab-paper);}
+.m3-tile-name {display:block; font-size:12px; line-height:1.5; margin-bottom:10px;}
+.reaction-materials-pair {display:grid; gap:8px;}
+.reaction-material {
+  --material-bg:#edf4fd; --material-ink:#285c8d; --material-border:#c7dbef;
+  display:flex; flex-direction:column; gap:4px; padding:9px 10px;
+  background:var(--material-bg); color:var(--material-ink);
+  border:1px solid var(--material-border); border-left:4px solid var(--material-ink); border-radius:8px;
 }
-.m3-reaction-expandable-card.is-expanded .m3-reaction-list-content {max-height:min(var(--list-space,320px),420px); overflow:auto; flex-shrink:0;}
-.m3-reaction-header,.lab-selection-status,.lab-materials,.lab-panel-footer {flex-shrink:0;}
-@media(max-height:560px) and (min-width:650px) {
-  .m3-reaction-expandable-card.is-expanded .m3-reaction-list-content {max-height:calc(100dvh - 134px);}
+.reaction-material[data-material-kind='acid'] {--material-bg:#fff0ed; --material-ink:#a34135; --material-border:#efc8c0;}
+.reaction-material[data-material-kind='base'] {--material-bg:#f3edfc; --material-ink:#7546a2; --material-border:#dac9ef;}
+.reaction-material[data-material-kind='solid'] {--material-bg:#fff6e4; --material-ink:#8a601a; --material-border:#e9d5a7;}
+.reaction-material[data-material-kind='peroxide'] {--material-bg:#eaf6f4; --material-ink:#286e65; --material-border:#b9ddd7;}
+.reaction-material[data-material-kind='catalyst'] {--material-bg:#f7f1e8; --material-ink:#805936; --material-border:#e1ccb6;}
+.reaction-material-role {display:flex; justify-content:space-between; align-items:center; gap:6px; font-size:9px; font-weight:600;}
+.reaction-material-kind {padding:2px 5px; border:1px solid var(--material-border); border-radius:4px;}
+.reaction-material-name {font-size:11px; font-weight:650; line-height:1.5;}
+.reaction-material-state {font-size:9px; line-height:1.5;}
+[data-theme='dark'] .reaction-material {background:color-mix(in srgb,var(--material-bg) 13%,#222c26); color:color-mix(in srgb,var(--material-ink) 30%,white); border-color:color-mix(in srgb,var(--material-border) 40%,#222c26);}
+[data-theme='dark'] .m3-reaction-tile:hover,[data-theme='dark'] .m3-reaction-tile.is-active {background:var(--lab-paper); border-color:#91b29a;}
+@media(max-width:1000px) {
+  body[data-mobile-panel='reactions'] .m3-reaction-expandable-card {display:flex; z-index:76;}
 }
+
+/* A single compact control panel keeps the experiment surface clear. */
+.m3-top-app-bar {z-index:80;}
+.lab-settings-wrap {display:flex; align-items:center;}
+.lab-settings-panel[hidden] {display:none!important;}
+.lab-settings-panel {position:absolute; top:calc(100% + 8px); right:0; width:min(286px,calc(100vw - 24px)); box-sizing:border-box; max-height:calc(100dvh - 120px); overflow:auto; padding:14px; border:1px solid var(--lab-line); border-radius:14px; background:var(--lab-paper); color:var(--mebi-text-main); box-shadow:0 10px 35px #182d3026;}
+.lab-settings-heading {display:flex; justify-content:space-between; align-items:center; gap:8px; font-size:13px;}
+.lab-settings-heading button {border:0; background:transparent; color:var(--mebi-text-secondary); font-size:22px; width:32px; height:32px; cursor:pointer;}
+.lab-settings-section {padding-top:12px; margin-top:10px; border-top:1px solid var(--lab-line);}
+.lab-settings-label {display:block; margin-bottom:8px; font-size:10px; font-weight:650; color:var(--mebi-text-secondary);}
+.lab-settings-views,.lab-settings-colors {display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:5px;}
+.lab-settings-section button {min-height:36px; padding:7px; border:1px solid var(--lab-line); border-radius:8px; background:transparent; color:var(--mebi-text-main); font-size:11px; cursor:pointer;}
+.lab-settings-section button:hover {background:var(--mebi-primary-light);}
+.lab-settings-section button[aria-pressed='true'] {border-color:var(--mebi-primary); background:var(--mebi-primary-light); color:var(--mebi-primary); font-weight:650;}
+.lab-settings-reset {width:100%; margin-top:5px;}
+.lab-settings-light {width:100%; text-align:left;}
+.lab-settings-colors button {display:flex; flex-direction:column; align-items:center; gap:5px;}
+.lab-settings-colors button span {width:20px; height:20px; border-radius:50%; background:var(--swatch); border:1px solid #8d9b9566;}
+.chemical-formula .ion-charge {display:inline; position:relative; top:-.48em; vertical-align:baseline; margin-left:2px; font-size:.68em; line-height:0; font-weight:750; color:inherit;}
+[data-theme='dark'] .lab-settings-section button[aria-pressed='true'] {background:#354c40; border-color:#9bbb9e; color:#e5f2e5;}
+[data-theme='dark'] .lab-settings-section button:hover {background:#354c40;}
+@media(max-width:600px) {
+  .m3-brand-container {min-width:0; flex:1;}
+  .m3-brand-container>div {min-width:0;}
+  .m3-app-title {font-size:12px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .m3-brand-container .lab-eyebrow {font-size:6px; letter-spacing:0; white-space:nowrap;}
+  .lab-header-tools {flex-shrink:0;}
+}
+@media(max-height:560px) {.lab-settings-panel {max-height:calc(100dvh - 85px);}}

@@ -13,6 +13,60 @@ document.addEventListener("DOMContentLoaded", () => {
   // 2. Aşama Yöneticilerini Başlat
   const stage1Mgr = new Stage1ObservationManager(window.labState);
   const scaffoldMgr = new StageScaffoldManager(window.labState);
+  window.labScaffold = scaffoldMgr;
+  window.labObservation = stage1Mgr;
+
+  const advanceButton = document.getElementById('btnDevAdvance');
+  const devStatus = document.getElementById('devStatus');
+  document.querySelector('.development-controls').hidden = new URLSearchParams(location.search).get('dev') !== '1';
+  function syncDevelopmentControls() {
+    const state = window.labState;
+    advanceButton.disabled = !state.getReaction() || (state.currentStage === 3 && state.stages[3].status === 'completed');
+    advanceButton.textContent = state.currentStage === 3 ? 'Otomatik tamamla' : 'Otomatik tamamla ve ilerle';
+    devStatus.textContent = !state.getReaction() ? 'Önce bir tepkime seç.' : state.currentStage === 3 && state.stages[3].status === 'completed' ? 'Tüm aşamalar tamamlandı.' : `Aşama ${state.currentStage} için test kısayolu`;
+  }
+  advanceButton.addEventListener('click', () => {
+    const state = window.labState, reaction = state.getReaction(); if (!reaction) return;
+    try {
+      if (state.currentStage === 1) {
+        labScene.glassware.setupReaction(reaction, false);
+        labScene.pourController.instantReact();
+        stage1Mgr.textarea.value = reaction.pedagogy.correctFeedback;
+        stage1Mgr.updateCounters(); stage1Mgr.evaluateObservation();
+        if (state.stages[1].status !== 'completed') throw new Error('Otomatik gözlem doğrulanamadı.');
+        state.stages[1].completedData.testMode = true;
+        state.setStage(2);
+      } else if (state.currentStage === 2) {
+        scaffoldMgr.stage2Manager.api.autoComplete();
+        state.stages[2].completedData.testMode = true;
+        state.setStage(3);
+      } else if (state.currentStage === 3) {
+        scaffoldMgr.stage3Manager.autoComplete();
+        state.stages[3].completedData.testMode = true;
+      }
+      syncDevelopmentControls();
+    } catch (error) { console.error(error); devStatus.textContent = error.message; }
+  });
+  window.labState.on('reactionChange', syncDevelopmentControls);
+  window.labState.on('stageChange', syncDevelopmentControls);
+  syncDevelopmentControls();
+
+  const settingsButton = document.getElementById('btnLabSettings');
+  const settingsPanel = document.getElementById('labSettingsPanel');
+  function setSettingsOpen(open, returnFocus = false) {
+    settingsPanel.hidden = !open;
+    settingsButton.setAttribute('aria-expanded', String(open));
+    if (returnFocus) settingsButton.focus();
+  }
+  settingsButton.addEventListener('click', () => setSettingsOpen(settingsPanel.hidden));
+  document.getElementById('btnCloseLabSettings').addEventListener('click', () => setSettingsOpen(false, true));
+  document.addEventListener('click', event => {
+    if (!event.target.closest('.lab-settings-wrap')) setSettingsOpen(false);
+  });
+  document.addEventListener('keydown', event => {
+    if (event.key === 'Escape' && !settingsPanel.hidden) setSettingsOpen(false, true);
+  });
+  window.labState.on('stageChange', () => setSettingsOpen(false));
 
   // 3. Tepkime Seçim Kartı (Madde 2 - Tıklanınca aşağı doğru uzayan Material kart)
   const reactionExpandCard = document.getElementById("reactionExpandCard");
@@ -21,34 +75,65 @@ document.addEventListener("DOMContentLoaded", () => {
   const reactionCardSubtext = document.getElementById("reactionCardSubtext");
   const reactionStatusBadge = document.getElementById("reactionStatusBadge");
 
+  // Material colors describe the reactants without revealing the experiment's result.
+  function materialCard(vessel, role) {
+    const name = vessel.name.toLocaleLowerCase('tr');
+    let kind = 'salt', label = 'Tuz çözeltisi';
+    if (vessel.state.includes('Katı')) { kind = 'solid'; label = 'Katı'; }
+    else if (name.includes('asit')) { kind = 'acid'; label = 'Asit'; }
+    else if (name.includes('hidroksit') || name.includes('amonyak')) { kind = 'base'; label = 'Baz'; }
+    else if (name.includes('peroksit')) { kind = 'peroxide'; label = 'Peroksit'; }
+    if (vessel.state.includes('Katalizör')) { kind = 'catalyst'; label = 'Katalizör'; }
+    return `<span class="reaction-material" data-material-kind="${kind}">
+      <span class="reaction-material-name">${vessel.name}</span>
+      <span class="reaction-material-details"><span class="reaction-material-role">${role}<span class="reaction-material-kind">${label}</span></span><span class="reaction-material-state">${vessel.state}</span></span>
+    </span>`;
+  }
+
+  const picker = document.getElementById('reactionPicker');
+  function setReactionCardExpanded(expanded) {
+    if (["pouring", "reacting"].includes(window.labState.simulationState)) return;
+    btnReactionToggle.setAttribute('aria-expanded', String(expanded));
+    document.getElementById('btnCloseReactionPicker').setAttribute('aria-expanded', String(expanded));
+    picker.hidden = !expanded;
+    reactionExpandCard.classList.toggle('is-expanded', expanded);
+    document.getElementById('selectedReactionPair').hidden = expanded;
+  }
+  document.getElementById('btnCloseReactionPicker').onclick = () => setReactionCardExpanded(false);
+  function refreshCompletion() {
+    const completed = window.labState.completedReactions;
+    document.getElementById('reactionCompletionCount').textContent = `${Object.keys(completed).length} / 12 tamamlandı`;
+    reactionListContent.querySelectorAll('[data-reaction-id]').forEach(tile => {
+      tile.querySelector('.reaction-completion').hidden = !completed[tile.dataset.reactionId];
+    });
+    const pinned = document.querySelector('#selectedReactionPair .reaction-completion');
+    if (pinned) pinned.hidden = !completed[window.labState.selectedReactionId];
+  }
+  window.labState.on('completionChange', refreshCompletion);
+
   if (reactionListContent && window.REACTIONS_DATA) {
     let index = 1;
     for (const [id, reaction] of Object.entries(window.REACTIONS_DATA)) {
-      const reactionNumber = index;
       const tileBtn = document.createElement("button");
-      tileBtn.className = "m3-reaction-tile";
+      tileBtn.className = "m3-reaction-tile mebi-card mebi-card-hoverable";
       tileBtn.setAttribute("data-reaction-id", id);
+      tileBtn.setAttribute("aria-pressed", "false");
 
       tileBtn.innerHTML = `
-        <span class="m3-tile-name">${index}. ${reaction.title}</span>
-        <span class="m3-tile-sub">Sabit Kap: ${reaction.fixedVessel.name.split(' (')[0]} | Eklenen: ${reaction.addedVessel.name.split(' (')[0]}</span>
+        <span class="m3-tile-name">${index}. ${reaction.title}</span><span class="reaction-completion" hidden>Tamamlandı</span>
+        <span class="reaction-materials-pair">
+          ${materialCard(reaction.fixedVessel, '01 · Sabit kap')}
+          ${materialCard(reaction.addedVessel, '02 · Eklenen')}
+        </span>
       `;
 
       tileBtn.addEventListener("click", () => {
         if (["pouring", "reacting"].includes(window.labState.simulationState)) return;
         if (window.labAudio) window.labAudio.playClick();
         window.labState.setReaction(id);
+        setReactionCardExpanded(false);
 
-        if (reactionCardSubtext) reactionCardSubtext.textContent = `${reactionNumber}. ${reaction.title}`;
-        if (reactionStatusBadge) {
-          reactionStatusBadge.textContent = "Reaktifler Masada";
-          reactionStatusBadge.className = "mebi-badge mebi-badge-success";
-        }
-
-        reactionListContent.querySelectorAll(".m3-reaction-tile").forEach(b => b.classList.remove("is-active"));
-        tileBtn.classList.add("is-active");
-
-        fitReactionCard();
+        btnReactionToggle.focus({ preventScroll: true });
       });
 
       tileBtn.addEventListener("mouseenter", () => {
@@ -60,33 +145,11 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  // Reserve the selected-material summary before allowing the list to scroll.
-  function fitReactionCard(keepOpen=false) {
-    const bounds = reactionExpandCard.getBoundingClientRect();
-    const available = Math.max(120, window.innerHeight - bounds.top - 88);
-    const summary = document.getElementById('selectedMaterials');
-    const reserved = btnReactionToggle.offsetHeight + summary.offsetHeight +
-      reactionExpandCard.querySelector('.lab-selection-status').offsetHeight +
-      reactionExpandCard.querySelector('.lab-panel-footer').offsetHeight;
-    const listSpace = Math.max(0, available - reserved - 16);
-    reactionListContent.style.setProperty('--list-space', `${listSpace}px`);
-    if (keepOpen!==true && window.labState.getReaction() && listSpace < 100) {
-      reactionExpandCard.classList.remove('is-expanded');
-      btnReactionToggle.setAttribute('aria-expanded', 'false');
-    }
-  }
-  window.addEventListener('resize', fitReactionCard);
-  requestAnimationFrame(fitReactionCard);
-
-  // Tıklanınca aşağı doğru uzama/kapanma (Accordion)
-  if (btnReactionToggle && reactionExpandCard) {
-    btnReactionToggle.addEventListener("click", () => {
-      if (window.labAudio) window.labAudio.playClick();
-      reactionExpandCard.classList.toggle("is-expanded");
-      btnReactionToggle.setAttribute("aria-expanded", String(reactionExpandCard.classList.contains("is-expanded")));
-      fitReactionCard(true);
-    });
-  }
+  refreshCompletion();
+  btnReactionToggle.addEventListener('click', () => {
+    window.labAudio?.playClick(); setReactionCardExpanded(picker.hidden);
+    if (!picker.hidden) reactionListContent.querySelector('.is-active')?.scrollIntoView({ block: 'nearest' });
+  });
 
   // 4. Masadaki Beher Madde Etiketleri
   function updateGlasswareLabels(reaction) {
@@ -111,26 +174,23 @@ document.addEventListener("DOMContentLoaded", () => {
 
   window.labState.on("reactionChange", (reaction) => {
     updateGlasswareLabels(reaction);
-    const materials = document.getElementById("selectedMaterials");
-    materials.hidden = !reaction;
     reactionExpandCard.classList.toggle('needs-selection', !reaction);
-    if (reaction) {
-      document.getElementById("selectedFixedName").textContent = reaction.fixedVessel.name;
-      document.getElementById("selectedFixedState").textContent = reaction.fixedVessel.state;
-      document.getElementById("selectedAddedName").textContent = reaction.addedVessel.name;
-      document.getElementById("selectedAddedState").textContent = reaction.addedVessel.state;
-    }
-    requestAnimationFrame(fitReactionCard);
+    reactionCardSubtext.textContent = reaction ? 'Başka bir deney seçmek için aç' : 'İncelemek istediğin deneyi seç';
+    reactionListContent.querySelectorAll('.m3-reaction-tile').forEach(tile => {
+      const selected = tile.dataset.reactionId === reaction?.id;
+      tile.classList.toggle('is-active', selected);
+      tile.setAttribute('aria-pressed', String(selected));
+    });
+    reactionStatusBadge.textContent = reaction ? 'Reaktifler Masada' : 'Masa Boş';
+    document.querySelector('.m3-reaction-card-title').textContent = reaction ? 'Tepkimeyi değiştir' : 'Tepkime seç';
+    document.getElementById('selectedReactionPair').innerHTML = reaction
+      ? `<span class="selected-pair-label">✓ Seçili madde çifti</span><span class="reaction-completion" hidden>Tamamlandı</span><div class="reaction-materials-pair">${materialCard(reaction.fixedVessel, '01 · Sabit kap')}${materialCard(reaction.addedVessel, '02 · Eklenen')}</div>`
+      : '<p>Bir madde çifti seçerek başla.</p>';
+    refreshCompletion();
+    setReactionCardExpanded(false);
   });
   reactionExpandCard.classList.toggle('needs-selection', !window.labState.getReaction());
-  document.querySelectorAll('#selectedMaterials>div').forEach((card, index) => {
-    card.tabIndex = 0;
-    card.addEventListener('mouseenter', () => labScene.setMaterialHover(index));
-    card.addEventListener('mouseleave', () => labScene.setMaterialHover(null));
-    card.addEventListener('focus', () => labScene.setMaterialHover(index));
-    card.addEventListener('blur', () => labScene.setMaterialHover(null));
-    card.addEventListener('click', () => labScene.previewMaterial(index));
-  });
+  setReactionCardExpanded(!window.labState.getReaction());
 
   function syncMobileTools() {
     document.getElementById("btnMobileReactions").setAttribute("aria-expanded", String(document.body.dataset.mobilePanel === "reactions"));
@@ -141,15 +201,14 @@ document.addEventListener("DOMContentLoaded", () => {
       if (document.body.dataset.mobilePanel === panel) document.body.removeAttribute("data-mobile-panel");
       else document.body.dataset.mobilePanel = panel;
       if (panel === "reactions") {
-        reactionExpandCard.classList.add("is-expanded");
-        btnReactionToggle.setAttribute("aria-expanded", "true");
-        fitReactionCard(true);
+        setReactionCardExpanded(true);
       }
       syncMobileTools();
     });
   }
   window.labState.on("simulationChange", () => {
     const busy = ["pouring", "reacting"].includes(window.labState.simulationState);
+    btnReactionToggle.disabled = busy;
     document.body.dataset.simulation = window.labState.simulationState;
     reactionListContent.querySelectorAll("button").forEach(button => { button.disabled = busy; });
     if (reactionStatusBadge && window.labState.getReaction()) {
@@ -176,7 +235,7 @@ document.addEventListener("DOMContentLoaded", () => {
       window.labTheme.applyTheme("dark", true);
     }
     if (urlParams.get("openMenu") === "true" && reactionExpandCard) {
-      reactionExpandCard.classList.add("is-expanded");
+      setReactionCardExpanded(true);
     }
     const hashVal = window.location.hash ? window.location.hash.replace('#', '').trim() : '';
     const initRx = urlParams.get("reaction") || (hashVal ? hashVal : null);

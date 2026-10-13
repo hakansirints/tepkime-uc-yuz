@@ -1,1 +1,73 @@
-#student-atom-trace{--bg:light-dark(#edf4f7,#071725);--panel:light-dark(#ffffff,#102b40);--ink:light-dark(#18384c,#edf5fc);--muted:light-dark(#526c7c,#adc4d4);--edge:light-dark(#bad0db,#31546b);--accent:light-dark(#00788b,#26d2e5);--soft:light-dark(#e5eeea,#263c38);font:14px/1.5 system-ui;color:var(--ink);background:var(--bg);padding:24px;width:100%;border-radius:20px}#student-atom-trace *{box-sizing:border-box}#student-atom-trace header{display:flex;justify-content:space-between;align-items:center;gap:15px;flex-wrap:wrap}#student-atom-trace h2{font-size:24px;font-weight:500;margin:5px 0}#student-atom-trace h3{font-size:16px;font-weight:500}#student-atom-trace .muted{color:var(--muted);font-size:12px}#student-atom-trace button{font:inherit;border:1px solid var(--edge);border-radius:8px;background:var(--panel);color:var(--ink);padding:8px 12px}#student-atom-trace button:disabled{opacity:.45}#student-atom-trace button[aria-pressed=true]{color:var(--panel);background:var(--accent);border-color:var(--accent)}#student-atom-trace .trace-steps,#student-atom-trace .row{display:flex;gap:10px;flex-wrap:wrap;margin:18px 0}#student-atom-trace .trace-steps span{padding:8px 12px;border-radius:8px;background:var(--panel);color:var(--muted)}#student-atom-trace .trace-steps .active{background:var(--accent);color:var(--panel)}#student-atom-trace .trace-scenes{display:grid;grid-template-columns:1fr 1fr;gap:18px}#student-atom-trace .trace-stage{position:relative;height:400px;background:var(--soft);border-radius:16px;overflow:hidden}#student-atom-trace canvas{width:100%;height:100%;display:block;touch-action:none;cursor:grab}#student-atom-trace .trace-phase{position:absolute;top:12px;left:14px;color:var(--muted)}#student-atom-trace .trace-species{position:absolute;bottom:10px;left:12px;right:12px;display:flex;gap:6px;flex-wrap:wrap}#student-atom-trace .trace-species button{background:transparent;border-color:transparent}#student-atom-trace .trace-species button[aria-pressed=true]{background:transparent;color:var(--accent);border-color:transparent;font-weight:500;text-decoration:underline;text-underline-offset:4px;text-decoration-thickness:2px}#trace-feedback{color:light-dark(#875300,#ffc464);min-height:40px}#trace-feedback.good,#trace-count{color:light-dark(#007344,#45d7a0)}#student-atom-trace [hidden]{display:none!important}@media(max-width:720px){#student-atom-trace .trace-scenes{grid-template-columns:1fr}#student-atom-trace .trace-stage{height:320px}#student-atom-trace{padding:14px}}@media(pointer:coarse){#student-atom-trace button{min-height:44px}}
+.trace-steps { margin:2px 0 20px; width:fit-content; }
+.trace-steps span { padding:10px 18px; border-radius:15px; font-size:12px; color:var(--liquid-muted); }
+.trace-steps .active { color:var(--liquid-accent); background:var(--liquid-solid); box-shadow:0 3px 12px rgba(25,40,60,.07); }
+.trace-prompt { display:flex; gap:18px; align-items:center; margin-bottom:20px; }
+.trace-prompt .atom-symbol { font-size:25px; font-weight:600; }
+.trace-prompt p { margin:5px 0 0; }
+.trace-scenes { display:grid; grid-template-columns:1fr 1fr; gap:20px; }
+.trace-stage { min-height:240px; }
+.trace-species { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; margin-top:25px; }
+.liquid-workshop .trace-formula-card { padding:20px 12px; border-radius:20px; display:flex; flex-direction:column; align-items:center; gap:20px; }
+.trace-atom-list { display:flex; justify-content:center; gap:5px; flex-wrap:wrap; }
+.trace-atom-list>span { display:grid; place-items:center; width:28px; min-height:28px; border-radius:9px; font:500 11px/1 system-ui,sans-serif; background:var(--liquid-subtle); color:var(--liquid-muted); border:1px solid transparent; }
+.trace-atom-list .marked-atom { border:2px solid var(--liquid-accent); color:var(--liquid-accent); background:var(--liquid-solid); }
+.reason-panel { margin:20px 0; }
+.trace-path { margin:20px 0; text-align:center; font-size:26px; font-weight:600; padding:20px; border-radius:24px; background:var(--liquid-subtle); color:var(--liquid-accent); }
+.trace-path.tracking { animation:atom-track 1.1s ease both; }
+.trace-count { color:var(--liquid-success); padding:8px 4px; }
+@keyframes atom-track { from { opacity:.3; transform:translateX(-10px); } to { opacity:1; transform:translateX(0); } }
+@media(max-width:1000px) { .trace-species { grid-template-columns:repeat(2,minmax(0,1fr)); } }
+@media(max-width:680px) { .trace-scenes { grid-template-columns:1fr; gap:14px; } .trace-species { grid-template-columns:repeat(3,minmax(0,1fr)); } .trace-stage { min-height:180px; } .trace-prompt { padding:16px; } .trace-steps { width:100%; } .trace-steps span { flex:1; padding:10px; } .trace-path { font-size:22px; } }
+
+.trace-steps { flex-shrink:0; margin:0; }
+.trace-steps span { padding:7px 12px; }
+.trace-prompt { flex-shrink:0; padding:10px 14px; margin:0; gap:12px; }
+.trace-prompt .atom-symbol { min-height:36px; font-size:21px; }
+.trace-scenes { flex:1; min-height:0; grid-template-columns:1fr 1fr; gap:12px; }
+.trace-stage { min-height:0; display:flex; flex-direction:column; }
+.trace-species { flex:1; min-height:0; overflow:auto; align-content:start; grid-template-columns:repeat(3,minmax(0,1fr)); gap:7px; margin-top:10px; scrollbar-width:thin; }
+.liquid-workshop .trace-formula-card { padding:10px; gap:8px; border-radius:14px; }
+.trace-formula-card .chemical-formula { font-size:22px; }
+.trace-atom-list { gap:4px; }
+.trace-atom-list>span { width:23px; min-height:23px; font-size:10px; }
+.reason-panel { flex-shrink:0; margin:0; padding:10px 14px; }
+.trace-path { flex-shrink:0; margin:0; padding:7px; font-size:21px; border-radius:15px; }
+.trace-count { flex-shrink:0; font-size:12px; padding:0; }
+#student-atom-trace .workshop-feedback { margin:0; }
+@media(max-width:680px) {
+  .trace-steps span { padding:6px 8px; font-size:10px; }
+  .trace-prompt { padding:8px; }
+  .trace-scenes { grid-template-columns:1fr 1fr; gap:8px; }
+  .trace-stage .step-dot { display:none; }
+  .trace-species { grid-template-columns:1fr; gap:6px; }
+  .liquid-workshop .trace-formula-card { padding:8px 5px; flex-direction:row; gap:6px; justify-content:space-between; min-height:48px; }
+  .trace-formula-card .chemical-formula { font-size:20px; }
+  .trace-atom-list { max-width:65px; gap:2px; }
+  .trace-atom-list>span { width:17px; min-height:17px; font-size:8px; border-radius:5px; }
+  .reason-panel { padding:8px; }
+  .reason-panel .workshop-actions { display:flex; flex-wrap:nowrap; }
+  .reason-panel button { flex:1; min-width:0; min-height:44px; font-size:10px; }
+}
+@media(max-height:540px) and (min-width:681px) {
+  .trace-steps span { padding:4px 8px; font-size:10px; }
+  .trace-prompt { padding:6px 10px; }
+  .trace-prompt .muted { display:none; }
+  .trace-path { padding:4px; font-size:18px; }
+  .reason-panel { padding:6px 10px; }
+  .reason-panel h3 { display:none; }
+  .reason-panel .workshop-actions { margin:0; }
+  .trace-species { grid-template-columns:repeat(4,minmax(0,1fr)); margin-top:5px; }
+  .liquid-workshop .trace-formula-card { padding:5px; gap:4px; }
+  .trace-formula-card .chemical-formula { font-size:19px; }
+  #student-atom-trace { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); grid-template-rows:auto auto minmax(0,1fr) auto auto auto; gap:5px 8px; }
+  #student-atom-trace .workshop-header { grid-column:1/-1; grid-row:1; }
+  .trace-steps { grid-column:1; grid-row:2; width:100%; }
+  .trace-prompt { grid-column:2; grid-row:2; padding:4px 8px; }
+  .trace-prompt .atom-symbol { min-height:28px; }
+  .trace-scenes { grid-column:1/-1; grid-row:3; }
+  .reason-panel, .trace-path { grid-column:1; grid-row:4; }
+  #student-atom-trace .workshop-footer { grid-column:2; grid-row:4; margin:0; padding:0; border:0; flex-wrap:nowrap; }
+  #student-atom-trace .workshop-footer button { min-width:0; font-size:10px; }
+  #trace-feedback { grid-column:1/-1; grid-row:5; min-height:20px; padding:3px 8px; font-size:10px; }
+  .trace-count { grid-column:1/-1; grid-row:6; margin:0!important; font-size:10px; }
+}

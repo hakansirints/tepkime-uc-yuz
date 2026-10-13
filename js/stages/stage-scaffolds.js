@@ -90,8 +90,12 @@ class StageScaffoldManager {
 
   renderActiveStage() {
     const stageId = this.state.currentStage;
+    if(this.renderedStage!==stageId)this.container.scrollTop=0;
+    this.renderedStage=stageId;
     if(stageId!==2&&this.stage2Manager){this.stage2Manager.dispose();this.stage2Manager=null;}
     if(stageId!==3&&this.stage3Manager){this.stage3Manager.dispose();this.stage3Manager=null;}
+    if (this.state.stages[2].status === 'locked') this.state.modelingDraft = null;
+    if (this.state.stages[3].status === 'locked') this.state.atomTraceDraft = null;
     const stage1Container = document.getElementById("stage1Container");
     const reactionCard = document.getElementById("reactionExpandCard");
     const scaffoldView = document.getElementById("stageScaffoldView");

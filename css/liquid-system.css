@@ -1,0 +1,155 @@
+/* MEBİ hierarchy and feedback colors adapted to translucent, rounded surfaces. */
+:root {
+  --liquid-ink: #192b36; --liquid-muted: #52646e;
+  --liquid-panel: rgba(255,255,255,.78); --liquid-solid: #f8fafc;
+  --liquid-subtle: rgba(227,234,240,.62); --liquid-edge: rgba(255,255,255,.94);
+  --liquid-line: #d1dce3; --liquid-accent: #1e40af;
+  --liquid-success: #087343; --liquid-warning: #8a5210;
+  --liquid-shadow: 0 12px 34px rgba(32,53,75,.08), inset 0 1px 0 rgba(255,255,255,.9);
+}
+[data-theme="dark"] {
+  --liquid-ink: #f4f4f5; --liquid-muted: #b8b8c2;
+  --liquid-panel: rgba(38,38,43,.88); --liquid-solid: #222226;
+  --liquid-subtle: rgba(58,58,65,.65); --liquid-edge: rgba(255,255,255,.14);
+  --liquid-line: #53535b; --liquid-accent: #f4f4f5;
+  --liquid-success: #69dfad; --liquid-warning: #ffd18b;
+  --liquid-shadow: 0 12px 34px rgba(0,0,0,.22), inset 0 1px 0 rgba(255,255,255,.09);
+}
+body:not([data-stage="1"]) #stageScaffoldView {
+  inset: 110px 0 0; padding: 12px 24px 88px; overflow: auto; overflow-anchor:none; align-items: flex-start;
+  background: radial-gradient(ellipse at 10% 0%,rgba(206,231,247,.95),transparent 60%), linear-gradient(140deg,rgba(244,247,250,.96),rgba(226,235,237,.96));
+  backdrop-filter: blur(22px); -webkit-backdrop-filter: blur(22px);
+}
+[data-theme="dark"] body:not([data-stage="1"]) #stageScaffoldView {
+  background: radial-gradient(ellipse at 8% 0%,rgba(58,58,65,.95),transparent 60%), linear-gradient(140deg,rgba(22,22,25,.96),rgba(34,34,38,.96));
+}
+.liquid-workshop { color: var(--liquid-ink); font: 15px/1.55 'Segoe UI',system-ui,sans-serif; width:100%; max-width:1400px; margin:0 auto; min-width:0; }
+.liquid-workshop *, .development-controls * { box-sizing:border-box; }
+.liquid-workshop h2 { font-size:clamp(22px,2.3vw,30px); line-height:1.25; letter-spacing:-.7px; font-weight:650; margin:4px 0 8px; }
+.liquid-workshop h3 { font-size:17px; line-height:1.35; font-weight:600; margin:0; }
+.liquid-workshop h4 { font-size:12px; font-weight:600; color:var(--liquid-muted); margin:0 0 18px; }
+.liquid-workshop p { margin:8px 0 14px; }
+.liquid-workshop .muted, .workshop-note { color:var(--liquid-muted); font-size:13px; }
+.liquid-workshop .eyebrow { color:var(--liquid-muted); letter-spacing:1.8px; font-size:11px; font-weight:650; }
+.workshop-header { display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:16px; padding:8px 4px 18px; }
+.workshop-header p { margin-bottom:0; }
+.glass-panel { background:var(--liquid-panel); border:1px solid var(--liquid-edge); border-radius:26px; box-shadow:var(--liquid-shadow); backdrop-filter:blur(24px) saturate(130%); -webkit-backdrop-filter:blur(24px) saturate(130%); padding:24px; min-width:0; }
+.liquid-workshop button, #btnDevAdvance { min-height:44px; border:1px solid var(--liquid-edge); border-radius:999px; padding:10px 18px; color:var(--liquid-ink); background:var(--liquid-panel); box-shadow:0 2px 8px rgba(30,45,65,.06), inset 0 1px 0 rgba(255,255,255,.16); font-family:inherit; font-size:13px; font-weight:600; line-height:1.4; cursor:pointer; transition:background-color .2s ease,border-color .2s ease,box-shadow .2s ease,transform .2s ease; }
+.liquid-workshop button { font-family:inherit; font-size:13px; font-weight:600; }
+.liquid-workshop button:hover:not(:disabled) { background:var(--liquid-solid); box-shadow:0 4px 14px rgba(30,45,65,.12); transform:translateY(-1px); }
+.liquid-workshop button:active:not(:disabled) { transform:scale(.98); }
+.liquid-workshop button:disabled { opacity:.5; cursor:not-allowed; box-shadow:none; }
+.liquid-workshop button:focus-visible, #btnDevAdvance:focus-visible { outline:3px solid #7c63ce; outline-offset:3px; }
+.liquid-workshop button[aria-pressed="true"], .liquid-workshop button[aria-selected="true"] { background:var(--liquid-solid); color:var(--liquid-accent); border-color:var(--liquid-accent); box-shadow:0 3px 12px rgba(35,54,78,.09); }
+.liquid-workshop button.liquid-primary { background:#1e40af; color:#fff; border-color:transparent; padding-inline:23px; }
+.liquid-workshop button.liquid-primary:hover:not(:disabled) { background:#1d4ed8; }
+.liquid-segments { display:flex; gap:5px; padding:5px; background:var(--liquid-subtle); border:1px solid var(--liquid-edge); border-radius:20px; }
+.liquid-segments button { flex:1; border:1px solid transparent; background:transparent; box-shadow:none; border-radius:15px; padding:10px 8px; font-size:12px; }
+.workspace-heading, .panel-heading { display:flex; align-items:center; justify-content:space-between; gap:12px; }
+.panel-heading { justify-content:flex-start; }
+.step-dot { display:grid; place-items:center; width:30px; height:30px; border-radius:50%; background:var(--liquid-subtle); color:var(--liquid-muted); font-size:11px; font-weight:650; flex-shrink:0; }
+.workshop-actions, .workshop-footer { display:flex; align-items:center; flex-wrap:wrap; gap:8px; margin-top:16px; }
+.workshop-footer { justify-content:flex-end; padding-top:12px; border-top:1px solid var(--liquid-line); }
+.workshop-footer>button:first-child:not(.liquid-primary) { margin-right:auto; }
+.workshop-feedback { min-height:46px; padding:12px 16px; margin:16px 0; background:var(--liquid-subtle); border-radius:16px; font-size:13px; color:var(--liquid-muted); }
+.workshop-feedback.good, .count-ok { color:var(--liquid-success); }
+.count-error { color:var(--liquid-warning); }
+.workshop-note { padding:0 4px; margin:16px 0; }
+.liquid-workshop [hidden] { display:none!important; }
+.chemical-formula { font-family:'Segoe UI',system-ui,sans-serif; font-size:25px; letter-spacing:.2px; font-weight:600; }
+.liquid-dialog { border:1px solid var(--liquid-edge); border-radius:28px; padding:26px; background:var(--liquid-solid); color:var(--liquid-ink); box-shadow:var(--liquid-shadow); width:min(520px,calc(100% - 24px)); max-height:calc(100dvh - 32px); overflow:auto; }
+.liquid-dialog::backdrop { background:rgba(16,22,32,.35); backdrop-filter:blur(6px); }
+.liquid-dialog table { border-collapse:collapse; width:100%; margin:20px 0; font-size:14px; }
+.liquid-dialog caption { text-align:left; color:var(--liquid-muted); margin-bottom:10px; }
+.liquid-dialog td,.liquid-dialog th { padding:12px 8px; text-align:center; border-bottom:1px solid var(--liquid-line); }
+/* Shared treatment for subsequent stage templates when those stages are enabled. */
+#stageScaffoldView .mebi-scaffold-card { width:100%; max-width:1400px; color:var(--liquid-ink); background:var(--liquid-panel); border:1px solid var(--liquid-edge); border-radius:26px; box-shadow:var(--liquid-shadow); backdrop-filter:blur(24px); }
+#stageScaffoldView .mebi-scaffold-box { background:var(--liquid-subtle); border:1px solid var(--liquid-line); border-radius:20px; }
+#stageScaffoldView .mebi-card-title, #stageScaffoldView .mebi-box-title { color:var(--liquid-ink); }
+#stageScaffoldView .mebi-card-subtitle, #stageScaffoldView .mebi-box-desc { color:var(--liquid-muted); }
+#stageScaffoldView .mebi-btn { min-height:44px; border-radius:999px; box-shadow:0 3px 12px rgba(25,40,60,.12); font-family:inherit; }
+.development-controls { position:fixed; z-index:75; bottom:12px; left:50%; transform:translateX(-50%); display:flex; gap:12px; align-items:center; padding:7px 12px; max-width:calc(100% - 24px); color:var(--liquid-ink); background:var(--liquid-solid); border:1px solid var(--liquid-line); border-radius:999px; box-shadow:var(--liquid-shadow); }
+.development-controls>span:first-child { font-size:9px; font-weight:700; letter-spacing:1px; white-space:nowrap; color:var(--liquid-warning); }
+#btnDevAdvance { font:600 12px/1.4 'Segoe UI',sans-serif; min-height:36px; white-space:nowrap; background:var(--liquid-subtle); }
+#btnDevAdvance:disabled { opacity:.55; cursor:not-allowed; }
+#devStatus { font-size:11px; max-width:150px; }
+.lab-table-palette .lab-lighting-link { width:auto; height:auto; min-height:32px; padding:4px 9px; border:0; border-left:1px solid var(--lab-line); border-radius:0; margin-left:3px; background:transparent; color:var(--mebi-text-main); font-size:11px; white-space:nowrap; }
+.lab-table-palette .lab-lighting-link[aria-pressed="true"] { outline:none; }
+body[data-stage="1"] .m3-bottom-actions-strip { bottom:78px; }
+body:not([data-stage="1"]) .lab-scene-caption, body:not([data-stage="1"]) .lab-table-palette, body:not([data-stage="1"]) .lab-mobile-tools { display:none; }
+@media(max-width:900px) {
+  body:not([data-stage="1"]) #stageScaffoldView { inset:110px 0 0; padding:10px 14px 84px; }
+  .glass-panel { padding:18px; border-radius:22px; }
+  .development-controls { gap:6px; padding:6px 9px; }
+  #devStatus { display:none; }
+  body[data-stage="1"] .development-controls { bottom:auto; top:112px; }
+}
+@media(max-width:600px) {
+  body:not([data-stage="1"]) #stageScaffoldView { top:90px; padding:10px 10px 84px; }
+  .workshop-header { padding:6px 4px 16px; align-items:flex-start; gap:10px; }
+  .workshop-header button { font-size:11px; padding:8px 13px; }
+  .liquid-segments { flex-wrap:wrap; border-radius:16px; }
+  .liquid-segments button { flex:1 1 100%; text-align:left; }
+  .workspace-heading { align-items:flex-start; flex-wrap:wrap; }
+  .liquid-workshop button { min-height:44px; }
+  .development-controls>span:first-child { font-size:8px; }
+  body[data-stage="1"] .development-controls { top:99px; }
+  .lab-table-palette { gap:7px; padding:9px; }
+}
+@media(max-height:500px) and (min-width:601px) {
+  body:not([data-stage="1"]) #stageScaffoldView { top:70px; }
+  body[data-stage="1"] .development-controls { top:70px; }
+}
+@media(prefers-reduced-motion:reduce) { .liquid-workshop *, .formula-drag-ghost { animation:none!important; transition:none!important; } }
+@media(prefers-reduced-transparency:reduce) { .glass-panel { background:var(--liquid-solid); backdrop-filter:none; } }
+
+/* The activity occupies one rounded card beneath the application title card. */
+body:not([data-stage="1"]) #stageScaffoldView {
+  inset:110px 20px 72px; padding:0; overflow:hidden; background:transparent; backdrop-filter:none;
+}
+[data-theme="dark"] body:not([data-stage="1"]) #stageScaffoldView { background:transparent; }
+.liquid-workshop {
+  box-sizing:border-box; height:100%; display:flex; flex-direction:column; gap:10px;
+  padding:14px; border:1px solid var(--liquid-edge); border-radius:24px;
+  background:var(--liquid-solid); box-shadow:var(--liquid-shadow); overflow:hidden;
+}
+.workshop-header { flex-shrink:0; gap:10px; padding:8px 12px; border-radius:18px; background:var(--liquid-subtle); }
+.liquid-workshop h2 { font-size:23px; margin:2px 0 4px; }
+.liquid-workshop h3 { font-size:14px; }
+.liquid-workshop p { margin:5px 0; }
+.liquid-workshop .muted { font-size:12px; }
+.liquid-workshop .eyebrow { font-size:10px; letter-spacing:1.3px; }
+.glass-panel { padding:14px; border-radius:19px; }
+.liquid-workshop button { padding:7px 12px; font-size:12px; }
+.workshop-actions,.workshop-footer { margin-top:6px; gap:5px; }
+.workshop-footer { padding-top:6px; flex-shrink:0; }
+.workshop-feedback { min-height:28px; padding:6px 9px; margin:6px 0; font-size:12px; flex-shrink:0; }
+.workshop-note { display:none; }
+.step-dot { width:24px; height:24px; font-size:10px; }
+.liquid-segments { flex-shrink:0; padding:3px; gap:3px; border-radius:16px; }
+.liquid-segments button { padding:5px 6px; font-size:11px; border-radius:12px; }
+.liquid-workshop .hint:empty { display:none; }
+@media(max-width:680px) {
+  body:not([data-stage="1"]) #stageScaffoldView { inset:90px 10px 64px; }
+  .liquid-workshop { padding:9px; gap:8px; border-radius:20px; }
+  .workshop-header { padding:8px; flex-wrap:nowrap; align-items:center; }
+  .workshop-header>div { min-width:0; }
+  .liquid-workshop h2 { font-size:18px; letter-spacing:-.4px; }
+  .workshop-header .muted { font-size:11px; }
+  .workshop-header>button { max-width:85px; font-size:10px; padding:6px 9px; }
+  .glass-panel { padding:9px; border-radius:15px; }
+  .liquid-workshop h3 { font-size:12px; }
+  .liquid-workshop .muted { font-size:11px; }
+  .liquid-segments { flex-wrap:nowrap; }
+  .liquid-segments button { flex:1 1 0; min-width:0; text-align:center; font-size:10px; }
+  .workshop-feedback { font-size:10px; padding:5px 7px; }
+}
+@media(max-height:540px) and (min-width:681px) {
+  body:not([data-stage="1"]) #stageScaffoldView { top:70px; bottom:62px; }
+  .liquid-workshop { padding:8px; gap:6px; }
+  .workshop-header { padding:5px 10px; }
+  .workshop-header .eyebrow { display:none; }
+  .liquid-workshop h2 { font-size:18px; }
+  .glass-panel { padding:8px; }
+  .liquid-workshop button { min-height:34px; padding:4px 9px; }
+}

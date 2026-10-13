@@ -24,6 +24,7 @@ class LabThemeManager {
   }
 
   applyTheme(theme, notify = true) {
+    theme = theme === 'dark' ? 'dark' : 'light';
     this.currentTheme = theme;
     document.documentElement.setAttribute('data-theme', theme);
     try {
@@ -36,6 +37,7 @@ class LabThemeManager {
       const isDark = theme === 'dark';
       toggleBtn.setAttribute('title', isDark ? 'Aydınlık Moda Geç' : 'Karanlık Moda Geç');
       toggleBtn.setAttribute('aria-label', isDark ? 'Aydınlık Moda Geç' : 'Karanlık Moda Geç');
+      toggleBtn.setAttribute('aria-pressed', String(isDark));
     }
 
     if (notify) {

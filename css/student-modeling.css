@@ -1,12 +1,111 @@
+.workshop-layout { display:grid; grid-template-columns:280px minmax(0,1fr); gap:20px; align-items:start; }
+.formula-bank { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:9px; margin-top:18px; }
+.liquid-workshop .formula-card { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:8px; padding:16px 8px; border-radius:20px; min-height:100px; touch-action:none; }
+.formula-card small { font-size:10px; font-weight:500; color:var(--liquid-muted); }
+.atom-pool { margin-top:25px; padding-top:20px; border-top:1px solid var(--liquid-line); }
+.atom-bank { display:flex; gap:8px; flex-wrap:wrap; margin:16px 0; }
+.atom-symbol { display:flex; align-items:center; justify-content:center; gap:9px; min-width:52px; min-height:48px; border:1px solid var(--liquid-line); border-radius:15px; background:var(--liquid-subtle); padding:8px 12px; }
+.atom-symbol strong { font-size:20px; font-weight:600; }
+.atom-symbol span { color:var(--liquid-muted); font-size:12px; }
+.formula-workspace .workspace-heading { margin-top:25px; }
+.formula-dropzone { border:1px solid var(--liquid-line); border-radius:22px; overflow:hidden; margin:20px 0 16px; background:var(--liquid-subtle); }
+.formula-zone { min-height:225px; padding:20px; transition:background-color .2s; }
+.formula-zone.gas-zone { min-height:130px; border-bottom:1px dashed var(--liquid-line); }
+.formula-zone.drag-over { background:rgba(6,182,212,.12); outline:2px solid var(--liquid-accent); outline-offset:-3px; }
+.formula-items { display:flex; flex-wrap:wrap; align-content:flex-start; gap:12px; }
+.liquid-workshop .formula-token { min-width:78px; min-height:65px; border-radius:18px; padding:12px 18px; font-size:25px; touch-action:none; }
+.empty-state { text-align:center; padding:40px 8px; color:var(--liquid-muted); font-size:16px; }
+.empty-state span { display:inline-block; font-size:12px; margin-top:7px; }
+.liquid-workshop .selection-help { margin:9px 0 16px; font-size:11px; }
+.inventory-chips { display:flex; gap:6px; flex-wrap:wrap; }
+.inventory-chips span { font-size:12px; font-variant-numeric:tabular-nums; padding:5px 10px; border:1px solid var(--liquid-line); border-radius:999px; color:var(--liquid-muted); }
+.inventory-chips .complete { color:var(--liquid-success); border-color:var(--liquid-success); }
+.hint { color:var(--liquid-warning); font-size:12px; }
+.formula-drag-ghost { position:fixed; transform:translate(-50%,-50%); z-index:9999; padding:16px 22px; border-radius:18px; background:var(--liquid-solid); color:var(--liquid-ink); border:2px solid var(--liquid-accent); box-shadow:var(--liquid-shadow); pointer-events:none; font:600 24px/1.2 'Segoe UI',sans-serif; }
+@media(max-width:900px) { .workshop-layout { grid-template-columns:220px minmax(0,1fr); gap:14px; } .formula-bank { grid-template-columns:1fr; } }
+@media(max-width:680px) { .workshop-layout { grid-template-columns:1fr; } .formula-bank { grid-template-columns:repeat(3,minmax(0,1fr)); } .liquid-workshop .formula-card { min-height:88px; } .formula-card .chemical-formula { font-size:22px; } .formula-pool .atom-pool { margin-top:18px; padding-top:16px; } .formula-zone { min-height:210px; padding:16px; } }
 
-#chem-3d{--bg:light-dark(#edf5fb,#061423);--panel:light-dark(#ffffff,#0b243d);--scene:light-dark(#e5f0f8,#041421);--ink:light-dark(#18354d,#eaf3ff);--muted:light-dark(#4d657b,#b2c6d8);--edge:light-dark(#acc6d8,#2c526e);--cyan:light-dark(#00728b,#26cee9);--amber:light-dark(#885000,#ffc354);--green:light-dark(#007148,#44dda8);font:14px/1.5 system-ui,sans-serif;color:var(--ink);background:var(--bg);padding:22px;border-radius:20px}
-#chem-3d *{box-sizing:border-box}#chem-3d h2{font-size:24px;font-weight:500;margin:4px 0 8px}#chem-3d h3{font-size:17px;font-weight:500;margin:0 0 10px}#chem-3d .small{font-size:12px;color:var(--muted)}#chem-3d button{font:inherit;padding:8px 11px;background:var(--panel);color:var(--ink);border:1px solid var(--edge);border-radius:8px}#chem-3d button:disabled{opacity:.45}#chem-3d button[aria-pressed=true],#chem-3d button[aria-selected=true]{background:var(--cyan);color:var(--bg);border-color:var(--cyan)}#chem-3d .header{display:flex;justify-content:space-between;gap:14px;flex-wrap:wrap;align-items:center}#chem-3d .layout{display:grid;grid-template-columns:280px minmax(0,1fr);gap:18px;margin-top:18px}#chem-3d .panel{background:var(--panel);padding:16px;border:1px solid var(--edge);border-radius:20px;min-width:0}#chem-3d .platform{position:relative;width:100%;height:470px;background:var(--scene);border:1px solid var(--edge);border-radius:16px;overflow:hidden}#chem-3d .pool-platform{height:350px}#chem-3d canvas{display:block;width:100%;height:100%;touch-action:none;cursor:grab}#chem-3d .scene-label{position:absolute;top:10px;left:12px;right:12px;font-size:12px;color:var(--muted);pointer-events:none}#chem-3d .labels{position:absolute;inset:0;pointer-events:none;overflow:hidden}#chem-3d .object-label{position:absolute;font-size:12px;white-space:nowrap;color:var(--ink);background:var(--panel);padding:2px 5px;border-radius:5px;transform:translate(-50%,-50%)}#chem-3d .object-label.selected{outline:1px solid var(--cyan)}#chem-3d .row{display:flex;gap:7px;flex-wrap:wrap;align-items:center;margin:10px 0}#chem-3d .row button{font-size:12px}#chem-3d .tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px}#chem-3d .tabs button{flex:1;font-size:12px}#chem-3d .task{font-size:13px;color:var(--muted);margin:8px 0 12px}#chem-3d .next{border-color:var(--cyan);color:var(--cyan)}#chem-3d .feedback{font-size:13px;min-height:36px;color:var(--amber);margin-top:12px}#chem-3d .feedback.ok{color:var(--green)}#chem-3d .inventory{font-size:12px;color:var(--muted);margin-top:12px}#chem-3d .review-row{border-top:1px solid var(--edge);padding:10px 0;font-size:13px}#chem-3d .review-row strong{font-weight:500;color:var(--cyan)}#chem-3d .review-row .ok{color:var(--green)}#chem-3d .review-row .error{color:var(--amber)}#chem-3d footer{font-size:12px;color:var(--muted);margin-top:16px}#chem-3d .reset-note{color:var(--green)}#chem-3d .selection-list{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}#chem-3d .selection-list button{font-size:12px}#chem-3d .hint{font-size:13px;color:var(--amber)}@media(max-width:800px){#chem-3d .layout{grid-template-columns:1fr}#chem-3d .pool-platform{height:300px}#chem-3d .platform{height:420px}#chem-3d .pool-platform{height:300px}}@media(max-width:500px){#chem-3d{padding:12px}#chem-3d .panel{padding:12px}#chem-3d .tabs button{flex:auto;width:100%}#chem-3d .platform{height:360px}#chem-3d .pool-platform{height:280px}#chem-3d h2{font-size:21px}}
-
-#stageScaffoldView{overflow:auto;align-items:flex-start}#chem-3d{width:100%;max-width:1500px;margin:auto}#chem-3d .layout{grid-template-columns:270px minmax(0,1fr)}@media(max-width:800px){#chem-3d .layout{grid-template-columns:1fr}}
-#chem-3d .conservation-drawer{position:fixed;inset:0 0 0 auto;margin:0;width:min(430px,100%);max-width:100%;height:100%;max-height:100%;padding:24px;border:0;border-left:1px solid var(--edge);border-radius:20px 0 0 20px;background:var(--panel);color:var(--ink);overflow:auto;box-shadow:-12px 0 40px #0002}#chem-3d .conservation-drawer[open]{animation:c3-drawer-in .25s ease-out}#chem-3d .conservation-drawer::backdrop{background:#06142344}#chem-3d .drawer-heading{display:flex;justify-content:space-between;align-items:center;gap:12px}#chem-3d .drawer-heading h3{margin:0}#chem-3d .conservation-table{width:100%;border-collapse:collapse;margin:20px 0;font-size:13px;font-variant-numeric:tabular-nums}#chem-3d .conservation-table caption{text-align:left;margin-bottom:10px;color:var(--muted)}#chem-3d .conservation-table th,#chem-3d .conservation-table td{padding:9px 4px;border-bottom:1px solid var(--edge);text-align:center}#chem-3d .conservation-table th:first-child{text-align:left}#chem-3d .conservation-table th{font-weight:500}#chem-3d .count-ok,#chem-3d .passed{color:var(--green)}#chem-3d .count-error,#chem-3d .failed{color:var(--amber)}#chem-3d .conservation-rule{font-size:13px;margin:12px 0}@keyframes c3-drawer-in{from{transform:translateX(100%)}to{transform:translateX(0)}}@media(prefers-reduced-motion:reduce){#chem-3d .conservation-drawer[open]{animation:none}}
-
-#chem-3d .layout{grid-template-columns:337.5px minmax(0,1fr)}#chem-3d h4{font:500 14px/1.5 system-ui;margin:8px 0 12px;color:var(--cyan)}#chem-3d .atom-section{margin-top:18px;border-top:1px solid var(--edge);padding-top:8px}#chem-3d .atom-platform{height:180px;margin-bottom:10px}#chem-3d .pool-platform{height:290px}@media(max-width:950px){#chem-3d .layout{grid-template-columns:1fr}}
-
-#chem-3d .shared-platform{height:550px;background:light-dark(#e5eeea,#263c38);margin:12px 0}#chem-3d .tabs{margin-top:16px}#chem-3d .scene-divider{position:absolute;left:35%;top:0;bottom:0;border-left:1px solid var(--edge);pointer-events:none}#chem-3d .bank-heading{left:14px;width:31%;right:auto}#chem-3d .model-heading{left:calc(35% + 14px)}#chem-3d .scene-bottom{position:absolute;bottom:8px;padding:8px 10px}#chem-3d .bank-bottom{left:0;width:35%}#chem-3d .model-bottom{left:35%;right:0}#chem-3d .scene-bottom button{background:transparent;border-color:transparent;font-size:13px;padding:5px 8px}#chem-3d .scene-bottom button[aria-pressed=true]{background:transparent;color:var(--cyan);border-color:transparent;font-weight:500;text-decoration:underline;text-underline-offset:4px;text-decoration-thickness:2px}@media(max-width:600px){#chem-3d .shared-platform{height:480px}#chem-3d .bank-heading small{display:none}#chem-3d .scene-bottom{padding:4px}#chem-3d .scene-bottom button{padding:4px;font-size:12px}}
-
-#chem-3d .atom-legend{width:100%;color:var(--muted);font-size:12px;margin-top:4px}
+.workshop-layout { flex:1; min-height:0; grid-template-columns:220px minmax(0,1fr); gap:12px; align-items:stretch; }
+.formula-pool { overflow:auto; scrollbar-width:thin; }
+.formula-workspace { display:flex; flex-direction:column; min-height:0; }
+#fm-panel { display:flex; flex-direction:column; min-height:0; flex:1; }
+.formula-bank { grid-template-columns:repeat(2,minmax(0,1fr)); margin-top:8px; gap:6px; }
+.liquid-workshop .formula-card { min-height:58px; padding:6px; gap:3px; border-radius:14px; }
+.formula-card .chemical-formula { font-size:22px; }
+.formula-card small { font-size:9px; }
+.formula-pool>p { font-size:11px; }
+.atom-pool { margin-top:12px; padding-top:10px; }
+.atom-pool p:last-child { display:none; }
+.atom-bank { gap:5px; margin:8px 0 0; }
+.atom-symbol { min-width:43px; min-height:36px; padding:5px 8px; gap:6px; border-radius:11px; }
+.atom-symbol strong { font-size:17px; }
+.formula-workspace .workspace-heading { margin-top:8px; flex-shrink:0; }
+#fm-task { flex-shrink:0; }
+.formula-dropzone { flex:1; min-height:90px; display:flex; flex-direction:column; overflow:auto; margin:8px 0; border-radius:16px; }
+.formula-zone { flex:1; min-height:100px; padding:10px; }
+.formula-zone.gas-zone { flex:0 0 auto; min-height:80px; }
+.formula-zone h4 { margin-bottom:8px; }
+.formula-items { gap:7px; }
+.liquid-workshop .formula-token { min-width:54px; min-height:46px; padding:7px 11px; font-size:22px; border-radius:13px; }
+.empty-state { padding:12px 6px; font-size:14px; }
+.empty-state span { margin-top:4px; }
+.workshop-actions { flex-shrink:0; }
+.liquid-workshop .selection-help { display:none; }
+.inventory-chips { gap:4px; margin-top:6px; flex-shrink:0; }
+.inventory-chips span { padding:3px 8px; font-size:11px; }
+.hint { flex-shrink:0; font-size:11px; }
+@media(max-width:680px) {
+  .workshop-layout { grid-template-columns:110px minmax(0,1fr); gap:8px; }
+  .formula-bank { grid-template-columns:1fr; gap:5px; }
+  .liquid-workshop .formula-card { min-height:48px; padding:5px; }
+  .formula-card .chemical-formula { font-size:20px; }
+  .formula-card small { font-size:8px; }
+  .formula-pool>.muted, .atom-pool>.muted { display:none; }
+  .formula-pool .panel-heading { gap:5px; }
+  .formula-pool .step-dot { display:none; }
+  .formula-pool .atom-pool { margin-top:10px; padding-top:8px; }
+  .atom-bank { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .atom-symbol { min-width:0; min-height:30px; padding:4px; gap:4px; }
+  .atom-symbol strong { font-size:14px; }
+  .atom-symbol span { font-size:10px; }
+  .workspace-heading>span { display:none; }
+  .formula-workspace .workspace-heading { margin-top:6px; }
+  #fm-task { font-size:10px; }
+  .formula-zone { min-height:60px; padding:8px; }
+  .formula-zone.gas-zone { min-height:58px; }
+  .formula-zone h4 { font-size:10px; margin-bottom:5px; }
+  .formula-items { gap:5px; }
+  .liquid-workshop .formula-token { min-width:42px; min-height:42px; font-size:19px; padding:5px 8px; }
+  .empty-state { font-size:12px; padding:5px 0; }
+  .empty-state span { font-size:10px; }
+  .workshop-actions { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:4px; }
+  .workshop-actions button { font-size:10px; padding:5px; min-height:38px; }
+  .inventory-chips span { font-size:9px; padding:2px 5px; }
+  .workshop-footer { flex-wrap:nowrap; }
+  .workshop-footer button { font-size:10px; padding:5px 8px; }
+  .workshop-footer .liquid-primary { flex:1; padding:5px 8px; }
+}
+@media(max-height:540px) and (min-width:681px) {
+  .workshop-layout { grid-template-columns:210px minmax(0,1fr); gap:8px; }
+  .formula-card .chemical-formula { font-size:18px; }
+  .liquid-workshop .formula-card { min-height:44px; }
+  .formula-pool>p,.atom-pool>p,#fm-task { display:none; }
+  .formula-workspace .workspace-heading { margin-top:5px; }
+  .formula-zone { min-height:48px; padding:6px; }
+  .formula-zone.gas-zone { min-height:48px; }
+  .formula-zone h4 { display:none; }
+  .liquid-workshop .formula-token { min-height:34px; padding:4px 9px; font-size:19px; }
+  .formula-dropzone { min-height:48px; margin:5px 0; }
+  .workshop-feedback { margin:3px 0; min-height:22px; padding:3px 7px; font-size:10px; }
+  #fm-panel { display:grid; grid-template-columns:minmax(0,1fr) 130px; grid-template-rows:auto minmax(40px,1fr) auto auto auto; gap:3px 6px; }
+  .formula-workspace .workspace-heading { grid-column:1/-1; grid-row:1; margin:0; }
+  .formula-dropzone { grid-column:1/-1; grid-row:2; margin:0; min-height:40px; }
+  .workshop-actions { grid-column:1; grid-row:3; margin:0; flex-wrap:nowrap; }
+  .workshop-actions button { min-height:28px; padding:3px 6px; font-size:10px; }
+  .inventory-chips { grid-column:1; grid-row:4; margin:0; }
+  .inventory-chips span { font-size:9px; padding:1px 5px; }
+  #fm-feedback { grid-column:1; grid-row:5; min-height:18px; margin:0; padding:2px 5px; }
+  .workshop-footer { grid-column:2; grid-row:3/6; margin:0; padding:0; border:0; flex-direction:column; justify-content:center; align-items:stretch; }
+  .workshop-footer button { margin:0!important; padding:4px 8px!important; }
+  #fm-hint { grid-column:1/-1; margin:0; font-size:10px; }
+}

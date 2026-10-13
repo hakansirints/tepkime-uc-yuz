@@ -1,0 +1,182 @@
+/* Full-screen laboratory, transparent side panels and separate 16:9 activity cards. */
+:root {
+  --material-elevation: 0 2px 8px #0f172a12;
+  --up-glass-alpha: .65;
+  --activity-glass: rgba(255,255,255,var(--up-glass-alpha));
+  --activity-glass-fallback: #f8fafc;
+}
+[data-theme="dark"] { --activity-glass: rgba(34,34,38,var(--up-glass-alpha)); --activity-glass-fallback: #222226; --material-elevation: 0 2px 8px #0003; }
+html, body { height:100%; margin:0; overflow:hidden; }
+body { background:var(--mebi-bg-body,#edf2f7); }
+* { box-sizing:border-box; }
+[hidden] { display:none !important; }
+.lab-app-frame {
+  position:fixed; inset:16px; width:auto; height:auto; min-width:0;
+  display:grid; grid-template-rows:auto minmax(0,1fr); overflow:visible;
+  border:0; border-radius:0; background:transparent; box-shadow:none;
+  pointer-events:none; z-index:2;
+}
+.lab-app-frame .m3-top-app-bar.mebi-topbar {
+  position:relative; inset:auto; transform:none; width:100%; height:auto; min-height:0;
+  flex:none; display:grid; grid-template-columns:minmax(0,1fr) auto; gap:10px;
+  border-radius:20px; padding:14px; border:1px solid var(--mebi-border);
+  box-shadow:var(--material-elevation); z-index:20; pointer-events:auto;
+}
+.m3-brand-container { gap:8px; min-width:0; }
+.m3-brand-icon { width:32px; height:36px; font-size:22px; flex:none; }
+.m3-brand-container>div:last-child { min-width:0; }
+.m3-app-title { font-size:clamp(17px,4vw,22px); line-height:1.25; white-space:normal; }
+.m3-app-sub { display:none; }
+.lab-eyebrow { font-size:9px; letter-spacing:.08em; }
+.lab-header-tools { grid-row:1; grid-column:2; gap:2px; flex-wrap:wrap; justify-content:flex-end; max-width:100px; }
+.lab-stage-badge { display:none; }
+.m3-top-app-bar .m3-icon-btn { width:32px; height:44px; min-height:44px; }
+.lab-app-frame .m3-stepper-pills {
+  grid-column:1/-1; display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); width:100%;
+  padding:3px; margin:0; gap:3px; border-radius:14px; min-width:0;
+}
+.m3-stepper-pills .m3-step-btn { width:100%; min-width:0; min-height:48px; padding:7px 4px; white-space:normal; font-size:11px; justify-content:center; line-height:1.3; gap:4px; box-shadow:none; border-radius:11px; }
+.step-number { display:none; }
+.step-connector { display:none; }
+.lab-settings-panel { position:absolute; top:48px; right:0; width:min(300px,calc(100vw - 44px)); max-height:calc(100dvh - 130px); overflow:auto; }
+.observation-layout { grid-row:2; position:relative; min-height:0; overflow-y:auto; overflow-x:hidden; padding:16px 0 0; background:transparent; pointer-events:none; }
+body:not([data-stage="1"]) #observationLayout { display:none; }
+.lab-app-frame #reactionExpandCard, .lab-app-frame #stage1Container {
+  position:relative; inset:auto; transform:none; width:100%; max-width:none; min-width:0;
+  display:block; margin:0; background:var(--activity-glass); border:1px solid var(--mebi-border);
+  border-radius:20px; box-shadow:0 8px 24px #0f172a18; backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px);
+  z-index:3; overflow:auto; pointer-events:auto;
+}
+.lab-app-frame #reactionExpandCard { margin:0; }
+.lab-app-frame #stage1Container { margin:0; padding:16px; }
+.m3-reaction-header { width:100%; min-height:48px; padding:12px 14px; gap:8px; background:transparent; }
+.m3-reaction-card-title { font-size:15px; }
+.m3-reaction-card-sub { font-size:12px; white-space:normal; }
+#reactionExpandCard:not(.needs-selection) .m3-reaction-card-sub { display:none; }
+.m3-reaction-header .lab-eyebrow, .m3-chevron-icon, .lab-panel-footer, .lab-selection-status { display:none; }
+.selected-reaction-pair { padding:0 14px 14px; font-size:13px; }
+.selected-pair-label { display:inline-block; margin-bottom:9px; font-size:11px; color:var(--mebi-primary); font-weight:700; }
+.reaction-completion { display:inline-flex; align-items:center; width:fit-content; max-width:100%; border-radius:8px; font-size:11px; padding:4px 8px; margin:0 0 8px 5px; color:var(--mebi-text-main); background:var(--mebi-success-light,#d1fae5); border:1px solid var(--mebi-success); }
+[data-theme="dark"] .reaction-completion { background:#10b98120; }
+.reaction-materials-pair { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; min-width:0; }
+.reaction-material { min-width:0; padding:10px; border-radius:12px; box-shadow:none; }
+.reaction-material-name { font-size:13px; line-height:1.5; overflow-wrap:anywhere; }
+.reaction-material-role { font-size:9px; flex-wrap:wrap; }
+.reaction-material-kind { display:none; }
+.reaction-material-state { font-size:11px; line-height:1.4; }
+.lab-scene-window { height:320px; position:relative; margin:0; overflow:visible; pointer-events:none; }
+#labCanvasContainer.fullscreen-lab-canvas { position:fixed; inset:0; width:100%; height:100%; z-index:0; }
+body:not([data-stage="1"]) #labCanvasContainer { pointer-events:none; }
+.lab-stage-backdrop { position:fixed; inset:0; z-index:1; background:rgba(15,23,42,.32); pointer-events:none; opacity:0; transition:opacity .2s ease; }
+body:not([data-stage="1"]) .lab-stage-backdrop { opacity:1; }
+.fullscreen-lab-canvas canvas { width:100%; height:100%; display:block; touch-action:none; }
+.lab-app-frame .lab-scene-caption { position:absolute; inset:auto 12px 12px; display:flex; flex-direction:column; gap:3px; padding:8px 10px; width:fit-content; max-width:calc(100% - 24px); border-radius:12px; background:var(--activity-glass); font-size:11px; transform:none; pointer-events:none; }
+.lab-app-frame .lab-scene-caption span { font-size:11px; padding:0; background:none; border:0; }
+.scene-temperature { position:absolute; top:26px; left:12px; display:flex; flex-direction:column; gap:2px; padding:8px 10px; border-radius:12px; background:var(--activity-glass); color:var(--mebi-text-main); pointer-events:none; }
+.scene-temperature span { font-size:10px; color:var(--mebi-text-secondary); }
+.scene-temperature strong { font-size:16px; font-variant-numeric:tabular-nums; }
+.lab-app-frame .m3-beaker-labels-strip { display:none !important; }
+.lab-empty-illustration, .lab-observe-note { display:none; }
+.lab-notebook-heading { margin-bottom:8px; }
+.lab-notebook-mark { font-size:20px; }
+.m3-card-title { font-size:18px; }
+.m3-card-sub { font-size:13px; line-height:1.6; }
+.m3-textfield-box { margin-top:12px; }
+.m3-textarea { font-size:16px; width:100%; min-width:0; min-height:120px; resize:vertical; }
+.lab-observation-actions, .lab-experiment-actions { display:flex; flex-direction:column; gap:10px; }
+.lab-observation-actions>* , .lab-experiment-actions>* { width:100%; }
+#obsCompletedState { margin-top:12px; font-size:13px; }
+#obsCompletedState h3 { font-size:14px; color:var(--mebi-success); }
+.activity-overlay { grid-row:2; display:flex; justify-content:center; align-items:flex-start; min-height:0; container-type:size; padding:16px; pointer-events:none; }
+body[data-stage="1"] .activity-overlay { display:none; }
+#labAppFrame #stageScaffoldView {
+  position:relative; inset:auto; flex:none;
+  width:min(1280px,calc(100cqw - 32px),calc((100cqh - 32px) * 16 / 9));
+  aspect-ratio:16 / 9; height:auto; min-height:0; padding:0; margin:0;
+  overflow:auto; overflow-x:hidden; background:var(--mebi-bg-surface);
+  border:1px solid var(--mebi-border); border-radius:24px; box-shadow:0 18px 50px #0f172a30;
+  pointer-events:auto; container-type:inline-size;
+}
+.lab-app-frame .liquid-workshop { width:100%; height:auto; min-width:0; overflow:visible; padding:12px; }
+.lab-app-frame .workshop-layout, .lab-app-frame .trace-scenes { display:grid; grid-template-columns:minmax(0,1fr); gap:12px; }
+.lab-app-frame .workshop-header { flex-wrap:wrap; gap:12px; }
+.lab-app-frame .workshop-header h2 { font-size:21px; }
+.lab-app-frame .workshop-header p { overflow-wrap:anywhere; }
+.lab-app-frame .formula-bank { grid-template-columns:repeat(3,minmax(0,1fr)); }
+.lab-app-frame .inquiry-field.source-fields { grid-template-columns:minmax(0,1fr); }
+.lab-app-frame .formula-workspace { padding:12px; min-width:0; }
+.lab-app-frame .liquid-segments { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); }
+.lab-app-frame .liquid-segments>* { width:100%; min-width:0; }
+.lab-app-frame .liquid-segments button { min-height:64px; white-space:normal; text-align:center; padding:6px 3px; font-size:11px; line-height:1.4; }
+.lab-app-frame .trace-steps { grid-template-columns:repeat(2,minmax(0,1fr)); }
+.lab-app-frame .inquiry-zone-heading { flex-wrap:wrap; }
+.lab-app-frame .inquiry-zone-heading h4 { flex-basis:70%; }
+.lab-app-frame .workshop-actions, .lab-app-frame .workshop-footer { flex-wrap:wrap; }
+.lab-app-frame .workshop-actions button, .lab-app-frame .workshop-footer button { max-width:100%; white-space:normal; }
+.lab-app-frame .formula-workspace .workshop-footer { position:sticky; bottom:0; z-index:4; background:var(--mebi-bg-surface); padding-bottom:12px; }
+.lab-app-frame .trace-formula-card { max-width:100%; min-width:0; }
+.lab-app-frame .trace-path { flex-wrap:wrap; }
+#labAppFrame #student-atom-trace { display:flex; flex-direction:column; }
+#labAppFrame .trace-prompt .muted, #labAppFrame .reason-panel h3 { display:block; }
+.lab-app-frame .mebi-btn, .reaction-picker button { min-height:48px; white-space:normal; }
+.lab-app-frame .mebi-btn, .lab-app-frame .formula-token, .lab-app-frame .formula-card, .lab-app-frame .trace-formula-card { box-shadow:var(--material-elevation) !important; transform:none; border-radius:12px; }
+.lab-app-frame .mebi-btn:hover { transform:none; filter:brightness(.98); }
+.lab-app-frame .mebi-btn:active { transform:none; box-shadow:none !important; filter:brightness(.94); }
+.lab-app-frame .is-pulse-ready { animation:none; }
+.lab-app-frame #fm-result-close.mebi-btn { width:48px; min-height:48px; }
+.lab-app-frame .mebi-card, .lab-app-frame .workshop-header { box-shadow:var(--material-elevation); border-radius:18px; }
+.lab-app-frame .model-result.mebi-modal { box-shadow:0 12px 40px #0003; }
+button:focus-visible { outline:3px solid var(--mebi-primary); outline-offset:3px; }
+.reaction-picker { position:fixed; inset:0; margin:auto; width:min(520px,calc(100vw - 28px)); max-height:calc(100dvh - 32px); padding:16px; overflow:auto; overflow-x:hidden; border:1px solid var(--mebi-border); border-radius:24px; background:var(--mebi-bg-surface); color:var(--mebi-text-main); box-shadow:0 12px 40px #0003; }
+.reaction-picker::backdrop { background:#0f172a66; backdrop-filter:blur(4px); }
+.reaction-picker-heading { position:sticky; top:0; z-index:2; display:flex; justify-content:space-between; gap:10px; background:var(--mebi-bg-surface); border-bottom:1px solid var(--mebi-border); margin-bottom:12px; }
+.reaction-picker-heading h2 { font-size:20px; margin:6px 0; }
+.reaction-picker-heading p { font-size:12px; margin-bottom:14px; color:var(--mebi-text-secondary); }
+.reaction-picker-heading button { flex:none; width:48px; border:1px solid var(--mebi-border); border-radius:50%; background:var(--mebi-bg-subtle); font-size:24px; color:inherit; }
+.reaction-picker .m3-reaction-list-content { display:grid; gap:12px; max-height:none; padding:0; overflow:visible; }
+.reaction-picker .m3-reaction-tile { display:block; width:100%; min-width:0; padding:12px; white-space:normal; border:1px solid var(--mebi-border); border-radius:16px; box-shadow:var(--material-elevation); background:var(--mebi-bg-surface); color:var(--mebi-text-main); }
+.reaction-picker .m3-reaction-tile.is-active { border:2px solid var(--mebi-primary); background:var(--mebi-primary-light); }
+[data-theme="dark"] .reaction-picker .m3-reaction-tile.is-active { background:#1e40af20; }
+.reaction-picker .m3-tile-name { white-space:normal; font-size:13px; margin-bottom:10px; display:block; }
+.lab-mobile-tools { display:none !important; }
+.development-controls { position:absolute; inset:auto 8px 8px; width:calc(100% - 16px); flex-wrap:wrap; padding:6px; font-size:10px; }
+.mebi-observation-feedback.is-error { border-color:var(--mebi-danger); background:var(--mebi-danger-light); color:var(--mebi-text-main); }
+@supports not (backdrop-filter:blur(12px)) { .lab-app-frame #reactionExpandCard, .lab-app-frame #stage1Container, .scene-temperature, .lab-app-frame .lab-scene-caption { background:var(--activity-glass-fallback); } }
+@media(prefers-reduced-transparency:reduce) { .lab-app-frame #reactionExpandCard, .lab-app-frame #stage1Container, .scene-temperature, .lab-app-frame .lab-scene-caption { background:var(--activity-glass-fallback); backdrop-filter:none; } }
+@media(prefers-reduced-motion:reduce) { .lab-app-frame *, .reaction-picker *, .lab-stage-backdrop { animation:none !important; transition:none !important; scroll-behavior:auto !important; } }
+@media(min-width:960px) {
+  #observationLayout {
+    display:grid; grid-template-columns:clamp(230px,18vw,280px) minmax(0,1fr) clamp(290px,23vw,360px);
+    grid-template-rows:minmax(0,1fr); gap:16px; align-items:start; overflow:visible;
+  }
+  .lab-app-frame #reactionExpandCard { grid-column:1; grid-row:1; max-height:100%; }
+  .lab-app-frame #stage1Container { grid-column:3; grid-row:1; max-height:100%; }
+  #selectedReactionPair .reaction-materials-pair { grid-template-columns:minmax(0,1fr); }
+  .lab-scene-window { grid-column:2; grid-row:1; height:100%; min-height:0; }
+  .scene-temperature { top:12px; }
+}
+@container(min-width:850px) {
+  .lab-app-frame .workshop-layout { grid-template-columns:minmax(220px,260px) minmax(0,1fr); align-items:start; }
+  .lab-app-frame .formula-bank { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .lab-app-frame .formula-pool { position:sticky; top:12px; }
+  .lab-app-frame .inquiry-field.source-fields { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .lab-app-frame .trace-scenes { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .lab-app-frame .trace-species { overflow:visible; grid-template-columns:repeat(3,minmax(0,1fr)); }
+  .lab-app-frame .workshop-header { flex-wrap:nowrap; }
+  .lab-app-frame .workshop-header>div { min-width:0; }
+  .lab-app-frame .workshop-header>button { flex:none; }
+  .lab-app-frame .liquid-segments button { min-height:48px; font-size:12px; }
+}
+@media(min-width:1100px) and (min-height:600px) {
+  .lab-app-frame .m3-top-app-bar.mebi-topbar { grid-template-columns:minmax(240px,1fr) minmax(380px,1.5fr) auto; padding:14px 18px; }
+  .lab-app-frame .m3-stepper-pills { grid-column:2; grid-row:1; align-self:center; }
+  .lab-header-tools { grid-column:3; align-self:center; }
+  .m3-stepper-pills .m3-step-btn { font-size:13px; }
+}
+@media(max-width:959px) {
+  .lab-app-frame { inset:8px; }
+  .activity-overlay { padding:8px 0 0; }
+  #labAppFrame #stageScaffoldView { width:100%; height:100%; aspect-ratio:auto; }
+  .lab-scene-window { touch-action:none; }
+}
+@media(max-width:380px) { .lab-app-frame .formula-bank { grid-template-columns:repeat(2,minmax(0,1fr)); } }

@@ -29,7 +29,7 @@ const REACTIONS_DATA = {
     // Tepkime Sonucu ve Gözlem
     result: {
       primaryType: "gas", // 'gas' | 'precipitate' | 'neutralization' | 'smoke'
-      targetTemp: 35.6,
+      targetTemp: 19.0,
       finalColor: 0xe2e8f0,
       finalOpacity: 0.5,
       bubbles: {
@@ -39,16 +39,13 @@ const REACTIONS_DATA = {
         durationMs: 7000
       },
       precipitate: null,
-      vapor: {
-        intensity: "medium",
-        color: 0xffffff
-      },
-      evidenceSummary: "Yoğun gaz kabarcıkları çıkışı ve sıcaklık artışı"
+      vapor: null,
+      evidenceSummary: "Yoğun gaz kabarcıkları çıkışı ve sıcaklık düşüşü"
     },
     // Pedagojik Değerlendirme ve Dönüt Kuralları
     pedagogy: {
-      expectedKeyEvidence: ["kabarcık", "gaz", "köpürme", "kaynama", "hava"],
-      supportingEvidence: ["sıcaklık", "ısınma", "derece", "arttı"],
+      expectedKeyEvidence: ["kabarcık", "gaz", "köpürme"],
+      supportingEvidence: ["sıcaklık", "soğuma", "derece", "azaldı"],
       misconceptions: {
         precipitate: {
           keywords: ["çökelti", "katı", "çöktü", "tortu"],
@@ -59,7 +56,7 @@ const REACTIONS_DATA = {
           feedback: "Renk değişiminden ziyade sıvının içinde hareket eden taneciklere ve yukarı yükselen yapılara odaklan."
         }
       },
-      correctFeedback: "Gaz oluşumuna işaret eden kabarcıklar gözlendi. Sıcaklık artışı destekleyici kanıttır. Şimdi bu değişimi tanecik düzeyinde modelleyelim.",
+      correctFeedback: "Gaz oluşumuna işaret eden kabarcıklar gözlendi. Sıcaklık düşüşü destekleyici kanıttır. Şimdi bu değişimi tanecik düzeyinde modelleyelim.",
       guidancePrompt: "Sıvı içine asit döküldüğünde kabarcık oluşumu mu yoksa katı birikimi mi gözlemlediniz?"
     },
     // İleriki aşamalar (Aşama 2-7) için kimyasal tanecik bilgisi (Yönerge S.19 & S.20)
@@ -129,7 +126,7 @@ const REACTIONS_DATA = {
           feedback: "Dikkatli incele; yeni bir katı mı oluştu, yoksa dipteki mevcut katı kabarcıklar çıkararak eridi mi?"
         }
       },
-      correctFeedback: "Katı maddenin gaz kabarcıkları eşliğinde eriyerek çözündüğü ve gaz çıktığı gözlendi. Şimdi tanecik modelini kuralım.",
+      correctFeedback: "Katı maddenin gaz kabarcıkları eşliğinde çözündüğü ve gaz çıktığı gözlendi. Şimdi tanecik modelini kuralım.",
       guidancePrompt: "Dipteki katı maddeye ve çıkan kabarcıklara odaklanınız."
     },
     microscopic: {

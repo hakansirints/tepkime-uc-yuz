@@ -9,6 +9,13 @@ class LabStateMachine {
     this.currentStage = 1;
     this.selectedReactionId = null; // Başlangıçta boş!
     this.simulationState = "no_reaction"; // 'no_reaction' | 'waiting_pour' | 'pouring' | 'reacting' | 'reacted'
+    this.completedReactions = {};
+    try {
+      const saved = JSON.parse(localStorage.getItem('three-faces-completed-v1') || '{}');
+      for (const [id, value] of Object.entries(saved)) {
+        if (window.REACTIONS_DATA[id] && typeof value === 'string' && Number.isFinite(Date.parse(value))) this.completedReactions[id] = value;
+      }
+    } catch {}
     
     this.stages = {
       1: {
@@ -23,7 +30,7 @@ class LabStateMachine {
         id: 2,
         shortName: "Modelle",
         title: "Aşama 2 — Modelini kur",
-        subtitle: "Ürünleri hazır vermek yerine öğrencinin taneciklerden model üretmesi sağlanır.",
+        subtitle: "Türleri yerleştir, etkileşimi keşfet ve gözlemini tanecik modelinle açıkla.",
         status: "locked",
         completedData: null
       },
@@ -73,7 +80,8 @@ class LabStateMachine {
       stageChange: [],
       reactionChange: [],
       simulationChange: [],
-      observationSuccess: []
+      observationSuccess: [],
+      completionChange: []
     };
   }
 
@@ -94,8 +102,10 @@ class LabStateMachine {
     return this.selectedReactionId ? window.REACTIONS_DATA[this.selectedReactionId] : null;
   }
 
-  setReaction(reactionId) {
+  setReaction(reactionId, { restart = false } = {}) {
     if (!window.REACTIONS_DATA[reactionId]) return;
+    if (["pouring", "reacting"].includes(this.simulationState)) return;
+    if (reactionId === this.selectedReactionId && !restart) return;
     this.selectedReactionId = reactionId;
     this.simulationState = "waiting_pour";
     
@@ -115,6 +125,14 @@ class LabStateMachine {
   setSimulationState(newState) {
     this.simulationState = newState;
     this.emit("simulationChange", newState);
+  }
+
+  invalidateObservation() {
+    this.stages[1].status = 'active'; this.stages[1].completedData = null;
+    for (let i = 2; i <= 7; i++) { this.stages[i].status = 'locked'; this.stages[i].completedData = null; }
+    this.modelingDraft = this.atomTraceDraft = null;
+    this.currentStage = 1;
+    this.emit('stageChange', { currentStage: 1, stages: this.stages });
   }
 
   unlockStage(stageId) {
@@ -147,6 +165,11 @@ class LabStateMachine {
       }
 
       if (window.labAudio) window.labAudio.playSuccess();
+      if (stageId === 3 && [1, 2, 3].every(id => this.stages[id].status === 'completed' && !this.stages[id].completedData?.testMode)) {
+        this.completedReactions[this.selectedReactionId] = new Date().toISOString();
+        try { localStorage.setItem('three-faces-completed-v1', JSON.stringify(this.completedReactions)); } catch {}
+        this.emit('completionChange', this.completedReactions);
+      }
       this.emit("stageChange", { currentStage: this.currentStage, stages: this.stages });
     }
   }

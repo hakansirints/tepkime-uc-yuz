@@ -5,7 +5,7 @@
  * - Paslanmaz çelik daldırma probu ve beherin ağzına oturan sabitleme klipsi
  * - Dijital LCD ekranlı ergonomik gövde
  * - Dinamik 512x256 7-segment dijital LCD dokusu (canlı sıcaklık değişimleri)
- * - Üstteki DOM rozeti ve ses efektleriyle tam senkron
+ * - Sıcaklık yalnızca cihazın LCD ekranında gösterilir
  */
 
 class LabThermometer {
@@ -149,8 +149,8 @@ class LabThermometer {
       roughness: 0.16
     });
 
-    // 250 mL beherin içinde güvenle kalacak boyutta prob (0.26m)
-    const probeLength = 0.26;
+    // Raised display: extend the probe so its tip remains submerged.
+    const probeLength = 0.30;
     const probeGeo = new THREE.CylinderBufferGeometry(0.0035, 0.0035, probeLength, 16);
     probeGeo.translate(0, -probeLength / 2, 0);
     const probeMesh = new THREE.Mesh(probeGeo, probeMat);
@@ -158,7 +158,7 @@ class LabThermometer {
     probeMesh.castShadow = true;
     headGroup.add(probeMesh);
 
-    // Prob Yuvarlak Ucu (Sensor Tip - Beherin tabanına 10 cm kala sonlanır, asla dışarı taşmaz)
+    // Rounded sensor tip stays inside the liquid, clear of the beaker base.
     const tipGeo = new THREE.SphereBufferGeometry(0.0038, 12, 12);
     tipGeo.translate(0, -probeLength - 0.034, 0);
     const tipMesh = new THREE.Mesh(tipGeo, probeMat);
@@ -167,7 +167,7 @@ class LabThermometer {
     // Beher Ağzı Klipsi / Derinlik Stoperi (Beherin ağzına oturan bilezik)
     const collarGeo = new THREE.TorusBufferGeometry(0.008, 0.003, 8, 16);
     collarGeo.rotateX(Math.PI / 2);
-    collarGeo.translate(0, -0.032, 0);
+    collarGeo.translate(0, -0.085 / 1.5, 0);
     const collarMesh = new THREE.Mesh(collarGeo, probeMat);
     headGroup.add(collarMesh);
   }
@@ -177,29 +177,11 @@ class LabThermometer {
     if (!animate) {
       this.currentTemp = this.targetTemp;
       this.updateLCD();
-      this.updateDOMDisplay();
     }
   }
 
   reset(temp = 22.0) {
     this.setTemperature(temp, false);
-  }
-
-  updateDOMDisplay() {
-    const badge = document.getElementById("digitalTempBadge");
-    if (badge) {
-      badge.textContent = `${this.currentTemp.toFixed(1)} °C`;
-      if (this.currentTemp > 30) {
-        badge.style.color = "#dc2626";
-        badge.style.borderColor = "rgba(220, 38, 38, 0.4)";
-      } else if (this.currentTemp < 20) {
-        badge.style.color = "#0284c7";
-        badge.style.borderColor = "rgba(2, 132, 199, 0.4)";
-      } else {
-        badge.style.color = "#315e50";
-        badge.style.borderColor = "rgba(49, 94, 80, 0.35)";
-      }
-    }
   }
 
   update(delta) {
@@ -211,7 +193,6 @@ class LabThermometer {
         this.currentTemp = Math.max(this.targetTemp, this.currentTemp - speed * delta);
       }
       this.updateLCD();
-      this.updateDOMDisplay();
     }
   }
 }

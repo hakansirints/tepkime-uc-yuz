@@ -13,6 +13,8 @@ class Stage1ObservationManager {
     this.initElements();
     this.initListeners();
     this.updateUI();
+    document.getElementById('obsViewExperiment').onclick = () => this.setView('experiment');
+    document.getElementById('obsViewWrite').onclick = () => { this.setView('write'); this.textarea.focus({ preventScroll: true }); };
   }
 
   initElements() {
@@ -30,7 +32,6 @@ class Stage1ObservationManager {
     this.feedbackBox = document.getElementById("obsFeedbackBox");
     this.feedbackText = document.getElementById("obsFeedbackText");
     this.feedbackBadge = document.getElementById("obsFeedbackBadge");
-    this.btnProceedStage2 = document.getElementById("btnProceedStage2");
   }
 
   initListeners() {
@@ -40,6 +41,7 @@ class Stage1ObservationManager {
     });
 
     // 2. Tepkime değişimi
+    this.state.on('stageChange', () => this.updateUI());
     this.state.on("reactionChange", () => {
       this.resetInput();
       this.updateUI();
@@ -48,6 +50,12 @@ class Stage1ObservationManager {
     // 3. Metin girişi ve sayaçlar
     if (this.textarea) {
       this.textarea.addEventListener("input", () => {
+        this.container.dataset.status = 'neutral';
+        this.feedbackBox.style.display = 'none';
+        if (this.state.stages[1].status === 'completed' && this.textarea.value.trim() !== this.state.stages[1].completedData?.userObservation) {
+          this.state.invalidateObservation(); this.lockStage2Transition();
+          this.feedbackBox.style.display = 'none';
+        }
         this.updateCounters();
       });
     }
@@ -55,34 +63,19 @@ class Stage1ObservationManager {
     // 4. Gözlemi Gönder Butonu (Kontrol Et)
     if (this.btnSubmit) {
       this.btnSubmit.addEventListener("click", () => {
-        this.evaluateObservation();
+        if (this.hasApprovedObservation()) this.state.setStage(2);
+        else this.evaluateObservation();
       });
     }
 
-    // 5. Aşama 2'ye Geç Butonu (Sıkı Kilit: Doğru gözlem onaylanmadan geçilemez)
-    if (this.btnProceedStage2) {
-      this.btnProceedStage2.addEventListener("click", () => {
-        if (this.btnProceedStage2.disabled) {
-          if (window.labAudio && typeof window.labAudio.playWarning === "function") {
-            window.labAudio.playWarning();
-          }
-          return;
-        }
-        this.state.setStage(2);
-      });
-    }
   }
 
   updateUI() {
     const simState = this.state.simulationState;
     const stage = this.state.stages[1];
-
-    if (stage.status === "completed") {
-      if (this.waitingStateBox) this.waitingStateBox.style.display = "none";
-      if (this.activeStateBox) this.activeStateBox.style.display = "none";
-      if (this.completedStateBox) this.completedStateBox.style.display = "block";
-      return;
-    }
+    document.getElementById('obsViewWrite').hidden = simState !== 'reacted';
+    if (simState !== 'reacted') this.setView('experiment');
+    else if (!document.getElementById('observationLayout').dataset.view) this.setView('experiment');
 
     if (simState === "no_reaction") {
       if (this.waitingStateBox) this.waitingStateBox.style.display = "block";
@@ -90,7 +83,7 @@ class Stage1ObservationManager {
       if (this.completedStateBox) this.completedStateBox.style.display = "none";
       if (this.obsWaitingTitle) this.obsWaitingTitle.textContent = "Tepkime Bekleniyor";
       if (this.obsWaitingDesc) {
-        this.obsWaitingDesc.textContent = "Deney masası başlangıçta boştur. Soldaki karttan bir tepkime seçtiğinizde reaktifler beherlere yerleştirilecek ve karışımdan sonra gözlem paneli aktifleşecektir.";
+        this.obsWaitingDesc.textContent = "Deney masası başlangıçta boştur. Tepkime seçiminden bir tepkime seçtiğinizde reaktifler beherlere yerleştirilecek ve karışımdan sonra gözlem paneli aktifleşecektir.";
       }
     } else if (simState === "waiting_pour") {
       if (this.waitingStateBox) this.waitingStateBox.style.display = "block";
@@ -114,9 +107,10 @@ class Stage1ObservationManager {
       // Reaksiyon gerçekleşti (simState === 'reacted'): Gözlem paneli aktif!
       if (this.waitingStateBox) this.waitingStateBox.style.display = "none";
       if (this.activeStateBox) this.activeStateBox.style.display = "block";
-      if (this.completedStateBox) this.completedStateBox.style.display = "none";
+      if (this.completedStateBox) this.completedStateBox.style.display = stage.status === 'completed' ? 'block' : 'none';
       this.updateSubmitButtonState();
     }
+    this.updateSubmitButtonState();
   }
 
   updateCounters() {
@@ -134,103 +128,45 @@ class Stage1ObservationManager {
   updateSubmitButtonState() {
     if (!this.btnSubmit) return;
     const text = this.textarea ? this.textarea.value.trim() : "";
-    this.btnSubmit.disabled = text.length < 3;
+    const approved = this.hasApprovedObservation();
+    this.btnSubmit.dataset.action = approved ? 'proceed' : 'check';
+    this.btnSubmit.querySelector('.mebi-btn-text').textContent = approved ? 'Tanecik laboratuvarına geç →' : 'Gözlemi kontrol et ↗';
+    this.btnSubmit.disabled = text.length < 3 || this.state.simulationState !== "reacted";
   }
 
-  // Akıllı Gözlem ve Kanıt Analizörü (Metindeki kimyasal gözlem kanıtlarını arar)
+  hasApprovedObservation() {
+    const stage = this.state.stages[1], approved = stage.completedData;
+    return stage.status === 'completed' && this.state.simulationState === 'reacted'
+      && approved?.reactionId === this.state.selectedReactionId
+      && approved.userObservation === this.textarea.value.trim();
+  }
+
   evaluateObservation() {
     const reaction = this.state.getReaction();
-    if (!reaction) return;
-
-    const pedagogy = reaction.pedagogy || {};
-    const rawText = this.textarea ? this.textarea.value.trim() : "";
-    if (rawText.length < 3) return;
-
-    // Türkçe karakterleri normalize et
-    const norm = (str) => {
-      return (str || "")
-        .toLocaleLowerCase("tr-TR")
-        .replace(/ğ/g, "g")
-        .replace(/ü/g, "u")
-        .replace(/ş/g, "s")
-        .replace(/ı/g, "i")
-        .replace(/ö/g, "o")
-        .replace(/ç/g, "c")
-        .trim();
-    };
-
-    const text = norm(rawText);
-
-    // 1. Yanılgı (Misconception) Denetimi: Örn. Gaz reaksiyonuna çökelti / katı dedi mi?
-    if (pedagogy.misconceptions) {
-      for (const [key, mis] of Object.entries(pedagogy.misconceptions)) {
-        const matchesMis = (mis.keywords || []).some((kw) => text.includes(norm(kw)));
-        if (matchesMis) {
-          this.showFeedback(mis.feedback, "warning");
-          if (window.labAudio && typeof window.labAudio.playWarning === "function") {
-            window.labAudio.playWarning();
-          } else if (window.labAudio) {
-            window.labAudio.playHint();
-          }
-          this.lockStage2Transition();
-          return;
-        }
-      }
+    const rawText = this.textarea?.value.trim() || '';
+    if (!reaction || this.state.simulationState !== 'reacted') {
+      this.showFeedback('Önce maddeleri karıştır ve deneyi tamamla.', 'incomplete');
+      return;
     }
-
-    // 2. Kimyasal Reaksiyon Gözlem Kanıtı Eşleşmesi
-    const primaryType = reaction.result ? reaction.result.primaryType : "";
-    const typeKeywords = {
-      gas: ["kabarcik", "gaz", "kopurme", "kaynama", "hava", "baloncuk", "uctu", "cikis", "buhar"],
-      precipitate: ["cokelti", "cokelek", "cokme", "bulanma", "bulandi", "bulanık", "katilasma", "kati", "tortu", "dibinde", "parcacik"],
-      smoke: ["duman", "beyaz duman", "sis", "gaz", "buhar"],
-      neutralization: ["sicaklik", "isinma", "isi", "derece", "artti", "termo"]
-    };
-
-    const expectedKeys = (pedagogy.expectedKeyEvidence || []).map(norm);
-    if (typeKeywords[primaryType]) {
-      typeKeywords[primaryType].forEach(kw => {
-        if (!expectedKeys.includes(kw)) expectedKeys.push(kw);
+    const result = ObservationEvaluator.evaluate(reaction.id, rawText);
+    this.lastEvaluation = result;
+    this.showFeedback(result.message, result.status);
+    if (result.status === 'correct') {
+      const approved = this.state.stages[1].completedData;
+      if (approved?.userObservation !== rawText) this.state.completeStage(1, {
+        reactionId: reaction.id, userObservation: rawText, timestamp: new Date().toISOString()
       });
-    }
-
-    const hasKeyEvidence = expectedKeys.some((kw) => text.includes(kw));
-
-    if (hasKeyEvidence) {
-      // Doğru gözlem!
-      this.showFeedback(pedagogy.correctFeedback || "Tebrikler! Doğru gözlem yaptınız.", "success");
-      if (window.labAudio && typeof window.labAudio.playSuccess === "function") {
-        window.labAudio.playSuccess();
-      }
-
-      this.state.completeStage(1, {
-        userObservation: rawText,
-        timestamp: new Date().toISOString()
-      });
-      this.state.unlockStage(2);
       this.unlockStage2Transition();
     } else {
-      // Yanlış / Eksik gözlem: Amber uyarı kutusu ve tepkimeye özel rehber soru
-      const guideMsg = pedagogy.guidancePrompt 
-        ? `Gözleminizi deneydeki somut fiziksel değişime göre yeniden inceleyiniz: ${pedagogy.guidancePrompt}`
-        : "Gözleminizi kapta gerçekleşen fiziksel duruma (gaz kabarcıkları, katı çökelti veya sıcaklık değişimi) odaklanarak yeniden inceleyiniz.";
-      
-      this.showFeedback(guideMsg, "warning");
-      if (window.labAudio && typeof window.labAudio.playWarning === "function") {
-        window.labAudio.playWarning();
-      } else if (window.labAudio) {
-        window.labAudio.playHint();
-      }
+      this.state.invalidateObservation();
       this.lockStage2Transition();
+      window.labAudio?.playHint();
     }
+    this.updateUI();
   }
 
   unlockStage2Transition() {
-    if (this.btnProceedStage2) {
-      this.btnProceedStage2.disabled = false;
-      this.btnProceedStage2.removeAttribute("title");
-      this.btnProceedStage2.classList.add("is-pulse-ready");
-    }
+    this.updateSubmitButtonState();
     const stepBtn2 = document.getElementById("stepBtnStage2");
     if (stepBtn2) {
       stepBtn2.disabled = false;
@@ -243,11 +179,7 @@ class Stage1ObservationManager {
   }
 
   lockStage2Transition() {
-    if (this.btnProceedStage2) {
-      this.btnProceedStage2.disabled = true;
-      this.btnProceedStage2.title = "Önce gerçekleşen tepkimeyle ilgili gözleminizi yazıp 'Kontrol Et' ile doğrulayınız";
-      this.btnProceedStage2.classList.remove("is-pulse-ready");
-    }
+    this.updateSubmitButtonState();
     const stepBtn2 = document.getElementById("stepBtnStage2");
     if (stepBtn2) {
       stepBtn2.disabled = true;
@@ -266,26 +198,33 @@ class Stage1ObservationManager {
     const cleanMessage = (message || "").replace(/^Doğru\s*gözlem\s*:\s*/i, "").trim();
 
     this.feedbackBox.style.display = "flex";
-    this.feedbackText.textContent = cleanMessage;
+    const labels = { correct: 'Doğru', incorrect: 'Hatalı', incomplete: 'Eksik' };
+    this.feedbackBox.dataset.status = type;
+    this.container.dataset.status = type;
+    this.setView('feedback');
+    this.feedbackBox.setAttribute('role', 'status');
+    this.feedbackText.textContent = (labels[type] ? labels[type] + ' · ' : '') + cleanMessage;
 
     this.feedbackBox.className = "mebi-observation-feedback";
-    if (type === "success") {
+    if (type === "correct" || type === "success") {
       this.feedbackBox.classList.add("is-success");
       if (this.feedbackBadge) this.feedbackBadge.textContent = "✓";
     } else {
-      this.feedbackBox.classList.add("is-warning");
-      if (this.feedbackBadge) this.feedbackBadge.textContent = "✗";
+      this.feedbackBox.classList.add(type === 'incorrect' ? 'is-error' : 'is-warning');
+      if (this.feedbackBadge) this.feedbackBadge.textContent = type === 'incorrect' ? '✗' : '!';
     }
 
-    this.feedbackBox.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    if (!LandscapeTasks.active()) this.feedbackBox.scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'nearest' });
   }
 
   resetInput() {
+    this.container.dataset.status = 'neutral'; this.setView('experiment');
     if (this.textarea) this.textarea.value = "";
     if (this.feedbackBox) this.feedbackBox.style.display = "none";
     this.lockStage2Transition();
     this.updateCounters();
   }
+  setView(view) { document.getElementById('observationLayout').dataset.view = view; }
 }
 
 if (typeof window !== "undefined") {

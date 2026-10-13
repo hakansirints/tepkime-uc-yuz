@@ -36,9 +36,11 @@ function buildWarmClassroom(scene) {
   box(.19,2.17,.055,-5.81,2.82,-1.2,frame); box(.19,.055,3.16,-5.81,2.8,-1.2,frame); box(.38,.09,3.4,-5.76,1.68,-1.2,frame);
   const c=document.createElement('canvas'); c.width=2048; c.height=256;
   const ctx=c.getContext('2d'); ctx.fillStyle=t.wall; ctx.fillRect(0,0,c.width,c.height);
-  ctx.fillStyle='#536a53'; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.font='500 76px Segoe UI'; ctx.fillText('K İ M Y A   L A B O R A T U V A R I',1024,128);
+  const signText='MEBİ KİMYA LABORATUVARI';
+  ctx.fillStyle='#536a53'; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.font='600 92px Segoe UI'; ctx.fillText(signText,1024,128);
   const signTexture=new THREE.CanvasTexture(c); signTexture.encoding=THREE.sRGBEncoding;
   const sign=new THREE.Mesh(new THREE.PlaneGeometry(4.6,.39),new THREE.MeshBasicMaterial({map:signTexture}));
+  sign.name='laboratory-sign'; sign.userData.label=signText;
   sign.position.set(0,4.23,-4.7); room.add(sign);
   const tableMaterial=mat('#315e50',.78),table=box(7,.15,2.2,0,1.34,0,tableMaterial); table.name='experiment-table';
   box(6.95,.035,2.16,0,1.255,0,M.wood); box(6.5,1.13,1.75,0,.65,0,M.wood);

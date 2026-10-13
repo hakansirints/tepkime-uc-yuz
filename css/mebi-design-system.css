@@ -1,0 +1,162 @@
+/* Laboratory integration of css/mebi-ui-kit.css: keep MEBİ tokens and components authoritative. */
+:root {
+  --mebi-primary:#1e40af;
+  --mebi-primary-hover:#1d4ed8;
+  --mebi-primary-active:#1e3a8a;
+  --mebi-primary-light:#eff6ff;
+  --mebi-primary-border:#bfdbfe;
+  --mebi-success:#10b981;
+  --mebi-success-hover:#059669;
+  --mebi-text-main:#0f172a;
+  --mebi-text-secondary:#475569;
+  --mebi-font:'Plus Jakarta Sans',system-ui,-apple-system,sans-serif;
+  /* These control colours are the kit's tactile button variants. */
+  --mebi-control-primary:#2563eb;
+  --mebi-control-secondary:#e2e8f0;
+  --mebi-control-secondary-base:#cbd5e1;
+  --mebi-card-base:#e2e8f0;
+  --mebi-control-disabled-text:#64748b;
+}
+[data-theme="dark"] {
+  --mebi-primary-light:rgba(59,130,246,.14);
+  --mebi-primary-border:rgba(96,165,250,.28);
+  --mebi-text-main:#f4f4f5;
+  --mebi-text-secondary:#a1a1aa;
+  --mebi-control-secondary:#2b2b30;
+  --mebi-control-secondary-base:#09090b;
+  --mebi-card-base:#09090b;
+  --mebi-control-disabled-text:#a1a1aa;
+}
+:root,[data-theme="dark"] {
+  --lab-paper:var(--mebi-bg-surface);
+  --lab-line:var(--mebi-border);
+  /* Layout classes remain backwards compatible; appearance comes from the kit. */
+  --liquid-ink:var(--mebi-text-main);
+  --liquid-muted:var(--mebi-text-secondary);
+  --liquid-panel:var(--mebi-bg-surface);
+  --liquid-solid:var(--mebi-bg-surface);
+  --liquid-subtle:var(--mebi-bg-subtle);
+  --liquid-edge:var(--mebi-border);
+  --liquid-line:var(--mebi-border);
+  --liquid-accent:var(--mebi-primary);
+  --liquid-success:var(--mebi-success);
+  --liquid-warning:var(--mebi-warning);
+  --liquid-shadow:var(--mebi-shadow-md);
+}
+html,body { font-family:var(--mebi-font); color:var(--mebi-text-main); background:var(--mebi-bg-body); }
+button,input,select,textarea { font-family:inherit; }
+button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,summary:focus-visible {
+  outline:3px solid var(--mebi-border-focus); outline-offset:3px;
+}
+/* Application chrome and the observation laboratory. */
+.m3-top-app-bar.mebi-topbar {
+  position:fixed; background:var(--mebi-bg-surface); border:1px solid var(--mebi-border);
+  border-radius:var(--mebi-radius-lg); box-shadow:var(--mebi-shadow-md); backdrop-filter:none;
+}
+[data-theme="dark"] .m3-top-app-bar.mebi-topbar { background:var(--mebi-bg-surface); border-color:var(--mebi-border); }
+.m3-brand-icon { background:var(--mebi-primary); border-radius:var(--mebi-radius-md); color:var(--mebi-text-white); }
+.lab-eyebrow,.lab-stage-badge,.lab-notebook-mark,.lab-panel-footer { color:var(--mebi-text-secondary); }
+.m3-app-title,.m3-reaction-card-title,.m3-card-title,.m3-tile-name { color:var(--mebi-text-main); font-weight:700; }
+.m3-app-sub,.m3-reaction-card-sub,.m3-card-sub,.lab-selection-status { color:var(--mebi-text-secondary); }
+.m3-step-btn { color:var(--mebi-text-secondary); font-family:var(--mebi-font); border-radius:var(--mebi-radius-md); }
+.m3-step-btn.is-active,[data-theme="dark"] .m3-step-btn.is-active { background:var(--mebi-primary-light); color:var(--mebi-text-main); box-shadow:inset 0 0 0 1px var(--mebi-primary-border); }
+.m3-step-btn.is-completed { color:var(--mebi-text-main); }
+.step-connector,.m3-strip-divider { background:var(--mebi-border); }
+.m3-icon-btn { color:var(--mebi-text-main); background:var(--mebi-bg-subtle); border-color:var(--mebi-border); border-radius:var(--mebi-radius-md); }
+.m3-reaction-expandable-card,.m3-observation-card,.lab-settings-panel,.m3-bottom-actions-strip,.lab-table-palette,.lab-mobile-tools {
+  background:var(--mebi-bg-surface); border-color:var(--mebi-border); border-radius:var(--mebi-radius-lg);
+  box-shadow:0 5px 0 var(--mebi-card-base),var(--mebi-shadow-md); backdrop-filter:none;
+}
+[data-theme="dark"] .m3-reaction-expandable-card,[data-theme="dark"] .m3-observation-card,
+[data-theme="dark"] .m3-bottom-actions-strip { background:var(--mebi-bg-surface); border-color:var(--mebi-border); }
+.m3-chevron-icon,.lab-empty-illustration { background:var(--mebi-bg-subtle); color:var(--mebi-text-secondary); }
+.lab-empty-illustration span { color:var(--mebi-primary); }
+.lab-observe-note { border-color:var(--mebi-primary-border); }
+.lab-observe-note>span,.lab-observe-note p { color:var(--mebi-text-secondary); }
+.m3-reaction-tile.mebi-card { background:var(--mebi-bg-surface); border:1px solid var(--mebi-border); border-radius:var(--mebi-radius-md); box-shadow:0 3px 0 var(--mebi-card-base); }
+.m3-reaction-tile.is-active,[data-theme="dark"] .m3-reaction-tile.is-active { background:var(--mebi-primary-light); border-color:var(--mebi-primary-border); }
+.m3-reaction-tile:hover,[data-theme="dark"] .m3-reaction-tile:hover { background:var(--mebi-bg-subtle); border-color:var(--mebi-border-hover); }
+.status-dot { background:var(--mebi-primary); }
+.m3-textfield-box,[data-theme="dark"] .m3-textfield-box { background:var(--mebi-bg-subtle); border-color:var(--mebi-border); border-radius:var(--mebi-radius-md); }
+.m3-textfield-box:focus-within { border-color:var(--mebi-border-focus); box-shadow:0 0 0 3px var(--mebi-primary-light); }
+.m3-textarea { font-family:var(--mebi-font); color:var(--mebi-text-main); font-size:14px; }
+.m3-textfield-status { color:var(--mebi-text-secondary); }
+.m3-beaker-tag,.m3-floating-temp-badge { background:var(--mebi-bg-surface); border-color:var(--mebi-border); border-radius:var(--mebi-radius-md); color:var(--mebi-text-main); box-shadow:var(--mebi-shadow-sm); }
+.m3-beaker-tag-title,.lab-volume { color:var(--mebi-text-main); }
+.m3-beaker-tag-sub,.lab-vessel-index { color:var(--mebi-text-secondary); border-color:var(--mebi-border); }
+.m3-segment-btn { color:var(--mebi-text-secondary); border-radius:var(--mebi-radius-sm); }
+.m3-segment-btn.is-active { color:var(--mebi-text-white); background:var(--mebi-primary); }
+.lab-table-palette>span,.lab-settings-heading,.lab-settings-panel button { color:var(--mebi-text-main); }
+.lab-settings-section button { background:var(--mebi-bg-subtle); border-color:var(--mebi-border); border-radius:var(--mebi-radius-sm); }
+.lab-settings-section button[aria-pressed="true"] { color:var(--mebi-text-main); background:var(--mebi-primary-light); border-color:var(--mebi-primary-border); }
+.reaction-material { --material-bg:var(--mebi-primary-light); --material-ink:var(--mebi-text-main); --material-border:var(--mebi-primary-border); }
+.reaction-material[data-material-kind="acid"] { --material-bg:var(--mebi-danger-light); --material-ink:var(--mebi-text-main); --material-border:var(--mebi-danger-border); }
+.reaction-material[data-material-kind="base"] { --material-bg:var(--mebi-info-light); --material-ink:var(--mebi-text-main); --material-border:var(--mebi-info-border); }
+.reaction-material[data-material-kind="solid"] { --material-bg:var(--mebi-warning-light); --material-ink:var(--mebi-text-main); --material-border:var(--mebi-warning-border); }
+.reaction-material[data-material-kind="peroxide"],.reaction-material[data-material-kind="catalyst"] { --material-bg:var(--mebi-accent-light); --material-ink:var(--mebi-text-main); --material-border:var(--mebi-border); }
+[data-theme="dark"] .reaction-material { background:var(--material-bg); color:var(--material-ink); border-color:var(--material-border); }
+/* MEBİ activities: opaque surfaces, Jakarta typography and tactile controls. */
+body:not([data-stage="1"]) #stageScaffoldView { background:var(--mebi-bg-body); border-radius:var(--mebi-radius-xl); }
+.liquid-workshop.mebi-activity { font-family:var(--mebi-font); background:var(--mebi-bg-surface); color:var(--mebi-text-main); border-radius:var(--mebi-radius-xl); border-color:var(--mebi-border); box-shadow:0 6px 0 var(--mebi-card-base),var(--mebi-shadow-md); }
+.mebi-activity .glass-panel,.mebi-activity .workshop-header { background:var(--mebi-bg-surface); border:1px solid var(--mebi-border); border-radius:var(--mebi-radius-lg); box-shadow:0 4px 0 var(--mebi-card-base); backdrop-filter:none; }
+.mebi-activity .workshop-header { background:var(--mebi-bg-subtle); box-shadow:none; }
+.mebi-activity h2,.mebi-activity h3 { font-weight:700; letter-spacing:normal; }
+.mebi-activity .eyebrow { font-family:var(--mebi-font); color:var(--mebi-text-secondary); }
+.mebi-activity .chemical-formula,.formula-drag-ghost { font-family:var(--mebi-font); }
+.mebi-activity .mebi-btn,.lab-experiment-actions .mebi-btn,.lab-observation-actions .mebi-btn {
+  height:auto; min-height:44px; min-width:0; padding:10px 18px; border:0; border-radius:var(--mebi-radius-full);
+  font-family:var(--mebi-font); font-size:13px; font-weight:700; text-transform:none; letter-spacing:0;
+  background:var(--mebi-control-secondary); color:var(--mebi-text-main);
+  box-shadow:0 5px 0 var(--mebi-control-secondary-base)!important;
+}
+.mebi-activity button.mebi-btn-primary,.lab-experiment-actions .mebi-btn-primary,.lab-observation-actions .mebi-btn-primary {
+  background:var(--mebi-control-primary); color:var(--mebi-text-white); box-shadow:0 5px 0 var(--mebi-primary-hover)!important;
+}
+.mebi-activity .mebi-btn:hover:not(:disabled),.lab-experiment-actions .mebi-btn:hover:not(:disabled),.lab-observation-actions .mebi-btn:hover:not(:disabled) { background:var(--mebi-bg-subtle); transform:none; }
+.mebi-activity button.mebi-btn-primary:hover:not(:disabled),.lab-experiment-actions .mebi-btn-primary:hover:not(:disabled),.lab-observation-actions .mebi-btn-primary:hover:not(:disabled) { background:var(--mebi-primary-hover); }
+.mebi-activity .mebi-btn:active:not(:disabled),.lab-experiment-actions .mebi-btn:active:not(:disabled),.lab-observation-actions .mebi-btn:active:not(:disabled) { box-shadow:0 1px 0 var(--mebi-control-secondary-base)!important; }
+.mebi-activity button.mebi-btn-primary:active:not(:disabled),.lab-experiment-actions .mebi-btn-primary:active:not(:disabled),.lab-observation-actions .mebi-btn-primary:active:not(:disabled) { box-shadow:0 1px 0 var(--mebi-primary-hover)!important; }
+.mebi-activity .mebi-btn:disabled,.lab-experiment-actions .mebi-btn:disabled,.lab-observation-actions .mebi-btn:disabled {
+  background:var(--mebi-control-secondary)!important; color:var(--mebi-control-disabled-text)!important;
+  box-shadow:0 3px 0 var(--mebi-control-secondary-base)!important; opacity:.75;
+}
+.mebi-activity button:focus-visible { outline:3px solid var(--mebi-border-focus); outline-offset:4px; }
+.mebi-activity .source-target.mebi-btn { background:var(--mebi-bg-subtle); border-radius:var(--mebi-radius-md); box-shadow:0 3px 0 var(--mebi-card-base)!important; font-size:12px; }
+.mebi-activity .mebi-btn[aria-pressed="true"] { color:var(--mebi-text-main); background:var(--mebi-primary-light); box-shadow:0 4px 0 var(--mebi-primary-border)!important; }
+.mebi-activity .liquid-segments { background:var(--mebi-bg-subtle); border-color:var(--mebi-border); border-radius:var(--mebi-radius-md); }
+.mebi-activity .liquid-segments button { color:var(--mebi-text-secondary); border-radius:var(--mebi-radius-sm); }
+.mebi-activity .liquid-segments button[aria-selected="true"] { background:var(--mebi-bg-surface); color:var(--mebi-text-main); border-color:var(--mebi-primary-border); box-shadow:0 3px 0 var(--mebi-card-base); }
+.mebi-activity .mebi-species-card { background:var(--mebi-bg-surface); color:var(--mebi-text-main); border:1px solid var(--mebi-border); border-radius:var(--mebi-radius-md); box-shadow:0 4px 0 var(--mebi-card-base); }
+.mebi-activity .mebi-species-card:hover:not(:disabled) { background:var(--mebi-bg-subtle); box-shadow:0 4px 0 var(--mebi-card-base); transform:none; }
+.mebi-activity .mebi-species-card[aria-pressed="true"] { background:var(--mebi-primary-light); color:var(--mebi-text-main); border-color:var(--mebi-primary); box-shadow:0 4px 0 var(--mebi-primary-border); }
+.mebi-activity .formula-token .chemical-formula { font-size:24px; }
+.mebi-activity .inquiry-field { background:var(--mebi-bg-subtle); border-color:var(--mebi-border); border-radius:var(--mebi-radius-lg); }
+.inquiry-workshop,[data-theme="dark"] .inquiry-workshop { --inquiry-error:var(--mebi-danger); --inquiry-incomplete:var(--mebi-warning); }
+.mebi-activity .inquiry-zone { background:var(--mebi-bg-surface); border-radius:var(--mebi-radius-md); }
+.mebi-activity .inquiry-zone .zone-status { color:var(--mebi-text-main); }
+.mebi-activity .atom-name-list span { background:var(--mebi-bg-subtle); border-radius:var(--mebi-radius-sm); }
+.mebi-activity .inquiry-evidence { background:var(--mebi-primary-light); border-color:var(--mebi-primary); border-radius:var(--mebi-radius-md); }
+.mebi-activity .workshop-feedback.mebi-panel { display:block; padding:12px 14px; color:var(--mebi-text-main); background:var(--mebi-bg-subtle); border-radius:var(--mebi-radius-md); box-shadow:none; }
+.mebi-activity .workshop-feedback.mebi-panel-success { background:var(--mebi-success-light); border-left-color:var(--mebi-success); }
+.mebi-activity .workshop-feedback.mebi-panel-warning { background:var(--mebi-warning-light); border-left-color:var(--mebi-warning); }
+.mebi-activity .mebi-input { background:var(--mebi-bg-subtle); color:var(--mebi-text-main); border-color:var(--mebi-border); border-radius:var(--mebi-radius-md); }
+.mebi-activity .mebi-input:focus { border-color:var(--mebi-border-focus); box-shadow:0 0 0 3px var(--mebi-primary-light); }
+.mebi-activity .mebi-quiz-choice { background:var(--mebi-bg-subtle); color:var(--mebi-text-main); border-radius:var(--mebi-radius-md); box-shadow:0 3px 0 var(--mebi-card-base); }
+.mebi-activity .mebi-quiz-choice:has(input:checked) { background:var(--mebi-primary-light); border-color:var(--mebi-primary-border); }
+.mebi-activity .model-result.mebi-modal { background:var(--mebi-bg-surface); color:var(--mebi-text-main); border-radius:var(--mebi-radius-lg); transform:none; box-shadow:0 8px 0 var(--mebi-card-base),var(--mebi-shadow-lg); }
+.mebi-activity .model-result::backdrop { background:rgba(15,23,42,.45); backdrop-filter:blur(4px); }
+.mebi-activity .result-symbol { background:var(--mebi-warning-light); color:var(--mebi-warning-hover); border-radius:var(--mebi-radius-full); }
+.mebi-activity [data-status="correct"] .result-symbol { background:var(--mebi-success-light); color:var(--mebi-success-hover); }
+.mebi-activity [data-status="incorrect"] .result-symbol { background:var(--mebi-danger-light); color:var(--mebi-danger); }
+.mebi-activity #fm-result-close.mebi-btn { width:36px; min-height:36px; padding:0; flex:none; box-shadow:none!important; }
+.mebi-activity .model-result-actions { gap:12px; padding-bottom:5px; }
+.mebi-activity .trace-steps .active { color:var(--mebi-text-main); background:var(--mebi-primary-light); box-shadow:0 3px 0 var(--mebi-card-base); }
+.mebi-activity .trace-atom-list>span { color:var(--mebi-text-secondary); background:var(--mebi-bg-subtle); }
+.mebi-activity .trace-atom-list .marked-atom { color:var(--mebi-text-main); border-color:var(--mebi-primary); background:var(--mebi-primary-light); }
+@media(max-width:680px) {
+  .mebi-activity .mebi-btn { padding:9px 12px; }
+  .mebi-activity .workshop-header { box-shadow:none; }
+  .mebi-activity .model-result-actions { flex-direction:column-reverse; }
+  .mebi-activity .model-result-actions .mebi-btn { width:100%; }
+}
+@media(prefers-reduced-motion:reduce) { .mebi-activity *,.m3-top-app-bar { transition:none!important; animation:none!important; } }

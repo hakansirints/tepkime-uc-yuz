@@ -1,64 +1,481 @@
-
-function mountStudentModel(container,state){
-container.innerHTML="<div id=\"chem-3d\" lang=\"tr\"><div class=\"header\"><div><div class=\"small\">AŞAMA 2 · MODELİNİ KUR</div><h2>3B tepkime atölyesi</h2><div class=\"small\">Aynı atomlarla üç aşamayı oluştur.</div></div><button type=\"button\" id=\"c3-reset\" class=\"cursor-interaction\">Modellemeyi Sıfırla</button></div><div id=\"c3-tabs\" class=\"tabs\" role=\"tablist\" aria-label=\"Modelleme aşamaları\"></div><section id=\"c3-panel\" role=\"tabpanel\"><h3 id=\"c3-title\"></h3><div id=\"c3-task\" class=\"task\"></div><div id=\"c3-work\" class=\"platform shared-platform\"><canvas aria-label=\"Solda tanecik havuzu, sağda modelleme bölgesi olan tek üç boyutlu sahne\"></canvas><div class=\"scene-label bank-heading\">Tanecik havuzu<br><small>Kimyasal türler · altta atom örnekleri</small></div><div class=\"scene-label model-heading\" id=\"c3-zone\">Modelleme bölgesi</div><div class=\"scene-divider\"></div><div class=\"scene-bottom bank-bottom\"><div id=\"c3-bank-buttons\" class=\"selection-list\"></div></div><div class=\"scene-bottom model-bottom\"><div id=\"c3-items\" class=\"selection-list\"></div></div></div><div class=\"small\">Havuzdan sağa sürükle · Seçili taneciği sürükle: taşı · Seçili olmayan taneciği sürükle: döndür · Sahne sabit</div><div class=\"row\"><button type=\"button\" data-zoom=\"work-in\" class=\"cursor-interaction\">Yakınlaştır</button><button type=\"button\" data-zoom=\"work-out\" class=\"cursor-interaction\">Uzaklaştır</button><button type=\"button\" id=\"c3-merge\" class=\"cursor-interaction\">Birleştir</button><button type=\"button\" id=\"c3-split\" class=\"cursor-interaction\">Atomlarına ayır</button><button type=\"button\" id=\"c3-gas\" class=\"cursor-interaction\" hidden>Gaz bölgesine taşı</button><button type=\"button\" id=\"c3-water\" class=\"cursor-interaction\" hidden>Sulu ortama taşı</button></div><button type=\"button\" id=\"c3-next\" class=\"next cursor-interaction\">Aşamayı doğrula ve devam et</button><button type=\"button\" id=\"c3-trace\" class=\"cursor-interaction\" hidden>Atomun izini sür aşamasına geç</button><div id=\"c3-feedback\" class=\"feedback\" aria-live=\"polite\"></div><div class=\"row\"><button type=\"button\" id=\"c3-help\" class=\"cursor-interaction\">İpucu al</button><span id=\"c3-hint\" class=\"hint\" aria-live=\"polite\"></span></div><div id=\"c3-inventory\" class=\"inventory\"></div></section><footer></footer><dialog id=\"c3-conservation\" class=\"conservation-drawer\" aria-labelledby=\"c3-conservation-title\"><div class=\"drawer-heading\"><h3 id=\"c3-conservation-title\">Korunma kontrolü</h3><button type=\"button\" id=\"c3-close-check\" class=\"cursor-interaction\" aria-label=\"Korunma kartını kapat\">Kapat</button></div><div id=\"c3-conservation-summary\" class=\"feedback\" aria-live=\"polite\"></div><table class=\"conservation-table\"><caption>Üç aşamada atom sayıları</caption><thead><tr><th scope=\"col\">Atom</th><th scope=\"col\">Önce</th><th scope=\"col\">Etkileşim</th><th scope=\"col\">Sonra</th></tr></thead><tbody id=\"c3-atom-counts\"></tbody></table><div id=\"c3-conservation-rules\"></div><div id=\"c3-review\" aria-live=\"polite\"></div></dialog>\n</div>";const root=container.querySelector('#chem-3d'),el=id=>root.querySelector('#c3-'+id),T=window.THREE;
-if(!T){el('feedback').textContent='3B görüntü yüklenemedi. Uygulama dosyalarını kontrol ederek yeniden aç.';return;}
-const titles=['Tepkime öncesi','Tanecikler etkileşirken','Tepkime sonrası'],tasks=['Havuzdan başlangıç türlerini seç ve 3B platforma yerleştir.','Kendi başlangıç modelindeki atomları yeniden grupla.','Son taneciklerini oluştur; gazı üst bölgeye taşı ve modelini kontrol et.'];
-const blank=()=>({items:[],selected:[],ok:false,feedback:'',hint:0,code:''}),copy=v=>JSON.parse(JSON.stringify(v));
-const prior=state.modelingDraft?.reactionId===state.selectedReactionId?state.modelingDraft:null;
-let frames=prior?.version===5&&prior.frames?.length===3?copy(prior.frames):[blank(),blank(),blank()],active=prior?.version===5?Math.max(0,Math.min(2,prior.active||0)):0,reached=prior?.version===5?Math.max(active,Math.min(2,prior.reached||0)):0,review=null,serial=0,bankSelected=null;
-const a=(e,id)=>({e,id}),specs={sodium:[a('Na','sodium')],bicarbonate:[a('H','b-H'),a('C','b-C'),a('O','b-O1'),a('O','b-O2'),a('O','b-O3')],acid:[a('H','acid-H')],chloride:[a('Cl','chloride')]},colors={H:0xffffff,C:0x303030,O:0xff0d0d,Na:0xab5cf2,Cl:0x1ff01f};
-const count=atoms=>{const c={};atoms.forEach(v=>c[v.e]=(c[v.e]||0)+1);return c;},key=atoms=>{const c=count(atoms);return ['H','C','O','Na','Cl',...Object.keys(c).filter(e=>!['H','C','O','Na','Cl'].includes(e)).sort()].filter(e=>c[e]).map(e=>e+c[e]).join('');};
-
-const reaction=state.getReaction(),micro=reaction.microscopic;
-root.querySelector('.header .small:last-child').textContent=reaction.title;root.querySelector('footer').textContent='Atom boyutları ve bağ çizgileri temsilidir. Etkileşim aşaması bağların yeniden düzenlenmesini gösteren sade bir modeldir.'+(reaction.id==='nahco3_hcl'?' H⁺ sulu asit ortamının sade gösterimidir. Na⁺ ve Cl⁻ suda ayrı iyonlar olarak kalır.':'');
-const sourceDefs={},speciesNames={};
-function normalizeSpecies(entry){const sym=entry.symbol.replace(/^\d+\s+/,'');let record=SPECIES_REGISTRY[sym];if(!record){const raw=SPECIES_REGISTRY[entry.symbol],coefficient=Number(entry.symbol.match(/^\d+\s+/)?.[0])||1;if(raw)record={...raw,elements:Object.fromEntries(Object.entries(raw.elements).map(([e,n])=>[e,n/coefficient]))};else{const plain=sym.replace(/\((k|g|s|suda)\)$/,'').replace(/[₀-₉]/g,d=>String('₀₁₂₃₄₅₆₇₈₉'.indexOf(d))).replace(/[⁺⁻²³]/g,'');const elements={};for(const match of plain.matchAll(/([A-Z][a-z]?)(\d*)/g))elements[match[1]]=(elements[match[1]]||0)+(Number(match[2])||1);if(!Object.keys(elements).length)throw new Error('Tanecik tanımı bulunamadı: '+sym);record={elements,state:'suda'};}}return{sym,elements:record.elements,n:entry.count||1,state:entry.state||record.state};}
-Object.keys(specs).forEach(k=>delete specs[k]);
-micro.reactants.forEach((entry,j)=>{const d=normalizeSpecies(entry);for(let n=0;n<d.n;n++){const kind='source-'+j+'-'+n;specs[kind]=Object.entries(d.elements).flatMap(([e,total])=>Array.from({length:total},(_,t)=>a(e,kind+'-'+e+t)));sourceDefs[kind]=d;speciesNames[key(specs[kind])]=d.sym;}});
-const expectedBefore=Object.values(specs).map(key).sort().join('|');
-const expectedAfter=micro.products.flatMap(entry=>{const d=normalizeSpecies(entry),atoms=Object.entries(d.elements).flatMap(([e,n])=>Array.from({length:n},()=>({e})));speciesNames[key(atoms)]=d.sym;return Array(d.n).fill(key(atoms));}).sort().join('|');
-const inventory=count(Object.values(specs).flat());
-const expectedStates=new Map(micro.products.map(entry=>{const d=normalizeSpecies(entry),atoms=Object.entries(d.elements).flatMap(([e,n])=>Array.from({length:n},()=>({e})));return[key(atoms),d.state];}));
-Object.assign(colors,{N:0x3050f8,Ca:0x3dff00,Pb:0x575961,K:0x8f40d4,I:0x940094,Ag:0xc0c0c0,Cu:0xc88033,S:0xffff30,P:0xff8000});
-
-function formula(p){if(p.atoms.length>1&&speciesNames[key(p.atoms)])return speciesNames[key(p.atoms)];if(p.atoms.length===1&&p.id?.startsWith("start-"))return sourceDefs[p.id.slice(6)]?.sym||p.atoms[0].e;const k=key(p.atoms),known={H1:'H',C1:'C',O1:'O',Na1:'Na⁺',Cl1:'Cl⁻',H1C1O3:'HCO₃⁻',H2C1O3:'H₂CO₃',H2O1:'H₂O',C1O2:'CO₂'};if(k==='H1'&&p.atoms[0].id==='acid-H')return 'H⁺';if(known[k])return known[k];if(speciesNames[k])return speciesNames[k];const c=count(p.atoms);return Object.keys(c).sort().map(e=>e+(c[e]>1?String(c[e]).replace(/\d/g,d=>'₀₁₂₃₄₅₆₇₈₉'[d]):'')).join('');}
-function save(){if(state.selectedReactionId!==reaction.id)return;state.modelingDraft={version:5,reactionId:state.selectedReactionId,frames:copy(frames),active,reached};}
-function invalidate(){frames.slice(active).forEach(f=>f.ok=false);for(let i=active+1;i<3;i++)frames[i]=blank();reached=active;frames[active].code='';frames[active].hint=0;review=null;el('conservation').close();state.stages[2].completedData=null;if(state.stages[2].status==='completed')state.stages[2].status='active';state.stages[3].status='locked';state.stages[3].completedData=null;state.atomTraceDraft=null;el('trace').hidden=true;state.emit('stageChange',{currentStage:state.currentStage,stages:state.stages});}
-function spread(){frames[active].items.forEach((p,i)=>{p.x=-4.2+(i%4)*2.8;p.y=.85;p.z=-1.5+Math.floor(i/4)*3;p.rx=p.rx||0;p.ry=p.ry||0;});}
-function used(kind){return frames[0].items.some(p=>p.atoms.some(v=>v.id===specs[kind]?.[0].id));}
-function add(kind,pos){if(active!==0||!specs[kind]||used(kind))return;const p={id:'start-'+kind,atoms:copy(specs[kind]),x:0,y:.85,z:0,rx:0,ry:0};frames[0].items.push(p);spread();if(pos){p.x=Math.max(-5,Math.min(5,pos.x));p.z=Math.max(-3,Math.min(3,pos.z));}invalidate();frames[0].feedback='Taneciğin eklendi. Başlangıç modelini kendin tamamla.';render();save();}
-function select(id){const f=frames[active];f.selected=f.selected.includes(id)?f.selected.filter(x=>x!==id):[...f.selected,id];render();save();}
-function merge(){const f=frames[active],chosen=f.items.filter(p=>f.selected.includes(p.id));if(chosen.length<2){f.feedback='Birleştirmek için en az iki tanecik seç.';render();return;}const p={id:'built-'+Date.now()+'-'+(++serial),atoms:chosen.flatMap(v=>v.atoms),x:chosen.reduce((s,v)=>s+v.x,0)/chosen.length,y:chosen.reduce((s,v)=>s+v.y,0)/chosen.length,z:chosen.reduce((s,v)=>s+v.z,0)/chosen.length,rx:0,ry:0};f.items=f.items.filter(v=>!f.selected.includes(v.id));f.items.push(p);f.selected=[p.id];invalidate();f.feedback='Taneciklerini birleştirdin. Aynı atomlarla çalışmaya devam et.';render();save();}
-function split(){const f=frames[active],chosen=f.items.filter(p=>f.selected.includes(p.id)&&p.atoms.length>1);if(!chosen.length){f.feedback='Önce ayırmak istediğin taneciği seç.';render();return;}const ids=new Set(chosen.map(p=>p.id));f.items=f.items.filter(p=>!ids.has(p.id));chosen.forEach(p=>p.atoms.forEach(v=>f.items.push({id:'atom-'+v.id,atoms:[v],x:0,y:.85,z:0,rx:0,ry:0})));f.selected=[];spread();invalidate();f.feedback='Atomların aynı kaldı. Parçaları seçip yeniden birleştir.';render();save();}
-function next(){if(active===2){checkAll();return;}const f=frames[active],[code,message]=validate(active);f.code=code;f.ok=code==='ok';f.feedback=message;if(!f.ok){render();return;}const from=active;active++;reached=Math.max(reached,active);if(!frames[active].items.length)frames[active]={...blank(),items:copy(frames[from].items),feedback:'Önceki aşaman doğrulandı. Bu aşamayı kendi modelinle oluştur.'};render();save();}
-function go(i){if(i<0||i>reached||frames.slice(0,i).some((f,j)=>!f.ok||validate(j)[0]!=='ok'))return;el('conservation').close();active=i;render();save();}
-function setPhase(gas){frames[active].items.filter(p=>frames[active].selected.includes(p.id)).forEach(p=>p.y=gas?3.7:.85);invalidate();frames[active].feedback='Taneciğinin ortamını değiştirdin. Gözleminle karşılaştır.';render();save();}
-function reset(){frames=[blank(),blank(),blank()];active=0;reached=0;review=null;serial=0;bankSelected=null;work.resetCamera();[...bankItems,...atomItems].forEach(p=>{p.rx=0;p.ry=0;});el('hint').textContent='';invalidate();frames[0].feedback='Modelleme sıfırlandı. Havuzdan yeniden başlayabilirsin.';render();save();}
-function validate(i){const f=frames[i],atoms=f.items.flatMap(p=>p.atoms),c=count(atoms);if(!atoms.length)return['empty','Bu aşama boş. Kendi modelini oluştur.'];if(Object.keys(inventory).some(e=>c[e]!==inventory[e])||atoms.length!==Object.values(inventory).reduce((s,n)=>s+n,0)||new Set(atoms.map(a=>a.id)).size!==atoms.length)return['inventory','Başlangıçtaki atomların tamamı korunmalı. Eksik veya fazla taneciği incele.'];const k=f.items.map(p=>key(p.atoms)).sort().join('|');if(i===0&&k!==expectedBefore)return['start','Başlangıç türlerini havuzdaki gibi ayrı göster.'];if(i===1&&k===expectedBefore)return['change','Etkileşimde başlangıç modelin aynı kalmış. Taneciklerin yeniden düzenlenmesini göster.'];if(i===1&&k!==expectedAfter&&!(reaction.id==='nahco3_hcl'&&k===['Na1','Cl1','H2C1O3'].sort().join('|')))return['regroup','Grupların henüz tutarlı değil. Etkileşen taneciklerin atomlarını yeniden incele.'];if(i===2&&k!==expectedAfter)return['products','Son taneciklerin gözlenen değişimi henüz açıklamıyor. Atom gruplarını yeniden incele.'];if(i===2&&f.items.some(p=>expectedStates.get(key(p.atoms))==='g'?p.y<2.8:p.y>=2.8))return['gas','Gaz tanecikleri üstte; diğer tanecikler alt bölgede bulunmalı.'];return['ok','Bu aşama tutarlı.'];}
-function checkAll(){review=frames.map((f,i)=>{const[code,message]=validate(i);f.code=code;f.ok=code==='ok';return{stage:i,code,message};});frames[2].feedback=review.every(v=>v.code==='ok')?'Üç aşama da doğrulandı. Modelin tamamlandı.':'Korunma kartındaki geri bildirimle modelini düzelt.';render();renderConservation();if(!el('conservation').open)el('conservation').showModal();if(review.every(v=>v.code==='ok')){save();state.completeStage(2,{frames:copy(frames),reactionId:reaction.id});el('trace').hidden=false;}}
-function renderConservation(){const counts=frames.map(f=>count(f.items.flatMap(p=>p.atoms))),elements=[...new Set([...Object.keys(inventory),...counts.flatMap(c=>Object.keys(c))])];el('atom-counts').replaceChildren();elements.forEach(e=>{const row=document.createElement('tr'),heading=document.createElement('th');heading.scope='row';heading.textContent=e;row.append(heading);counts.forEach(c=>{const cell=document.createElement('td');cell.textContent=String(c[e]||0);cell.className=(c[e]||0)===(inventory[e]||0)?'count-ok':'count-error';row.append(cell);});el('atom-counts').append(row);});const sameTypes=counts.every(c=>Object.keys(c).sort().join('|')===Object.keys(inventory).sort().join('|')),sameCounts=counts.every(c=>elements.every(e=>(c[e]||0)===(inventory[e]||0))),sameIds=frames.every(f=>{const ids=f.items.flatMap(p=>p.atoms.map(a=>a.id));return new Set(ids).size===ids.length&&ids.length===Object.values(inventory).reduce((a,b)=>a+b,0);});const rules=[[sameTypes,'Atom türleri korunuyor.'],[sameCounts&&sameIds,'Atom sayıları korunuyor; toplam kütle değişmiyor.'],[review[2].code==='ok','Ürün türleri ve bulundukları ortam tutarlı.']];el('conservation-rules').replaceChildren();rules.forEach(([ok,label])=>{const p=document.createElement('p');p.className='conservation-rule '+(ok?'passed':'failed');p.textContent=(ok?'✓ ':'Düzelt: ')+label;el('conservation-rules').append(p);});el('conservation-summary').textContent=frames[2].feedback;el('conservation-summary').classList.toggle('ok',review.every(v=>v.code==='ok'));}
-const hints={empty:['Başlangıçta havuzdaki dört türü kullan.','Na⁺, HCO₃⁻, H⁺ ve Cl⁻ ayrı yerleştirilebilir.'],inventory:['H, C ve O sayılarını karşılaştır.','Bu örnekte 2 H, 1 C, 3 O; birer Na⁺ ve Cl⁻ bulunur.'],ions:['Seyirci iyonlar bağ değişimine katılır mı?','Na⁺ ve Cl⁻ ayrı kalır.'],start:['Başlangıç türlerini havuzdaki taneciklerle karşılaştır.','HCO₃⁻ ve H⁺ başlangıçta ayrıdır.'],change:['H⁺ ile hidrojenkarbonat iyonunun etkileşimini düşün.','Proton aktarımını H₂CO₃ grubuyla temsil edebilirsin.'],regroup:['H ve O içeren parçaların düzenini düşün.','H₂CO₃, proton aktarımını göstermek için kullanabileceğin bir ara modeldir.'],products:['C atomunun gaz oluştururken kaç O ile gruplanacağını düşün.','CO₂ ve H₂O gruplarını aynı atomlarla kurabilirsin.'],gas:['Seçili taneciği yukarı taşı veya “Gaz bölgesine taşı” düğmesini kullan.','CO₂ üstte; su, Na⁺ ve Cl⁻ sulu ortamda kalır.'],liquid:['Taneciği seçip “Sulu ortama taşı” düğmesini kullanabilirsin.'],ok:['Atomların üç aşamada nasıl yeniden düzenlendiğini açıkla.']};
-function help(){const f=frames[active],code=validate(active)[0],opts=hints[code]||hints.regroup;el('hint').textContent=reaction.id==='nahco3_hcl'?opts[Math.min(f.hint,opts.length-1)]:'Atomları koruyarak seçilen tepkimenin gözlemine uygun tanecik grupları oluştur. Tek atomlu seyirci iyonları ayrı bırak.';f.hint++;save();}
-function layout(p){const k=key(p.atoms),pos=p.atoms.map(()=>new T.Vector3()),links=[],idx=e=>p.atoms.map((v,i)=>v.e===e?i:-1).filter(i=>i>=0);if(p.atoms.length===1)return{pos,links};if(k==='H1C1O3'||k==='H2C1O3'){const C=idx('C')[0],O=idx('O'),H=idx('H');pos[C].set(0,0,0);pos[O[0]].set(0,1,0);pos[O[1]].set(-.95,-.55,.08);pos[O[2]].set(.95,-.55,-.08);pos[H[0]].set(1.45,-.65,.5);O.forEach((o,j)=>links.push([C,o,j===0?2:1]));links.push([O[2],H[0]]);if(H.length>1){pos[H[1]].set(-1.45,-.65,.5);links.push([O[1],H[1]]);}}else if(k==='H2O1'){const O=idx('O')[0],H=idx('H');pos[O].set(0,0,0);pos[H[0]].set(-.7,-.55,.1);pos[H[1]].set(.7,-.55,.1);links.push([O,H[0]],[O,H[1]]);}else if(k==='C1O2'){const C=idx('C')[0],O=idx('O');pos[C].set(0,0,0);pos[O[0]].set(-1.1,0,0);pos[O[1]].set(1.1,0,0);links.push([C,O[0],2],[C,O[1],2]);}else{p.atoms.forEach((v,i)=>pos[i].set((i%3-1)*.8,Math.floor(i/3)*.8-.4,(i%2)*.35));if(p.atoms.every(v=>['H','C','O','N','S'].includes(v.e)))for(let i=1;i<p.atoms.length;i++)links.push([i-1,i]);}return{pos,links};}
-window.StudentParticleLayout=layout;window.StudentCPKColors=colors;
-class Platform{
-constructor(host){this.host=host;this.canvas=host.querySelector('canvas');this.scene=new T.Scene();this.camera=new T.PerspectiveCamera(42,1,.1,200);this.renderer=new T.WebGLRenderer({canvas:this.canvas,antialias:true,alpha:true});this.renderer.setPixelRatio(Math.min(devicePixelRatio||1,2));this.scene.add(new T.HemisphereLight(0xffffff,0x698e82,.8));const light=new T.DirectionalLight(0xffffff,.95);light.position.set(-8,12,15);this.scene.add(light);this.base=new T.Mesh(new T.PlaneGeometry(12,7),new T.MeshBasicMaterial({color:0xe5eeea,side:T.DoubleSide}));this.base.rotation.x=-Math.PI/2;this.base.position.set(3.5,-.4,0);this.scene.add(this.base);this.models=new T.Group();this.scene.add(this.models);this.ray=new T.Raycaster();this.items=[];this.bank=[];this.hovered=null;this.modelScale=1;this.yaw=0;this.pitch=0;this.water={visible:false};this.observer=new ResizeObserver(()=>this.resize());this.observer.observe(host);this.bind();this.resize();this.last=performance.now();const tick=now=>{if(this.disposed)return;const dt=Math.max(0,Math.min(.1,(now-this.last)/1000));this.last=now;this.models.children.forEach(g=>{if(g.userData.bank&&g.userData.item!==this.hovered&&!matchMedia('(prefers-reduced-motion: reduce)').matches){g.rotation.y+=dt*.45;g.userData.p.ry=g.rotation.y;}});this.draw();this.animation=requestAnimationFrame(tick);};this.animation=requestAnimationFrame(tick);}
-resize(){const r=this.host.getBoundingClientRect();if(!r.width)return;this.w=r.width;this.h=r.height;this.renderer.setSize(this.w,this.h,false);this.camera.aspect=this.w/this.h;this.camera.updateProjectionMatrix();const d=32/this.camera.aspect;this.camera.position.set(0,1+d*.4,d*.92);this.camera.lookAt(0,1,0);this.camera.updateMatrixWorld();this.draw();}
-resetCamera(){this.modelScale=1;this.yaw=this.pitch=0;this.models.rotation.set(0,0,0);this.draw();}
-zoom(f){this.modelScale=Math.max(.65,Math.min(2,this.modelScale/f));this.models.children.forEach(g=>g.scale.setScalar(this.modelScale*(g.userData.item===this.hovered?1.25:1)));this.draw();}
-update(items,selected=[]){while(this.models.children.length){const g=this.models.children[0];g.traverse(o=>{o.geometry?.dispose();o.material?.dispose();});this.models.remove(g);}this.items=items;[...this.bank,...items].forEach(p=>{const bank=!!p.kind||p.sample,g=new T.Group();g.userData={item:p.id,bank,p};g.position.set(p.x+(bank?0:3.5),p.y,p.z);g.rotation.set(p.rx||0,p.ry||0,0);g.scale.setScalar(this.modelScale*(p.id===this.hovered?1.25:1));const {pos,links}=layout(p);p.atoms.forEach((atom,i)=>{const mesh=new T.Mesh(new T.SphereGeometry(atom.e==='H'?.23:.36,24,18),new T.MeshStandardMaterial({color:colors[atom.e]||0x909090,roughness:.32,metalness:.02}));mesh.position.copy(pos[i]);mesh.userData.item=p.id;g.add(mesh);});links.forEach(([i,j,n=1])=>{for(let k=0;k<n;k++){const d=pos[j].clone().sub(pos[i]),bond=new T.Mesh(new T.CylinderGeometry(.07,.07,d.length(),10),new T.MeshStandardMaterial({color:0x668b8f}));bond.position.copy(pos[i]).add(pos[j]).multiplyScalar(.5);bond.position.z+=(k-(n-1)/2)*.22;bond.quaternion.setFromUnitVectors(new T.Vector3(0,1,0),d.normalize());bond.userData.item=p.id;g.add(bond);}});this.models.add(g);});this.draw();}
-draw(){if(!this.w)return;this.models.rotation.set(this.pitch,this.yaw,0);this.scene.updateMatrixWorld(true);this.renderer.render(this.scene,this.camera);}
-rayAt(e){const r=this.canvas.getBoundingClientRect();this.ray.setFromCamera(new T.Vector2((e.clientX-r.x)/r.width*2-1,1-(e.clientY-r.y)/r.height*2),this.camera);}
-hit(e){this.rayAt(e);return this.ray.intersectObject(this.models,true).find(h=>h.object.userData.item)?.object.userData.item;}
-point(e,plane){this.rayAt(e);const v=this.ray.ray.intersectPlane(plane,new T.Vector3());return v?this.models.worldToLocal(v):null;}
-setHover(id){this.hovered=id;this.models.children.forEach(g=>g.scale.setScalar(this.modelScale*(g.userData.bank&&g.userData.item===id?1.25:1)));}
-bind(){const c=this.canvas;c.addEventListener('wheel',e=>{e.preventDefault();this.zoom(Math.exp(e.deltaY*.001));},{passive:false});c.addEventListener('pointerleave',()=>{if(!this.drag)this.setHover(null);});c.addEventListener('pointerdown',e=>{c.setPointerCapture(e.pointerId);const id=this.hit(e),g=this.models.children.find(g=>g.userData.item===id),p=g?.userData.p,bank=g?.userData.bank,selected=frames[active].selected.includes(id);const world=g?.getWorldPosition(new T.Vector3()),plane=world?new T.Plane().setFromNormalAndCoplanarPoint(this.camera.getWorldDirection(new T.Vector3()),world):null;this.drag={id,p,g,bank,operation:bank?(p.sample?'rotate':'bank'):selected?'move':p?'rotate':'scene',plane,start:plane?this.point(e,plane):null,origin:p?{x:p.x,y:p.y,z:p.z}:null,x:e.clientX,y:e.clientY,downX:e.clientX,downY:e.clientY,moved:false};this.setHover(bank?id:null);});c.addEventListener('pointermove',e=>{const d=this.drag;if(!d){const id=this.hit(e),g=this.models.children.find(g=>g.userData.item===id);this.setHover(g?.userData.bank?id:null);return;}const dx=e.clientX-d.x,dy=e.clientY-d.y;d.moved ||= Math.hypot(e.clientX-d.downX,e.clientY-d.downY)>4;if(d.moved){if(d.operation==='scene'){/* Blank drags leave the scene fixed. */}else if(d.operation==='rotate'){d.p.ry=(d.p.ry||0)+dx*.014;d.p.rx=(d.p.rx||0)+dy*.014;d.g.rotation.set(d.p.rx,d.p.ry,0);}else{const point=this.point(e,d.plane);if(point){const delta=point.sub(d.start);if(d.bank){d.g.position.set(d.origin.x+delta.x,d.origin.y+delta.y,d.origin.z+delta.z);}else{d.p.x=Math.max(-5.2,Math.min(5.2,d.origin.x+delta.x));d.p.y=Math.max(.7,Math.min(4.3,d.origin.y+delta.y));d.p.z=Math.max(-3,Math.min(3,d.origin.z+delta.z));d.g.position.set(d.p.x+3.5,d.p.y,d.p.z);}}}}d.x=e.clientX;d.y=e.clientY;});c.addEventListener('pointerup',e=>{const d=this.drag;this.drag=null;if(!d)return;const r=c.getBoundingClientRect();if(d.operation==='bank'){if(!d.moved)add(d.p.kind);else if(e.clientX>r.x+r.width*.35&&e.clientX<r.right&&e.clientY>r.top&&e.clientY<r.bottom){add(d.p.kind,{x:d.g.position.x-3.5,z:d.g.position.z});}this.update(frames[active].items,frames[active].selected);}else if(d.p&&!d.bank){if(!d.moved)select(d.id);else if(d.operation==='move'){invalidate();render();save();}}this.setHover(null);});c.addEventListener('pointercancel',()=>{this.drag=null;this.setHover(null);this.update(frames[active].items,frames[active].selected);});}
-dispose(){this.disposed=true;cancelAnimationFrame(this.animation);this.observer.disconnect();this.bank=[];this.update([]);this.base.geometry.dispose();this.base.material.dispose();this.renderer.dispose();this.renderer.forceContextLoss();}
+function mountStudentModel(container, state) {
+  const { clone } = FormulaChemistry;
+  const reaction = state.getReaction(), plan = InquiryChemistry.createPlan(reaction);
+  const blank = () => ({ items: [], selected: [], ok: false, feedback: '', tone: 'info', interaction: null, proposal: null, eligible: false, trialState: null });
+  const emptyAssessment = () => ({ evidence: '', explanation: '', stays: '', transfer: null, transferOK: false });
+  const saved = state.modelingDraft, compatible = saved?.version === 7 && saved.reactionId === reaction.id;
+  let frames = compatible ? clone(saved.frames) : [blank(), blank(), blank()];
+  let active = compatible ? saved.active : 0, reached = compatible ? saved.reached : 0;
+  let assessment = compatible ? clone(saved.assessment) : emptyAssessment();
+  let records = compatible ? clone(saved.records) : { actions: [], checks: 0, errors: 0, firstAttempt: null, hintUses: 0, transferAttempts: 0 };
+  let history = compatible ? clone(saved.history || []) : [], pending = null, disposed = false, touch = null;
+  let resultAction = null, nativeDrag = null;
+  let phoneView = 'model', question = 0, regionPage = 0;
+  const atomNames = { H: 'Hidrojen', C: 'Karbon', O: 'Oksijen', N: 'Azot', Na: 'Sodyum', Cl: 'Klor', Ca: 'Kalsiyum', K: 'Potasyum', I: 'İyot', Pb: 'Kurşun', Ag: 'Gümüş', Cu: 'Bakır' };
+  const titles = ['Tepkime öncesi', 'Tanecikler etkileşirken', 'Tepkime sonrası'];
+  const tasks = [
+    'Havuzdan bir tür seç; sonra ait olduğu kaynak bölgeye yerleştir. Türleri bütün olarak kullan.',
+    'Değişime katılacağını düşündüğün türleri seç. Etkileşimini dene; sonra oluşum önerini seçip yeniden dene.',
+    'Türleri fiziksel hâllerine uygun bölgelere taşı ve modelini kontrol et.'
+  ];
+  container.innerHTML = `<div id="formula-modeling" class="liquid-workshop inquiry-workshop" lang="tr">
+    <header class="workshop-header"><div><h2>Taneciklerle kur, atomlarla kontrol et</h2><p class="muted" id="fm-reaction"></p></div></header>
+    <div class="workshop-layout"><aside class="glass-panel formula-pool"><div class="panel-heading"><h3 id="fm-pool-title">Tanecik havuzu</h3></div><p class="muted" id="fm-pool-help"></p><div id="fm-pool" class="formula-bank"></div>
+      <section class="atom-pool"><h3>Bu türlerde bulunan atomlar</h3><div id="fm-atoms" class="atom-name-list"></div></section>
+      <details id="fm-properties" class="inquiry-properties" hidden><summary>Madde özelliklerini incele</summary><p id="fm-property-text"></p></details>
+      <div id="fm-returned" class="returned-species"></div>
+    </aside><section class="glass-panel formula-workspace"><div id="fm-tabs" class="liquid-segments" role="tablist" aria-label="Modelleme adımları"></div>
+      <div id="fm-panel" role="tabpanel"><div class="workspace-heading"><h3 id="fm-title"></h3><span class="muted" id="fm-progress"></span></div><p id="fm-task" class="muted"></p>
+        <div id="fm-region-nav" class="landscape-only task-view-nav"></div><div id="fm-work" class="inquiry-field"></div>
+        <section id="fm-proposals" class="inquiry-proposals" hidden><h4>Hangi oluşum gözlemini açıklayabilir?</h4><div id="fm-proposal-options" class="workshop-actions"></div></section>
+        <div id="fm-interaction-preview" class="interaction-preview" hidden></div>
+        <div class="workshop-actions phase-actions"><button id="fm-try" type="button" hidden>Etkileşimimi dene</button><button id="fm-liquid" type="button" hidden>Sıvı bölgesine taşı</button><button id="fm-gas" type="button" hidden>Gaz bölgesine taşı</button><button id="fm-solid" type="button" hidden>Katı yapı bölgesine taşı</button></div>
+        <div id="fm-feedback" class="workshop-feedback" role="status" aria-live="polite"></div><button id="fm-feedback-open" class="landscape-only" type="button">Dönütü oku</button>
+        <section id="fm-explanation" class="inquiry-explanation" hidden><h3>Gözlemimi modelimle açıklarım</h3><label for="fm-evidence">Gözlemimdeki kanıt<select id="fm-evidence"><option value="">Seç…</option><option>Katı oluşumu</option><option>Gaz kabarcıkları</option><option>Sıcaklık / asit-baz değişimi</option></select></label><label for="fm-cause">Modelimdeki açıklama<select id="fm-cause"><option value="">Seç…</option><option>Katı bir yapı oluşması</option><option>Yeni gazın sıvıdan ayrılması</option><option>Yeni su moleküllerinin oluşması</option><option>Amonyum iyonunun oluşması</option></select></label><label for="fm-stays">Değişime doğrudan katılmayan türler<select id="fm-stays"><option value="">Seç…</option><option value="remain">Modelde ve çözeltide kalır</option><option value="lost">Yok olur</option><option value="atoms">Nötr atomlara ayrılır</option></select></label><p id="fm-sentence" class="muted"></p><label for="fm-note">Kendi cümlenle eklemek istersen<textarea id="fm-note" rows="2" maxlength="600" placeholder="Gözlemimle modelim arasındaki ilişki…"></textarea></label><p class="muted">Bu ek açıklama öğrenme kaydında saklanır; otomatik notlandırılmaz.</p></section>
+        <section id="fm-transfer" class="inquiry-transfer" hidden><h3>Yeni bir örnekte kendin dene</h3><p id="fm-transfer-task"></p><div id="fm-transfer-options"></div><button id="fm-transfer-check" type="button">Yeni örneği kontrol et</button><p id="fm-transfer-feedback" role="status" aria-live="polite"></p></section>
+        <div class="landscape-only task-view-nav" id="fm-question-nav"><button id="fm-view-back" type="button">Modelime dön</button><button id="fm-question-prev" type="button">Önceki alan</button><span id="fm-question-count"></span><button id="fm-question-next" type="button">Sonraki alan</button><button id="fm-write-note" type="button">Cümle ekle</button></div>
+        <div class="workshop-footer"><button id="fm-reset" type="button">Yeniden başla</button><button id="fm-next" type="button" class="liquid-primary">Modelimi kontrol et</button><button id="fm-trace" type="button" class="liquid-primary" hidden>Atomun izini sür</button></div>
+      </div></section></div>
+    <dialog id="fm-result" class="liquid-dialog model-result" aria-labelledby="fm-result-title" aria-describedby="fm-result-message"><div class="model-result-heading"><span id="fm-result-symbol" class="result-symbol" aria-hidden="true"></span><button id="fm-result-close" type="button" aria-label="Sonuç kartını kapat">×</button></div><h3 id="fm-result-title"></h3><p id="fm-result-message"></p><div class="model-result-actions"><button id="fm-result-back" type="button">Modelime dön</button><button id="fm-result-action" type="button" class="liquid-primary"></button></div></dialog>
+  </div>`;
+  const root = container.querySelector('#formula-modeling'), el = id => root.querySelector('#fm-' + id);
+  el('reaction').textContent = reaction.fixedVessel.name + ' + ' + reaction.addedVessel.name;
+  el('property-text').textContent = plan.properties;
+  const smokeEvidence = document.createElement('option'); smokeEvidence.textContent = 'Beyaz sis / duman'; el('evidence').append(smokeEvidence);
+  const smokeCause = document.createElement('option'); smokeCause.textContent = 'Havada asılı katı tanecikler oluşması'; el('cause').append(smokeCause);
+  const none = document.createElement('option'); none.value = 'none'; none.textContent = 'İncelenen gazların ikisi de değişir; seyirci tür yok'; el('stays').append(none);
+  if (plan.kind === 'smoke') tasks[0] = 'Beher ağzındaki gaz türlerini, çıktıkları kaynak maddeye göre yerleştir.';
+  function save() {
+    if (state.selectedReactionId === reaction.id) state.modelingDraft = { version: 7, reactionId: reaction.id, frames: clone(frames), active, reached, assessment: clone(assessment), records: clone(records), history: clone(history) };
+  }
+  function record(action, result) { records.actions.push({ stage: active + 1, action, result, time: new Date().toISOString() }); if (records.actions.length > 200) records.actions.shift(); }
+  function revokeCompletion() {
+    state.stages[2].status = 'active'; state.stages[2].completedData = null;
+    for (let i = 3; i <= 7; i++) { state.stages[i].status = 'locked'; state.stages[i].completedData = null; }
+    state.atomTraceDraft = null; state.emit('stageChange', { currentStage: state.currentStage, stages: state.stages });
+  }
+  function remember() { history.push(clone({ frames, active, reached, assessment })); if (history.length > 25) history.shift(); }
+  function invalidate() {
+    frames[active].ok = false;
+    for (let i = active + 1; i < 3; i++) frames[i] = blank();
+    reached = active;
+    if (active < 2) assessment = emptyAssessment();
+    else assessment.transferOK = false;
+    revokeCompletion();
+  }
+  function feedback(message, tone = 'info') { frames[active].feedback = message; frames[active].tone = tone; }
+  function guide(code, message) {
+    const f = frames[active]; f.errorCodes ||= {}; f.errorCodes[code] = (f.errorCodes[code] || 0) + 1;
+    feedback(message, 'guidance');
+  }
+  function update() { render(); save(); }
+  const remaining = formula => plan.initial.filter(p => (!formula || p.formula === formula) && !frames[0].items.some(x => x.id === p.id));
+  function add(formula, source) {
+    if (active !== 0) return false;
+    if (source === undefined) {
+      const selected = frames[0].items.find(p => p.formula === formula && frames[0].selected.includes(p.id));
+      if (selected) return returnToPool(selected.id);
+    }
+    const item = remaining(formula)[0]; if (!item) { feedback('Bu türün tüm kartları modelde. Yeni kart üretmek yerine mevcut yerleştirmeyi incele.'); update(); return false; }
+    if (source === undefined) { pending = formula; feedback(formula + ' seçildi. Şimdi hedef kaynak bölgeyi seç.'); update(); return true; }
+    remember(); frames[0].items.push({ ...clone(item), source }); invalidate(); pending = null;
+    const correct = source === item.source;
+    if (correct) feedback(formula + (remaining().length ? ' doğru kaynakta. Türü bütün olarak gösterdin; kalan kartlarla modelini tamamla.' : ' doğru kaynakta. Başlangıç kartlarının tamamını yerleştirdin; şimdi modelini kontrol edebilirsin.'), 'good');
+    else guide('source', formula + ' bu kaynak maddeye ait mi? Madde adını ve bu türün atom içeriğini karşılaştır.');
+    record('kaynak yerleştirme', correct ? 'doğru' : 'kaynak hatası'); if (!correct) records.errors++; update(); return true;
+  }
+  function moveSource(source, id) {
+    if (active !== 0) return;
+    if (pending) return add(pending, source);
+    const selected = frames[0].items.filter(p => id ? p.id === id : frames[0].selected.includes(p.id));
+    if (!selected.length) { feedback('Önce havuzdan veya modelinden bir kart seç; sonra kaynak bölgeyi seç.'); update(); return; }
+    remember(); selected.forEach(p => p.source = source); invalidate(); frames[0].selected = [];
+    const correct = selected.every(p => plan.initial.find(x => x.id === p.id).source === source);
+    if (correct) feedback('Seçtiğin türler doğru kaynak bölgesinde. Sayıları da kontrol edebilirsin.', 'good');
+    else guide('source', 'Bu kaynak maddenin formülünde hangi elementler var? Seçtiğin türlerin atom içeriğiyle karşılaştır.');
+    record('kaynak taşıma', correct ? 'doğru' : 'kaynak hatası'); if (!correct) records.errors++; update();
+  }
+  function select(id) {
+    pending = null; const f = frames[active];
+    if (active === 1) { remember(); f.interaction = null; f.eligible = false; f.proposal = null; f.trialState = null; invalidate(); }
+    f.selected = f.selected.includes(id) ? f.selected.filter(x => x !== id) : [...f.selected, id];
+    feedback(f.selected.length ? `${f.selected.length} tür kartı seçtin. ${active === 1 ? 'Etkileşim önerini sınayabilirsin.' : 'Hedef bölgeyi seçebilir veya yerleştirmeyi geri alabilirsin.'}` : 'Seçim temizlendi.'); update();
+  }
+  function tryInteraction() {
+    if (active !== 1) return;
+    const f = frames[1], result = plan.tryInteraction(f.items, f.selected, f.proposal);
+    remember(); invalidate(); f.eligible = ['proposal', 'proposal-wrong', 'ok'].includes(result[0]); f.interaction = result[2] || null;
+    f.trialState = result[0] === 'ok' ? 'correct' : ['proposal', 'selection'].includes(result[0]) ? 'incomplete' : 'incorrect';
+    phoneView = f.eligible && !f.interaction ? 'proposals' : 'model';
+    if (['ok', 'proposal'].includes(result[0])) feedback(result[1], result[0] === 'ok' ? 'good' : 'info');
+    else guide(result[0], result[1]);
+    record('etkileşim önerisi', result[0]); if (!['ok', 'proposal'].includes(result[0])) records.errors++; update();
+  }
+  function chooseProposal(id) {
+    if (active !== 1 || !frames[1].eligible) return;
+    remember(); invalidate(); frames[1].proposal = id; frames[1].interaction = null; frames[1].trialState = null;
+    feedback('Oluşum önerin seçildi. Atom içeriğini ve gözlemini düşünerek etkileşimini yeniden dene.'); update();
+  }
+  function setPhase(region, id) {
+    if (active !== 2) return;
+    const f = frames[2], selected = f.items.filter(p => id ? p.id === id : f.selected.includes(p.id));
+    if (!selected.length) { feedback('Önce çalışma alanından bir tür seç.'); update(); return; }
+    remember(); selected.forEach(p => p.phase = region === 'liquid' ? (p.formula === 'H₂O' ? 's' : 'suda') : region); invalidate(); f.selected = [];
+    const correct = selected.every(p => p.phase === plan.finalItems.find(x => x.formula === p.formula).phase);
+    if (correct) feedback('Seçtiğin türlerin fiziksel hâli uygun. Diğer türleri de modelde tutarak tamamla.', 'good');
+    else guide('phase', 'Bu yerleştirme gözlemini açıklıyor mu? Türün gaz, katı veya çözünmüş hâlini ve madde özelliklerini incele.');
+    record('hâl seçimi', correct ? 'doğru' : 'hâl hatası'); if (!correct) records.errors++; update();
+  }
+  function remove() {
+    if (active === 1) return;
+    const f = frames[active]; if (!f.selected.length) return;
+    remember(); f.items = f.items.filter(p => !f.selected.includes(p.id)); f.selected = []; invalidate();
+    feedback(active === 0 ? 'Seçilen türler havuza döndü; atomlar kaybolmadı.' : 'Türleri modelden çıkardın. Tepkimeye katılmayan türler yok olur mu? Soldaki geri alınan kartlarla onları yeniden ekleyebilirsin.', active === 0 ? 'info' : 'guidance'); record('havuza geri al', 'yeniden eklenebilir'); update();
+  }
+  function returnToPool(id) {
+    if (active !== 0 || !frames[0].items.some(p => p.id === id)) return false;
+    remember(); frames[0].items = frames[0].items.filter(p => p.id !== id);
+    frames[0].selected = frames[0].selected.filter(value => value !== id); pending = null;
+    invalidate(); feedback('Tür havuza döndü. Aynı atomlarla yeniden yerleştirebilirsin.');
+    record('havuza dönüş', 'aynı atom kimlikleri'); update(); return true;
+  }
+  function restore(id) {
+    if (active !== 2) return;
+    const f = frames[2], item = f.baseItems.find(p => p.id === id); if (!item || f.items.some(p => p.id === id)) return;
+    remember(); f.items.push({ ...clone(item), phase: 'unplaced' }); invalidate(); feedback('Tür geri geldi; aynı atom kimlikleri korundu. Şimdi fiziksel hâlini belirle.', 'good'); record('türü geri getir', 'doğru'); update();
+  }
+  function undo() {
+    const previous = history.pop(); if (!previous) return;
+    ({ frames, active, reached, assessment } = clone(previous)); pending = null; revokeCompletion(); frames[2].ok = false; assessment.transferOK = false;
+    feedback('Son anlamlı işlem geri alındı; atomlar ve türler korundu.'); record('geri al', 'geri alındı'); update();
+  }
+  function next() {
+    const f = frames[active]; const result = plan.validate(f, active); records.checks++;
+    if (!records.firstAttempt) records.firstAttempt = clone({ stage: active, frames });
+    f.ok = result[0] === 'ok';
+    record('adım kontrolü', result[0]);
+    if (!f.ok) {
+      const status = currentModelStatus();
+      const message = status === 'incorrect' && active === 0 ? 'Bir tür ait olmadığı kaynak bölgesinde. Kırmızı çerçeveli bölgeyi inceleyip türü uygun kaynağa taşı.'
+        : status === 'incorrect' && active === 1 && f.trialState === 'incorrect' ? f.feedback
+        : status === 'incomplete' && active === 2 ? 'Bazı türler henüz yerleştirilmemiş. Eksik bölgeleri ve geri alınan türleri tamamla.'
+        : result[1];
+      if (status === 'incorrect') records.errors++;
+      feedback(message, status === 'incorrect' ? 'guidance' : 'info'); update();
+      showResult(status, status === 'incorrect' ? 'Modelini yeniden incele' : 'Modelin henüz tamamlanmadı', message, 'fix', 'Modelimi düzelt'); return;
+    }
+    feedback(result[1], 'good'); update();
+    if (active < 2) { showResult('correct', 'Modelin doğru', result[1], 'advance', 'Sonraki adıma geç'); return; }
+    if (!explanationOK()) {
+      const wrong = assessment.evidence && assessment.evidence !== plan.evidence || assessment.explanation && assessment.explanation !== plan.explanation || assessment.stays && assessment.stays !== plan.staysAnswer;
+      showResult(wrong ? 'incorrect' : 'correct', wrong ? 'Açıklamanı gözleminle karşılaştır' : 'Modelin doğru', wrong ? 'Modelindeki türlerle seçtiğin açıklama arasında bir uyumsuzluk var. Gözlem defterinle karşılaştırarak açıklamanı düzelt.' : 'Türleri uygun hâllerde gösterdin. Şimdi gözlemini bu modelle ilişkilendir.', 'explain', wrong ? 'Açıklamamı düzelt' : 'Açıklamaya geç'); return;
+    }
+    if (!assessment.transferOK) {
+      showResult(assessment.transferFeedback ? 'incorrect' : 'correct', assessment.transferFeedback ? 'Yeni örneği yeniden incele' : 'Modelin ve açıklaman doğru', assessment.transferFeedback || 'Aynı düşünceyi yeni bir örnekte kullanarak modellemeyi tamamla.', 'transfer', assessment.transferFeedback ? 'Yeni örneği düzelt' : 'Yeni örneğe geç'); return;
+    }
+    showResult('correct', 'Modellemeyi başarıyla tamamladın', 'Modelin, gözlem açıklaman ve yeni örnekteki seçimin tutarlı. Aynı atomların izini takip etmeye hazırsın.', 'finish', 'Atomun izini sür');
+  }
+  function advance() {
+    const f = frames[active]; if (active >= 2 || plan.validate(f, active)[0] !== 'ok') return;
+    remember();
+    if (active === 0) frames[1].items = clone(f.items);
+    else {
+      const ids = new Set(f.interaction.reactants.map(p => p.id));
+      const final = [...clone(f.items.filter(p => !ids.has(p.id))), ...clone(f.interaction.products)];
+      frames[2].baseItems = clone(final); frames[2].items = final.map(p => ({ ...p, phase: 'unplaced' }));
+    }
+    active++; reached = active; pending = null; phoneView = 'model'; regionPage = 0;
+    feedback(active === 1 ? 'Gözlemini açıklayan etkileşimi öner.' : 'Oluşan ve değişmeden kalan türleri hâllerine göre yerleştir.'); update();
+    el('tabs').scrollIntoView({ block: 'nearest', behavior: 'auto' }); el('tab-' + active).focus({ preventScroll: true });
+  }
+  function showResult(status, title, message, action, label) {
+    const dialog = el('result'); dialog.dataset.status = status;
+    el('result-symbol').textContent = status === 'correct' ? '✓' : status === 'incorrect' ? '×' : '!';
+    el('result-title').textContent = title; el('result-message').textContent = message;
+    el('result-action').textContent = label; el('result-back').hidden = action === 'fix';
+    resultAction = { action, stage: active };
+    if (!dialog.open) dialog.showModal();
+    el('result-action').focus();
+  }
+  function closeResult() { resultAction = null; el('result').close(); }
+  function continueResult() {
+    const target = resultAction; closeResult(); if (!target || target.stage !== active) return;
+    if (target.action === 'advance') advance();
+    else if (target.action === 'finish') { if (checkAll(false)) state.setStage(3); }
+    else if (target.action === 'trace') state.setStage(3);
+    else if (target.action === 'explain' || target.action === 'transfer') {
+      phoneView = target.action === 'explain' ? 'explanation' : 'transfer'; question = 0; update();
+      const section = el(target.action === 'explain' ? 'explanation' : 'transfer');
+      if (!LandscapeTasks.active()) {
+        const heading = section.querySelector('h3');
+        container.scrollTo({ top: container.scrollTop + heading.getBoundingClientRect().top - container.getBoundingClientRect().top - 20, behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
+      }
+      section.querySelector('select, input, button')?.focus({ preventScroll: true });
+    } else if (!LandscapeTasks.active() || phoneView === 'model') { el('work').scrollIntoView({ block: 'nearest', behavior: 'auto' }); el('work').querySelector('[data-item], [data-source]')?.focus({ preventScroll: true }); }
+  }
+  function explanationOK() { return assessment.evidence === plan.evidence && assessment.explanation === plan.explanation && assessment.stays === plan.staysAnswer; }
+  function go(index) {
+    if (index > reached || frames.slice(0, index).some((f, i) => plan.validate(f, i)[0] !== 'ok')) return;
+    active = index; pending = null; phoneView = 'model'; regionPage = 0; update();
+  }
+  function checkAll(show = true) {
+    const review = frames.map((f, i) => plan.validate(f, i));
+    const valid = review.every(([code]) => code === 'ok') && explanationOK() && assessment.transferOK;
+    if (!valid) { feedback('Model, gözlem açıklaması ve yeni örnek birlikte tamamlanmalı.', 'guidance'); update(); return false; }
+    frames.forEach(f => f.ok = true); feedback('Üç modelin ve gözlem açıklaman tutarlı. Yeni örnekte de atomları ve değişmeden kalan türleri korudun.', 'good');
+    save(); state.completeStage(2, { version: 7, reactionId: reaction.id, frames: clone(frames), explanation: clone(assessment), learningRecord: clone(records), assisted: records.hintUses > 0, testMode: Boolean(records.testMode) });
+    render(); if (show) showResult('correct', 'Modellemeyi başarıyla tamamladın', 'Modelin ve gözlem açıklaman tutarlı. Aynı atomların izini takip etmeye hazırsın.', 'trace', 'Atomun izini sür'); return true;
+  }
+  function reset() { frames = [blank(), blank(), blank()]; active = reached = 0; phoneView = 'model'; regionPage = 0; pending = null; history = []; assessment = emptyAssessment(); records = { actions: [], checks: 0, errors: 0, firstAttempt: null, hintUses: 0, transferAttempts: 0 }; revokeCompletion(); update(); }
+  function autoComplete() {
+    records.testMode = true;
+    frames = [blank(), blank(), blank()]; frames[0].items = clone(plan.initial); frames[0].ok = true;
+    frames[1].items = clone(plan.initial); frames[1].interaction = plan.tryInteraction(frames[1].items, plan.activeInitial.map(p => p.id), plan.options.find(o => o.correct).id)[2]; frames[1].ok = true;
+    frames[2].items = clone(plan.finalItems); frames[2].baseItems = clone(plan.finalItems); active = reached = 2;
+    assessment = { evidence: plan.evidence, explanation: plan.explanation, stays: plan.staysAnswer, transfer: plan.transfer.answer, transferOK: true };
+    record('geliştirme kısayolu', 'testMode'); if (!checkAll(false)) throw new Error('Model doğrulanamadı.'); return true;
+  }
+  function token(item) {
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'formula-token'; b.dataset.item = item.id;
+    const formula = document.createElement('strong'); formula.className = 'chemical-formula'; FormulaChemistry.renderFormula(formula, item.formula);
+    const phase = document.createElement('small'); phase.textContent = plan.phaseLabels[item.phase] || 'Hâl seç'; if (item.catalyst) phase.textContent += ' · katalizör';
+    b.append(formula, phase); b.setAttribute('aria-pressed', String(frames[active].selected.includes(item.id))); b.onclick = () => select(item.id); draggable(b, { id: item.id }); return b;
+  }
+  function zone(host, region, title, items, source) {
+    const section = document.createElement('section'); section.className = 'formula-zone inquiry-zone'; section.dataset.region = region;
+    section.dataset.status = zoneStatus(region, items, source);
+    const header = document.createElement('div'); header.className = 'inquiry-zone-heading';
+    const h = document.createElement('h4'); h.textContent = title;
+    const status = document.createElement('span'); status.className = 'zone-status'; status.textContent = { incomplete: 'Eksik', incorrect: 'Hatalı', correct: 'Doğru' }[section.dataset.status];
+    header.append(h, status); section.append(header);
+    const list = document.createElement('div'); list.className = 'formula-items'; items.forEach(p => list.append(token(p))); section.append(list);
+    if (!items.length) { const empty = document.createElement('p'); empty.className = 'muted'; empty.textContent = 'Türleri buraya yerleştir.'; section.append(empty); }
+    if (source !== undefined) { const target = document.createElement('button'); target.type = 'button'; target.className = 'source-target'; target.textContent = 'Seçili türü bu kaynağa yerleştir'; target.dataset.source = source; target.onclick = () => moveSource(source); section.append(target); }
+    host.append(section);
+  }
+  function zoneStatus(region, items, source) {
+    const signature = InquiryChemistry.signature;
+    if (active === 0) {
+      const expected = plan.initial.filter(p => p.source === source);
+      if (items.some(p => !expected.some(x => x.id === p.id && x.formula === p.formula && x.phase === p.phase))) return 'incorrect';
+      return signature(items) === signature(expected) ? 'correct' : 'incomplete';
+    }
+    if (active === 1) return frames[1].interaction && plan.validate(frames[1], 1)[0] === 'ok' ? 'correct' : frames[1].trialState === 'incorrect' ? 'incorrect' : 'incomplete';
+    if (region === 'unplaced') return 'incomplete';
+    const expected = plan.finalItems.filter(p => region === 'liquid' ? ['s', 'suda'].includes(p.phase) : p.phase === region);
+    if (items.some(p => !expected.some(x => x.formula === p.formula && x.phase === p.phase))) return 'incorrect';
+    return signature(items) === signature(expected) ? 'correct' : 'incomplete';
+  }
+  function currentModelStatus() {
+    const f = frames[active];
+    if (active === 0 && [0, 1].some(source => zoneStatus('source-' + source, f.items.filter(p => p.source === source), source) === 'incorrect')) return 'incorrect';
+    if (active === 1 && f.trialState === 'incorrect') return 'incorrect';
+    if (active === 2 && f.items.some(p => p.phase !== 'unplaced' && p.phase !== plan.finalItems.find(x => x.formula === p.formula)?.phase)) return 'incorrect';
+    const code = plan.validate(f, active)[0];
+    if (code === 'ok') return 'correct';
+    if (['empty', 'interaction'].includes(code)) return 'incomplete';
+    if (code === 'inventory') {
+      const own = f.items.flatMap(p => p.atoms), ids = new Set(own.map(a => a.id));
+      return ids.size === own.length && own.length < plan.atoms.length && own.every(a => plan.atoms.some(b => b.id === a.id && b.e === a.e)) ? 'incomplete' : 'incorrect';
+    }
+    return active === 2 && f.items.some(p => p.phase === 'unplaced') && ['phase', 'gas'].includes(code) ? 'incomplete' : 'incorrect';
+  }
+  function draggable(button, payload) {
+    button.draggable = true;
+    button.addEventListener('dragstart', e => { e.dataTransfer.setData('application/x-chem-species', JSON.stringify({ ...payload, active })); e.dataTransfer.effectAllowed = 'move'; });
+    button.addEventListener('dragend', stopNativeDrag);
+  }
+  function stopNativeDrag() { cancelAnimationFrame(nativeDrag?.scroll); nativeDrag = null; root.querySelectorAll('.drag-over').forEach(zone => zone.classList.remove('drag-over')); }
+  function nativeScroll() {
+    if (!nativeDrag || disposed) return;
+    const bounds = container.getBoundingClientRect();
+    if (nativeDrag.y > bounds.bottom - 55) container.scrollTop += 12;
+    else if (nativeDrag.y < bounds.top + 55) container.scrollTop -= 12;
+    nativeDrag.scroll = requestAnimationFrame(nativeScroll);
+  }
+  function drop(payload, region) {
+    if (payload.active !== active) return;
+    if (active === 0 && region === 'pool' && payload.id) returnToPool(payload.id);
+    else if (active === 0 && /^source-[01]$/.test(region)) { const source = Number(region.slice(-1)); payload.formula ? add(payload.formula, source) : moveSource(source, payload.id); }
+    else if (active === 2 && ['liquid', 'g', 'k', 'unplaced'].includes(region) && payload.id) setPhase(region, payload.id);
+  }
+  root.addEventListener('dragover', e => {
+    if (!e.dataTransfer.types.includes('application/x-chem-species')) return;
+    e.preventDefault();
+    if (!nativeDrag) { nativeDrag = { y: e.clientY }; nativeDrag.scroll = requestAnimationFrame(nativeScroll); }
+    nativeDrag.y = e.clientY;
+    const target = e.target.closest('[data-region]'); if (target) target.classList.add('drag-over');
+  });
+  root.addEventListener('dragleave', e => e.target.closest('[data-region]')?.classList.remove('drag-over'));
+  root.addEventListener('drop', e => { stopNativeDrag(); const target = e.target.closest('[data-region]'); if (!target) return; e.preventDefault(); target.classList.remove('drag-over'); try { drop(JSON.parse(e.dataTransfer.getData('application/x-chem-species')), target.dataset.region); } catch { /* Ignore unrelated drop data. */ } });
+  root.addEventListener('pointerdown', e => {
+    if (e.pointerType === 'mouse' || ![0, 2].includes(active)) return;
+    const button = e.target.closest('[data-formula], [data-item]'); if (!button || button.disabled) return;
+    touch = { pointerId: e.pointerId, x: e.clientX, y: e.clientY, button, payload: { active, formula: button.dataset.formula, id: button.dataset.item } };
+    button.setPointerCapture(e.pointerId);
+  });
+  function touchScroll() {
+    if (!touch?.moved) return;
+    const bounds = container.getBoundingClientRect();
+    if (touch.yNow > bounds.bottom - 55) container.scrollTop += 12;
+    else if (touch.yNow < bounds.top + 55) container.scrollTop -= 12;
+    touch.scroll = requestAnimationFrame(touchScroll);
+  }
+  root.addEventListener('pointermove', e => {
+    if (!touch || touch.pointerId !== e.pointerId || !touch.moved && Math.hypot(e.clientX - touch.x, e.clientY - touch.y) < 9) return;
+    e.preventDefault(); touch.moved = true; touch.yNow = e.clientY;
+    if (!touch.ghost) { touch.ghost = document.createElement('div'); touch.ghost.className = 'formula-drag-ghost'; const item = frames[active].items.find(p => p.id === touch.payload.id); FormulaChemistry.renderFormula(touch.ghost, touch.payload.formula || item.formula); document.body.append(touch.ghost); touch.scroll = requestAnimationFrame(touchScroll); }
+    touch.ghost.style.left = e.clientX + 'px'; touch.ghost.style.top = e.clientY + 'px';
+  }, { passive: false });
+  function suppressClick(e) { e.preventDefault(); e.stopImmediatePropagation(); }
+  function endTouch(e) {
+    if (!touch || touch.pointerId !== e.pointerId) return; const drag = touch; touch = null; drag.ghost?.remove(); cancelAnimationFrame(drag.scroll);
+    if (!drag.moved || e.type === 'pointercancel') return;
+    root.addEventListener('click', suppressClick, { capture: true, once: true }); setTimeout(() => root.removeEventListener('click', suppressClick, true), 0);
+    const region = document.elementFromPoint(e.clientX, e.clientY)?.closest('[data-region]'); if (region && root.contains(region)) drop(drag.payload, region.dataset.region);
+  }
+  root.addEventListener('pointerup', endTouch); root.addEventListener('pointercancel', endTouch);
+  function render() {
+    if (disposed) return;
+    const focused = document.activeElement, focusItem = root.contains(focused) && (focused.dataset.item || focused.dataset.formula);
+    const f = frames[active];
+    el('tabs').replaceChildren(); titles.forEach((title, i) => {
+      const b = document.createElement('button'); b.type = 'button'; b.id = 'fm-tab-' + i; b.setAttribute('role', 'tab'); b.setAttribute('aria-selected', String(active === i)); b.setAttribute('aria-controls', 'fm-panel'); b.disabled = i > reached; b.textContent = `${i + 1} · ${title}${frames[i].ok ? ' ✓' : ''}`; b.onclick = () => go(i); el('tabs').append(b);
+    });
+    el('panel').setAttribute('aria-labelledby', 'fm-tab-' + active); el('title').textContent = titles[active]; el('task').textContent = tasks[active]; el('progress').textContent = `Adım ${active + 1} / 3`;
+    el('pool-title').textContent = 'Tanecik havuzu'; el('pool-help').textContent = 'Kartı seç → kaynak bölgeyi seç. Geri dönüş için türü havuza taşı.'; el('pool-help').hidden = active !== 0;
+    el('pool').dataset.region = 'pool'; el('pool').classList.toggle('passive-pool', active !== 0);
+    el('pool').replaceChildren();
+    plan.before.forEach(d => {
+      const b = document.createElement('button'); b.type = 'button'; b.className = 'formula-card'; b.disabled = active !== 0;
+      const label = document.createElement('span'); label.className = 'chemical-formula'; FormulaChemistry.renderFormula(label, d.formula);
+      const n = document.createElement('small'); n.textContent = active === 0 ? `${remaining(d.formula).length} / ${d.n} havuzda` : `${d.n} adet · ${plan.phaseLabels[d.phase]}`;
+      b.append(label, n); if (active === 0) { b.dataset.formula = d.formula; b.disabled = !remaining(d.formula).length && !f.items.some(p => p.formula === d.formula && f.selected.includes(p.id)); b.setAttribute('aria-pressed', String(pending === d.formula)); b.onclick = () => add(d.formula); if (remaining(d.formula).length) draggable(b, { formula: d.formula }); } el('pool').append(b);
+    });
+    el('atoms').replaceChildren(); Object.keys(plan.inventory).forEach(symbol => {
+      const name = document.createElement('span'); name.textContent = symbol; name.setAttribute('aria-label', atomNames[symbol] || symbol); el('atoms').append(name);
+    });
+    el('properties').hidden = active !== 1;
+    el('returned').replaceChildren(); if (active === 2) {
+      const missing = (f.baseItems || []).filter(p => !f.items.some(x => x.id === p.id));
+      if (missing.length) { const h = document.createElement('h3'); h.textContent = 'Geri alınan türler'; el('returned').append(h); missing.forEach(p => { const b = document.createElement('button'); b.type = 'button'; b.dataset.restore = p.id; b.textContent = p.formula + ' türünü geri getir'; b.onclick = () => restore(p.id); el('returned').append(b); }); }
+    }
+    el('work').replaceChildren(); el('work').classList.toggle('source-fields', active === 0); el('work').dataset.status = currentModelStatus();
+    if (active === 0) { zone(el('work'), 'source-0', plan.sourceNames[0], f.items.filter(p => p.source === 0), 0); zone(el('work'), 'source-1', plan.sourceNames[1], f.items.filter(p => p.source === 1), 1); }
+    else if (active === 1) zone(el('work'), 'mixture', reaction.id === 'caco3_hcl' ? 'Karışım · başlangıç katısının yüzeyinde etkileşim' : 'Karışım · etkileşim önerin', f.items);
+    else {
+      if (f.items.some(p => p.phase === 'unplaced')) zone(el('work'), 'unplaced', 'Hâlini belirleyeceğim türler', f.items.filter(p => p.phase === 'unplaced'));
+      if (plan.kind === 'gas' || f.items.some(p => p.phase === 'g')) zone(el('work'), 'g', 'Gaz bölgesi · sıvının üstü', f.items.filter(p => p.phase === 'g'));
+      if (plan.kind !== 'smoke' || f.items.some(p => ['s', 'suda'].includes(p.phase))) zone(el('work'), 'liquid', 'Sıvı / çözelti · ayrı iyonlar ve moleküller', f.items.filter(p => ['s', 'suda'].includes(p.phase)));
+      if (['solid', 'smoke'].includes(plan.kind) || f.items.some(p => p.phase === 'k')) zone(el('work'), 'k', plan.kind === 'smoke' ? 'Havada asılı katı tanecikler · beyaz sis' : 'Katı yapı · formül birimi (örgü/küme)', f.items.filter(p => p.phase === 'k'));
+    }
+    el('proposals').hidden = active !== 1 || !f.eligible;
+    el('proposal-options').replaceChildren(); if (active === 1 && f.eligible) plan.options.forEach(o => {
+      const b = document.createElement('button'); b.type = 'button'; b.dataset.proposal = o.id; b.setAttribute('aria-pressed', String(f.proposal === o.id)); b.textContent = (o.formulas.length ? o.formulas.join(' + ') + ' — ' : '') + o.label; b.onclick = () => chooseProposal(o.id); el('proposal-options').append(b);
+    });
+    el('interaction-preview').hidden = active !== 1 || !f.interaction;
+    el('interaction-preview').textContent = f.interaction ? f.interaction.reactants.map(p => p.formula).join(' + ') + ' → ' + f.interaction.products.map(p => p.formula).join(' + ') + (plan.spectators.length ? ' · Değişmeden kalan türler modelde.' : ' · İncelenen iki gaz da değişime katıldı.') + ' Bu gösterim ayrıntılı mekanizma değildir.' : '';
+    el('try').hidden = active !== 1; el('try').disabled = !f.selected.length;
+    [['liquid', true], ['gas', plan.kind === 'gas'], ['solid', ['solid', 'smoke'].includes(plan.kind)]].forEach(([id, show]) => { el(id).hidden = active !== 2 || !show; el(id).disabled = !f.selected.length; });
+    el('feedback').textContent = f.feedback || 'Bir karar ver, modelini kur ve gözleminle karşılaştır.'; el('feedback').classList.toggle('good', f.tone === 'good'); el('feedback').classList.toggle('guidance', f.tone === 'guidance');
+    el('feedback-open').textContent = f.tone === 'good' ? '✓ Doğru' : f.tone === 'guidance' ? '! İncele' : 'Dönütü oku';
+    el('feedback-open').setAttribute('aria-label', 'İşlem dönütünü oku: ' + el('feedback').textContent);
+    el('explanation').hidden = active !== 2 || !f.ok; el('evidence').value = assessment.evidence; el('cause').value = assessment.explanation; el('stays').value = assessment.stays; el('note').value = assessment.note || '';
+    el('sentence').textContent = explanationOK() ? `“${assessment.evidence}” gözlemim, modelimde “${assessment.explanation.toLocaleLowerCase('tr')}” ile açıklanır; ${plan.staysAnswer === 'none' ? 'incelenen gazların ikisi de değişime katılır.' : 'değişime katılmayan türler çözeltide kalır.'}` : 'Gözlem, model ve değişmeden kalan türler arasında ilişki kur.';
+    el('transfer').hidden = active !== 2 || !f.ok || !explanationOK();
+    el('transfer-task').textContent = plan.transfer.prompt; el('transfer-options').replaceChildren();
+    plan.transfer.options.forEach((text, i) => { const label = document.createElement('label'); const input = document.createElement('input'); input.type = 'radio'; input.name = 'fm-transfer-answer'; input.value = i; input.checked = assessment.transfer === i; input.onchange = () => { assessment.transfer = i; assessment.transferOK = false; revokeCompletion(); feedback('Yeni örnek için model önerin seçildi; kontrol ederek düşünceni sına.'); update(); }; label.append(input, document.createTextNode(text)); el('transfer-options').append(label); });
+    el('transfer-feedback').textContent = assessment.transferOK ? 'Bu yeni örnekte uygun modeli seçtin; türler ve atomlar korundu.' : assessment.transferFeedback || '';
+    el('transfer-check').disabled = assessment.transfer === null;
+    const complete = state.stages[2].status === 'completed'; el('next').hidden = complete; el('trace').hidden = !complete;
+    el('next').textContent = 'Modelimi kontrol et';
+    renderPhone();
+    MebiDesignSystem.applyActivity(root);
+    if (focusItem) { const same = [...root.querySelectorAll('[data-item],[data-formula]')].find(b => (b.dataset.item || b.dataset.formula) === focusItem); same?.focus({ preventScroll: true }); }
+  }
+  function renderPhone() {
+    const phone = LandscapeTasks.active(), f = frames[active];
+    if (active !== 2 && ['explanation', 'note', 'transfer'].includes(phoneView)) phoneView = 'model';
+    if (active === 2 && !f.ok && ['explanation', 'note', 'transfer'].includes(phoneView)) phoneView = 'model';
+    root.dataset.view = phoneView; root.dataset.step = active;
+    const nav = el('region-nav'); nav.replaceChildren();
+    const regions = [...el('work').children];
+    regionPage = Math.min(regionPage, regions.length - 1);
+    regions.forEach((section, i) => {
+      section.hidden = phone && i !== regionPage;
+      if (phone && regions.length > 1) {
+        const b = document.createElement('button'); b.type = 'button'; b.textContent = active === 0 ? 'Kaynak ' + (i + 1) : ({ unplaced:'Bekleyen', liquid:'Sıvı', g:'Gaz', k:'Katı' }[section.dataset.region]);
+        b.setAttribute('aria-pressed', String(i === regionPage)); b.onclick = () => { regionPage = i; renderPhone(); }; nav.append(b);
+      }
+      LandscapeTasks.paginate(section.querySelector('.formula-items'), 3);
+    });
+    LandscapeTasks.paginate(el('proposal-options'), 2);
+    LandscapeTasks.paginate(el('transfer-options'), 1);
+    if (phone && active === 1 && f.eligible) {
+      const b = document.createElement('button'); b.type = 'button'; b.textContent = phoneView === 'proposals' ? 'Türlere dön' : 'Oluşum önerim';
+      b.onclick = () => { phoneView = phoneView === 'proposals' ? 'model' : 'proposals'; renderPhone(); }; nav.append(b);
+    }
+    const fields = [...el('explanation').querySelectorAll('label')];
+    fields.forEach((label, i) => label.hidden = phone && (phoneView === 'note' ? i !== 3 : i !== question));
+    el('question-count').textContent = `${question + 1} / 3`;
+    el('question-prev').hidden = question === 0 || phoneView !== 'explanation';
+    el('question-next').hidden = question === 2 || phoneView !== 'explanation';
+    el('write-note').hidden = phoneView !== 'explanation';
+    el('question-count').hidden = phoneView !== 'explanation';
+    el('question-nav').classList.toggle('show-view-nav', ['explanation', 'note', 'transfer'].includes(phoneView));
+    el('question-nav').hidden = !['explanation', 'note', 'transfer'].includes(phoneView);
+    el('explanation').querySelector('h3').textContent = phoneView === 'note' && phone ? 'Kendi cümlenle ekle' : 'Gözlemimi modelimle açıklarım';
+    if (phone) container.scrollTop = 0;
+    root.querySelector('.workshop-footer').prepend(el('feedback-open'));
+    const actions = root.querySelector('.phase-actions'), footer = root.querySelector('.workshop-footer');
+    const actionMode = phone && ['model', 'proposals'].includes(phoneView) && f.selected.length && (active === 2 || active === 1 && !f.interaction);
+    actions.hidden = phone && !actionMode;
+    if (actionMode) { footer.append(actions); el('reset').hidden = true; el('next').hidden = true; }
+    else { el('panel').insertBefore(actions, el('feedback')); el('reset').hidden = false; }
+    if (phone && phoneView === 'transfer') {
+      root.querySelector('.workshop-footer').append(el('transfer-check'));
+      el('transfer-check').hidden = assessment.transferOK;
+      el('next').hidden = !assessment.transferOK;
+    } else {
+      el('transfer').insertBefore(el('transfer-check'), el('transfer-feedback'));
+      el('transfer-check').hidden = false;
+      el('next').hidden = actionMode || state.stages[2].status === 'completed';
+    }
+  }
+  const unsubscribeViewport = LandscapeTasks.subscribe(() => { if (!disposed) renderPhone(); });
+  el('view-back').onclick = () => { phoneView = 'model'; renderPhone(); };
+  el('question-prev').onclick = () => { question = Math.max(0, question - 1); renderPhone(); };
+  el('question-next').onclick = () => { question = Math.min(2, question + 1); renderPhone(); };
+  el('write-note').onclick = () => { phoneView = 'note'; renderPhone(); el('note').focus({ preventScroll: true }); };
+  el('feedback-open').onclick = () => showResult(frames[active].tone === 'good' ? 'correct' : currentModelStatus(), 'İşlemin için dönüt', frames[active].feedback, 'fix', 'Görevime dön');
+  el('properties').querySelector('summary').onclick = event => {
+    if (!LandscapeTasks.active()) return;
+    event.preventDefault(); showResult('incomplete', 'Madde özellikleri', plan.properties, 'fix', 'Görevime dön');
+  };
+  el('reset').onclick = reset; el('try').onclick = tryInteraction; el('next').onclick = next;
+  el('liquid').onclick = () => setPhase('liquid'); el('gas').onclick = () => setPhase('g'); el('solid').onclick = () => setPhase('k');
+  el('trace').onclick = () => { closeResult(); state.setStage(3); };
+  el('result-close').onclick = closeResult; el('result-back').onclick = closeResult; el('result-action').onclick = continueResult;
+  el('result').addEventListener('cancel', () => { resultAction = null; });
+  [['evidence', 'evidence'], ['cause', 'explanation'], ['stays', 'stays']].forEach(([id, field]) => el(id).onchange = () => {
+    assessment[field] = el(id).value; assessment.transferOK = false; revokeCompletion();
+    const correct = assessment[field] === (field === 'evidence' ? plan.evidence : field === 'explanation' ? plan.explanation : plan.staysAnswer);
+    feedback(correct ? 'Bu açıklama parçası modelinle uygun; diğer bağlantıları da tamamla.' : 'Seçtiğin açıklamayı gözlem defterinle ve son modelindeki türlerle karşılaştır.', correct ? 'good' : 'guidance'); record('gözlem açıklaması', correct ? 'doğru' : 'açıklama hatası'); if (!correct && assessment[field]) records.errors++; update();
+  });
+  el('note').oninput = () => { assessment.note = el('note').value; save(); };
+  el('transfer-check').onclick = () => {
+    if (assessment.transfer === null || !frames[2].ok || !explanationOK()) return;
+    records.transferAttempts++; assessment.transferOK = assessment.transfer === plan.transfer.answer;
+    assessment.transferFeedback = assessment.transferOK ? '' : plan.transfer.guidance;
+    feedback(assessment.transferOK ? 'Yeni örnekte de türleri ve atomları korudun. Modellemeyi tamamlayabilirsin.' : plan.transfer.guidance, assessment.transferOK ? 'good' : 'guidance'); record('bağımsız yeni örnek', assessment.transferOK ? 'doğru' : 'yeniden dene'); update();
+    if (LandscapeTasks.active() && !assessment.transferOK) showResult('incorrect', 'Yeni örneği yeniden incele', plan.transfer.guidance, 'fix', 'Seçimimi düzelt');
+  };
+  render();
+  return { frames: () => frames, validate: i => plan.validate(frames[i], i), add, select, moveSource, tryInteraction, chooseProposal, setPhase, remove, restore, undo, next, go, checkAll, reset, autoComplete,
+    dispose() { save(); disposed = true; unsubscribeViewport(); stopNativeDrag(); touch?.ghost?.remove(); cancelAnimationFrame(touch?.scroll); touch = null; closeResult(); } };
 }
-const work=new Platform(el('work'));const bankItems=Object.keys(specs).map((kind,i)=>({id:'pool-'+kind,kind,atoms:copy(specs[kind]),x:-8.2+(i%2)*2.5,y:2.8-Math.floor(i/2)*1.8,z:0,rx:0,ry:0}));const atomItems=Object.keys(inventory).map((e,i)=>({id:'sample-'+e,sample:true,atoms:[a(e,'sample-'+e)],x:-8.6+(i%4)*1.05,y:-.8-Math.floor(i/4)*.9,z:0,rx:0,ry:0}));work.bank=[...bankItems,...atomItems];
-function render(){const tabs=el('tabs');tabs.replaceChildren();titles.forEach((title,i)=>{const b=document.createElement('button');b.type='button';b.id='c3-tab-'+i;b.className='cursor-interaction';b.setAttribute('role','tab');b.setAttribute('aria-controls','c3-panel');b.setAttribute('aria-selected',String(i===active));b.disabled=i>reached||frames.slice(0,i).some(f=>!f.ok);b.textContent=(i+1)+' · '+title+(frames[i].ok?' ✓':'');b.addEventListener('click',()=>go(i));tabs.append(b);});el('panel').setAttribute('aria-labelledby','c3-tab-'+active);el('title').textContent=titles[active];el('task').textContent=tasks[active];el('zone').textContent=active===2?'Modelleme · üstte gaz, altta sulu ortam':'Modelleme bölgesi';work.water.visible=active===2;work.update(frames[active].items,frames[active].selected);const bank=el('bank-buttons');bank.replaceChildren();Object.keys(specs).forEach(kind=>{const b=document.createElement('button');b.type='button';b.className='cursor-interaction';b.textContent=formula({id: 'start-'+kind,atoms:specs[kind]});b.disabled=active!==0||used(kind);b.addEventListener('click',()=>add(kind));bank.append(b);});const atomLegend=document.createElement('div');atomLegend.className='atom-legend';atomLegend.textContent='Atom örnekleri: '+Object.keys(inventory).join(' · ');bank.append(atomLegend);const list=el('items');list.replaceChildren();frames[active].items.forEach(p=>{const b=document.createElement('button');b.type='button';b.className='cursor-interaction';b.textContent=formula(p);b.setAttribute('aria-pressed',String(frames[active].selected.includes(p.id)));b.addEventListener('click',()=>select(p.id));b.addEventListener('keydown',e=>{const d={ArrowLeft:[-.3,0,0],ArrowRight:[.3,0,0],ArrowUp:[0,.3,0],ArrowDown:[0,-.3,0],PageUp:[0,0,-.3],PageDown:[0,0,.3]}[e.key];if(d){e.preventDefault();p.x=Math.max(-5,Math.min(5,p.x+d[0]));p.y=Math.max(.7,Math.min(4.3,p.y+d[1]));p.z=Math.max(-3,Math.min(3,p.z+d[2]));invalidate();render();save();}});list.append(b);});el('gas').hidden=el('water').hidden=active!==2;el('gas').disabled=el('water').disabled=frames[active].selected.length===0;el('next').textContent=active===2?'Korunma kontrolünü aç':'Aşamayı doğrula ve devam et';el('feedback').textContent=frames[active].feedback||'Modelini sen oluştur; gerektiğinde ipucu al.';el('feedback').classList.toggle('ok',frames[active].ok);const c=count(frames[active].items.flatMap(p=>p.atoms));el('inventory').textContent='Atom sayımı: '+Object.keys(inventory).map(e=>e+' '+(c[e]||0)+'/'+inventory[e]).join(' · ');el('review').replaceChildren();if(review&&active===2)review.forEach(v=>{const row=document.createElement('div');row.className='review-row';const title=document.createElement('strong');title.textContent=titles[v.stage];const text=document.createElement('div');text.className=v.code==='ok'?'ok':'error';text.textContent=v.message;row.append(title,text);if(v.code!=='ok'){const b=document.createElement('button');b.type='button';b.className='cursor-interaction';b.textContent='Bu aşamayı düzelt';b.addEventListener('click',()=>go(v.stage));row.append(b);}el('review').append(row);});}
-el('trace').hidden=state.stages[2].status!=='completed';el('trace').addEventListener('click',()=>state.setStage(3));el('close-check').addEventListener('click',()=>el('conservation').close());el('reset').addEventListener('click',reset);el('merge').addEventListener('click',merge);el('split').addEventListener('click',split);el('next').addEventListener('click',next);el('help').addEventListener('click',help);el('gas').addEventListener('click',()=>setPhase(true));el('water').addEventListener('click',()=>setPhase(false));root.querySelectorAll('[data-zoom]').forEach(b=>b.addEventListener('click',()=>{const[,dir]=b.dataset.zoom.split('-');work.zoom(dir==='in'?.85:1.18);}));render();return{frames:()=>frames,validate,add,merge,split,next,go,checkAll,reset,work,dispose(){save();work.dispose();}};
-}
-
-window.StudentStage2ModelingManager=class{constructor(state,container){this.state=state;this.api=mountStudentModel(container,state);}dispose(){this.api?.dispose();}};
-window.Stage2ModelingManager=window.StudentStage2ModelingManager;
+window.StudentStage2ModelingManager = class {
+  constructor(state, container) { this.state = state; this.api = mountStudentModel(container, state); }
+  dispose() { this.api?.dispose(); }
+};
+window.Stage2ModelingManager = window.StudentStage2ModelingManager;

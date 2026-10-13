@@ -1,28 +1,134 @@
-class StudentAtomTraceManager{
-constructor(state,container){this.state=state;this.container=container;this.data=state.stages[2].completedData;this.reaction=state.getReaction();this.views=[];this.disposed=false;if(!this.data?.frames){container.innerHTML='<div>Önce Modelle aşamasını doğrula.</div>';return;}
-this.frames=[this.data.frames[0].items,this.data.frames[2].items].map(items=>JSON.parse(JSON.stringify(items)));const all=this.frames[0].flatMap(p=>p.atoms);this.target=all.find(a=>a.e==='C')||all.find(a=>!['Na','Cl','K'].includes(a.e))||all[0];this.source=this.frames[0].find(p=>p.atoms.some(a=>a.id===this.target.id));this.product=this.frames[1].find(p=>p.atoms.some(a=>a.id===this.target.id));this.mode='inquiry';this.marked=false;this.selected=null;this.reason=null;this.inquiryDone=false;this.watched=false;this.done=false;this.feedback='Başlangıçta görev atomunu içeren taneciği seç.';const saved=state.atomTraceDraft;if(saved?.reactionId===this.reaction.id&&saved.targetId===this.target.id)Object.assign(this,saved);
-container.innerHTML=`<div id="student-atom-trace" lang="tr"><header><div><div class="muted">AŞAMA 3 · ATOMUN İZİNİ SÜR</div><h2>Atomun izini sür</h2><div id="trace-mode"></div></div><button type="button" id="trace-reset">Yeniden dene</button></header><div class="trace-steps"><span id="trace-inquiry-step">Önce tahmin, sonra kanıt</span><span id="trace-guided-step">Yönlendirmeli iz sürme</span></div><p id="trace-task"></p><div class="trace-scenes"><section class="trace-stage"><div class="trace-phase" id="trace-before-title">Önce</div><canvas id="trace-before" aria-label="Başlangıç tanecikleri"></canvas><div id="trace-sources" class="trace-species"></div></section><section class="trace-stage"><div class="trace-phase">Sonra</div><canvas id="trace-after" aria-label="Son tanecikler"></canvas><div id="trace-products" class="trace-species"></div></section></div><p class="muted">Taneciği sürükle: yalnızca onu döndür · Sahne sabit</p><div id="trace-reasons"><h3>Neden bu taneciği seçtin?</h3><div class="row"><button data-reason="rearranged">Atomlar yeniden düzenlendi</button><button data-reason="created">Yeni atom oluştu</button><button data-reason="lost">Atom kayboldu</button></div></div><div class="row"><button id="trace-check">Eşleştirmemi kontrol et</button><button id="trace-continue" hidden>Yönlendirmeli iz sürmeye geç</button><button id="trace-watch" hidden>İşaretli atomu izle</button><button id="trace-finish" hidden>Son taneciği doğrula</button></div><div id="trace-feedback" aria-live="polite"></div><div id="trace-count" hidden></div><p class="muted">İşaret atomun kimliğini, hareket ise yeniden kullanılmasını temsil eder. Yeni atom oluşturulmaz.</p></div>`;
-this.root=container.querySelector('#student-atom-trace');this.el=id=>this.root.querySelector('#trace-'+id);this.views=[new AtomTraceScene(this,this.el('before'),0),new AtomTraceScene(this,this.el('after'),1)];if(this.mode==='guided'&&this.watched){this.views[0].load(1);this.el('before-title').textContent='İzlenen atom · son durum';}this.el('reset').onclick=()=>{cancelAnimationFrame(this.animation);this.animating=false;this.mode='inquiry';this.marked=this.inquiryDone=this.watched=this.done=false;this.selected=this.reason=null;this.el('before-title').textContent='Önce';this.feedback='Başlangıçta görev atomunu içeren taneciği seç.';state.stages[3].completedData=null;state.stages[3].status='active';this.views.forEach(v=>v.load(v.index));this.render();this.save();};this.root.querySelectorAll('[data-reason]').forEach(b=>b.onclick=()=>{this.edit();this.reason=b.dataset.reason;this.inquiryDone=false;this.done=false;this.render();this.save();});this.el('check').onclick=()=>{this.inquiryDone=this.selected===this.product.id&&this.reason==='rearranged';this.feedback=this.inquiryDone?'Eşleştirme ve gerekçe tutarlı. Şimdi aynı atomu yönlendirmeli olarak takip edebilirsin.':this.selected!==this.product.id?'Seçtiğin tanecikte görev atomu var mı? Önce ve sonradaki atom türlerini karşılaştır.':'Başlangıçta bu atom zaten vardı. Yeni atom oluşması ile atomların yeniden düzenlenmesini karşılaştır.';this.render();this.save();};this.el('continue').onclick=()=>{if(!this.inquiryDone)return;this.mode='guided';this.marked=this.watched=this.done=false;this.selected=null;this.feedback='Aynı başlangıç atomunu tekrar seç; sonra izlemeyi başlat.';this.views.forEach(v=>v.load(v.index));this.render();this.save();};this.el('watch').onclick=()=>this.watch();this.el('finish').onclick=()=>{if(!this.watched)return;this.done=this.selected===this.product.id;this.feedback=this.done?'Atom kaybolmadı; yeni atom oluşmadı. Aynı atom yeni tanecikte kullanıldı.':'İşaretli atomun bulunduğu son taneciği yeniden incele.';this.render();this.save();if(this.done)state.completeStage(3,{targetId:this.target.id,element:this.target.e,source:this.source.id,product:this.product.id,inquiry:true,guided:true});};this.render();}
-name(p){const count=atoms=>{const r={};atoms.forEach(a=>r[a.e]=(r[a.e]||0)+1);return Object.keys(r).sort().map(e=>e+r[e]).join('|');};const wanted=count(p.atoms),entries=[...this.reaction.microscopic.reactants,...this.reaction.microscopic.products];for(const entry of entries){const sym=entry.symbol.replace(/^\d+\s+/,''),rec=SPECIES_REGISTRY[sym]||SPECIES_REGISTRY[entry.symbol];if(rec){const coefficient=SPECIES_REGISTRY[sym]?1:Number(entry.symbol.match(/^\d+/)?.[0])||1;const atoms=Object.entries(rec.elements).flatMap(([e,n])=>Array.from({length:n/coefficient},()=>({e})));if(count(atoms)===wanted)return sym;}}const r={};p.atoms.forEach(a=>r[a.e]=(r[a.e]||0)+1);return Object.entries(r).map(([e,n])=>e+(n>1?String(n).replace(/\d/g,d=>'₀₁₂₃₄₅₆₇₈₉'[d]):'')).join('');}
-edit(){if(this.state.stages[3].status==='completed'){this.state.stages[3].status='active';this.state.stages[3].completedData=null;this.state.emit('stageChange',{currentStage:3,stages:this.state.stages});}}
-chooseSource(id){this.edit();this.done=false;const p=this.frames[0].find(p=>p.id===id);if(!p)return;if(!p.atoms.some(a=>a.id===this.target.id)){this.marked=false;this.inquiryDone=false;this.selected=null;this.reason=null;this.feedback='Bu tanecik görev atomunu içermiyor. Başlangıç taneciklerini yeniden incele.';}else{this.marked=true;this.feedback=this.mode==='inquiry'?'Atom işaretlendi. Aynı atomun son tanecikte nerede olduğunu tahmin et.':'Atom işaretlendi. İzlemeyi başlatabilirsin.';}this.render();this.save();}
-chooseProduct(id){this.edit();if(!this.marked||(this.mode==='guided'&&!this.watched))return;this.selected=id;this.inquiryDone=this.mode==='inquiry'?false:this.inquiryDone;this.done=false;this.feedback=this.mode==='inquiry'?'Eşleştirmeni yaptın; şimdi gerekçeni belirt.':'Son taneciği seçtin. Seçimini doğrula.';this.render();this.save();}
-render(){if(!this.root)return;this.el('mode').textContent=this.mode==='inquiry'?'Önce tahmin, sonra kanıt':'Yönlendirmeli iz sürme';this.el('task').textContent=this.target.e+' atomunun izini sür: hangi başlangıç taneciğinden hangi son taneciğe geçti?';this.el('inquiry-step').classList.toggle('active',this.mode==='inquiry');this.el('guided-step').classList.toggle('active',this.mode==='guided');this.el('reasons').hidden=this.mode!=='inquiry';this.el('check').hidden=this.mode!=='inquiry';this.el('check').disabled=!this.selected||!this.reason;this.el('continue').hidden=!this.inquiryDone||this.mode!=='inquiry';this.el('watch').hidden=this.mode!=='guided';this.el('watch').disabled=!this.marked||this.animating;this.el('finish').hidden=this.mode!=='guided';this.el('finish').disabled=!this.watched||!this.selected;this.root.querySelectorAll('[data-reason]').forEach(b=>{b.disabled=!this.selected;b.setAttribute('aria-pressed',String(b.dataset.reason===this.reason));});const build=(host,items,callback,selected)=>{host.replaceChildren();items.forEach(p=>{const b=document.createElement('button');b.textContent=this.name(p);b.setAttribute('aria-pressed',String(selected===p.id));b.onclick=()=>callback(p.id);host.append(b);});};const showingFinal=this.views[0]?.showing===1;build(this.el('sources'),this.frames[showingFinal?1:0],id=>showingFinal?this.chooseProduct(id):this.chooseSource(id),showingFinal?this.selected:this.marked?this.source.id:null);build(this.el('products'),this.frames[1],id=>this.chooseProduct(id),this.selected);this.el('feedback').textContent=this.feedback;this.el('feedback').classList.toggle('good',this.inquiryDone||this.done);this.el('count').hidden=!(this.inquiryDone&&this.mode==='inquiry'||this.done);const count=items=>items.flatMap(p=>p.atoms).filter(a=>a.e===this.target.e).length;this.el('count').textContent=this.target.e+' atom sayısı: önce '+count(this.frames[0])+' → sonra '+count(this.frames[1]);this.views.forEach(v=>v.updateMarker());}
-watch(){if(!this.marked||this.animating)return;this.animating=true;this.el('before-title').textContent='İşaretli atom izleniyor';this.watched=false;this.done=false;this.state.stages[3].status='active';this.state.stages[3].completedData=null;this.selected=null;this.render();const view=this.views[0],start=performance.now(),duration=matchMedia('(prefers-reduced-motion: reduce)').matches?0:2600;view.load(0);const tick=now=>{if(this.disposed)return;const t=duration?Math.min(1,(now-start)/duration):1;view.interpolate(t);if(t<1)this.animation=requestAnimationFrame(tick);else{view.load(1);this.animating=false;this.watched=true;this.el('before-title').textContent='İzlenen atom · son durum';this.feedback='Aynı işaretli atom son tanecikte kullanıldı. Bulunduğu taneciği seç.';this.render();this.save();}};this.animation=requestAnimationFrame(tick);}
-save(){this.state.atomTraceDraft={reactionId:this.reaction.id,targetId:this.target.id,mode:this.mode,marked:this.marked,selected:this.selected,reason:this.reason,inquiryDone:this.inquiryDone,watched:this.watched,done:this.done,feedback:this.feedback};}
-dispose(){this.disposed=true;cancelAnimationFrame(this.animation);this.views.forEach(v=>v.dispose());}
+class StudentAtomTraceManager {
+  constructor(state, container) {
+    this.state = state; this.container = container; this.reaction = state.getReaction();
+    const data = state.stages[2].completedData;
+    if (!data?.frames) { container.textContent = 'Önce modelini doğrula.'; return; }
+    this.frames = [data.frames[0].items, data.frames[2].items].map(FormulaChemistry.clone);
+    const atoms = this.frames[0].flatMap(p => p.atoms);
+    this.target = atoms.find(a => a.e === 'C') || atoms.find(a => !['Na', 'Cl', 'K'].includes(a.e)) || atoms[0];
+    this.source = this.frames[0].find(p => p.atoms.some(a => a.id === this.target.id));
+    this.product = this.frames[1].find(p => p.atoms.some(a => a.id === this.target.id));
+    this.mode = 'inquiry'; this.marked = false; this.selected = null; this.reason = null;
+    this.inquiryDone = this.watched = this.done = false; this.feedback = 'İşaretlenecek atomu içeren başlangıç formülünü seç.';
+    const saved = state.atomTraceDraft;
+    if (saved?.reactionId === this.reaction.id && saved.targetId === this.target.id) Object.assign(this, saved);
+    container.innerHTML = `<div id="student-atom-trace" class="liquid-workshop" lang="tr">
+      <header class="workshop-header"><div><div class="eyebrow">AŞAMA 3 · ATOMUN İZİNİ SÜR</div><h2>Bir atom, iki formül</h2><p class="muted" id="trace-reaction"></p></div><button type="button" id="trace-reset">Yeniden dene</button></header>
+      <div class="trace-steps liquid-segments"><span id="trace-inquiry-step">01 · Tahmin ve gerekçe</span><span id="trace-guided-step">02 · Aynı atomun izi</span></div>
+      <div class="trace-prompt glass-panel"><span id="trace-target" class="atom-symbol"></span><div><h3 id="trace-task"></h3><p id="trace-mode" class="muted"></p></div></div>
+      <div id="trace-view-nav" class="landscape-only task-view-nav"><button id="trace-view-source" type="button">Başlangıç türleri</button><button id="trace-view-product" type="button">Son türler</button><button id="trace-view-reason" type="button">Gerekçem</button></div>
+      <div class="trace-scenes"><section class="glass-panel trace-stage"><div class="panel-heading"><span class="step-dot">01</span><h3>Tepkime öncesi</h3></div><div id="trace-sources" class="trace-species"></div></section>
+        <section class="glass-panel trace-stage"><div class="panel-heading"><span class="step-dot">02</span><h3>Tepkime sonrası</h3></div><div id="trace-products" class="trace-species"></div></section></div>
+      <div id="trace-path" class="trace-path" hidden role="status"></div>
+      <section id="trace-reasons" class="glass-panel reason-panel"><h3>Neden bu formülü seçtin?</h3><div class="workshop-actions"><button type="button" data-reason="rearranged">Atomlar yeniden düzenlendi</button><button type="button" data-reason="created">Yeni atom oluştu</button><button type="button" data-reason="lost">Atom kayboldu</button></div></section>
+      <div class="workshop-footer"><button id="trace-check" type="button" class="liquid-primary">Eşleştirmemi kontrol et</button><button id="trace-continue" type="button" class="liquid-primary" hidden>Atomun izini takip et</button><button id="trace-watch" type="button" class="liquid-primary" hidden>İşaretli atomu izle</button><button id="trace-finish" type="button" class="liquid-primary" hidden>Son formülü doğrula</button></div>
+      <div id="trace-feedback" class="workshop-feedback" role="status"></div><p id="trace-count" class="trace-count" hidden></p><p class="workshop-note">İşaret aynı atomun kimliğini gösterir. Atom kaybolmaz; yeni atom oluşmaz.</p>
+    </div>`;
+    this.root = container.querySelector('#student-atom-trace'); this.el = id => this.root.querySelector('#trace-' + id);
+    this.el('reaction').textContent = this.reaction.fixedVessel.name + ' + ' + this.reaction.addedVessel.name[0].toLocaleLowerCase('tr') + this.reaction.addedVessel.name.slice(1); this.el('target').textContent = this.target.e;
+    this.el('reset').onclick = () => this.reset();
+    this.phoneView = this.mode === 'inquiry' ? (this.selected ? 'reason' : this.marked ? 'product' : 'source') : this.watched ? 'product' : 'source';
+    for (const view of ['source', 'product', 'reason']) this.el('view-' + view).onclick = () => { this.phoneView = view; this.renderPhone(); };
+    this.unsubscribeViewport = LandscapeTasks.subscribe(() => { if (!this.disposed) this.renderPhone(); });
+    this.root.querySelectorAll('[data-reason]').forEach(b => b.onclick = () => { this.edit(); this.reason = b.dataset.reason; this.inquiryDone = this.done = false; this.render(); this.save(); });
+    this.el('check').onclick = () => {
+      this.inquiryDone = this.selected === this.product.id && this.reason === 'rearranged';
+      this.feedback = this.inquiryDone ? 'Formül ve gerekçe tutarlı. Şimdi aynı atomun izini takip et.' : this.selected !== this.product.id ? 'Seçtiğin son formülde başlangıçtaki işaretli atom bulunuyor mu?' : 'Bu atom başlangıçta da vardı. Formüllerin atomları nasıl yeniden kullandığını düşün.';
+      this.render(); this.save();
+    };
+    this.el('continue').onclick = () => { if (!this.inquiryDone) return; this.phoneView = 'source'; this.mode = 'guided'; this.marked = this.watched = this.done = false; this.selected = null; this.feedback = 'Başlangıç formülünü tekrar seç; işaretli atomu izle.'; this.render(); this.save(); };
+    this.el('watch').onclick = () => this.watch(); this.el('finish').onclick = () => this.finish(); this.render();
+  }
+  edit() {
+    if (this.state.stages[3].status === 'completed') { this.state.stages[3].status = 'active'; this.state.stages[3].completedData = null; this.state.emit('stageChange', { currentStage: 3, stages: this.state.stages }); }
+  }
+  reset() {
+    this.testMode = false;
+    clearTimeout(this.timer); this.animating = false; this.edit(); this.mode = 'inquiry'; this.marked = this.inquiryDone = this.watched = this.done = false;
+    this.phoneView = 'source';
+    this.selected = this.reason = null; this.feedback = 'İşaretlenecek atomu içeren başlangıç formülünü seç.'; this.render(); this.save();
+  }
+  chooseSource(id) {
+    if (this.animating) return;
+    this.edit(); this.done = false; this.marked = id === this.source.id;
+    this.inquiryDone = this.mode === 'guided' && this.inquiryDone; this.selected = null; this.reason = null;
+    this.feedback = this.marked ? 'Atom işaretlendi. Aynı atomun yer aldığı son formülü seç.' : 'Bu başlangıç formülünde görev atomu bulunmuyor. Formülleri yeniden incele.';
+    if (this.marked && this.mode === 'inquiry') this.phoneView = 'product';
+    this.render(); this.save();
+  }
+  chooseProduct(id) {
+    if (!this.marked || this.animating || this.mode === 'guided' && !this.watched) return;
+    this.edit(); this.selected = id; this.done = false; if (this.mode === 'inquiry') this.inquiryDone = false;
+    this.feedback = this.mode === 'inquiry' ? 'Şimdi seçiminin gerekçesini belirt.' : 'Son formülü seçtin. Seçimini doğrula.'; this.render(); this.save();
+    if (this.mode === 'inquiry') { this.phoneView = 'reason'; this.renderPhone(); }
+  }
+  watch() {
+    if (!this.marked || this.animating) return;
+    this.animating = true; this.watched = this.done = false; this.selected = null; this.feedback = 'Aynı atomun iki formülde de kullanıldığını takip et.'; this.render();
+    this.timer = setTimeout(() => { if (this.disposed) return; this.animating = false; this.watched = true; this.phoneView = 'product'; this.feedback = 'İşaretli atomun yer aldığı son formülü seç ve doğrula.'; this.render(); this.save(); }, matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 1100);
+  }
+  finish() {
+    if (!this.watched || !this.selected) return;
+    this.done = this.selected === this.product.id; this.feedback = this.done ? 'Aynı atom son formülde yeniden kullanıldı. Atomun izini başarıyla takip ettin.' : 'İşaretli atomun yer aldığı son formülü yeniden incele.';
+    this.render(); this.save();
+    if (this.done) this.state.completeStage(3, { targetId: this.target.id, element: this.target.e, source: this.source.id, product: this.product.id, inquiry: true, guided: true, testMode: Boolean(this.testMode) });
+  }
+  autoComplete() {
+    this.testMode = true;
+    clearTimeout(this.timer); this.animating = false; this.mode = 'guided'; this.marked = this.inquiryDone = this.watched = true; this.selected = this.product.id; this.finish();
+  }
+  render() {
+    const el = this.el; el('task').textContent = `${this.target.e} atomu hangi son formülde kullanıldı?`;
+    el('mode').textContent = this.mode === 'inquiry' ? 'Önce tahmin et, sonra gerekçeni seç.' : 'Aynı atomun başlangıçtan sonuca geçişini takip et.';
+    el('inquiry-step').classList.toggle('active', this.mode === 'inquiry'); el('guided-step').classList.toggle('active', this.mode === 'guided');
+    el('reasons').hidden = el('check').hidden = this.mode !== 'inquiry'; el('check').disabled = !this.selected || !this.reason;
+    el('continue').hidden = !this.inquiryDone || this.mode !== 'inquiry'; el('watch').hidden = el('finish').hidden = this.mode !== 'guided';
+    el('watch').disabled = !this.marked || this.animating || this.done; el('finish').disabled = !this.watched || !this.selected || this.done;
+    this.root.querySelectorAll('[data-reason]').forEach(b => { b.disabled = !this.selected; b.setAttribute('aria-pressed', String(b.dataset.reason === this.reason)); });
+    const build = (host, items, before) => {
+      host.replaceChildren(); items.forEach(p => {
+        const b = document.createElement('button'); b.type = 'button'; b.className = 'trace-formula-card';
+        const formula = document.createElement('strong'); formula.className = 'chemical-formula'; FormulaChemistry.renderFormula(formula, p.formula);
+        const symbols = document.createElement('span'); symbols.className = 'trace-atom-list';
+        p.atoms.forEach(a => { const token = document.createElement('span'); token.textContent = a.e;
+          const marked = a.id === this.target.id && this.marked && (before || this.watched || this.inquiryDone);
+          if (marked) { token.className = 'marked-atom'; token.setAttribute('aria-label', a.e + ' · işaretli atom'); } symbols.append(token); });
+        b.append(formula, symbols); b.setAttribute('aria-pressed', String(before ? this.marked && p.id === this.source.id : p.id === this.selected));
+        b.disabled = !before && (!this.marked || this.mode === 'guided' && !this.watched || this.animating);
+        b.onclick = () => before ? this.chooseSource(p.id) : this.chooseProduct(p.id); host.append(b);
+      });
+    };
+    build(el('sources'), this.frames[0], true); build(el('products'), this.frames[1], false);
+    el('path').hidden = this.mode !== 'guided' || !this.marked || (!this.animating && !this.watched);
+    el('path').replaceChildren();
+    [this.source.formula, this.target.e, this.product.formula].forEach((value, index) => {
+      if (index) el('path').append(document.createTextNode('  →  '));
+      const label = document.createElement('span'); label.className = 'chemical-formula';
+      FormulaChemistry.renderFormula(label, value); el('path').append(label);
+    }); el('path').classList.toggle('tracking', this.animating);
+    el('feedback').textContent = this.feedback; el('feedback').classList.toggle('good', this.inquiryDone || this.done);
+    el('count').hidden = !(this.mode === 'inquiry' && this.inquiryDone || this.done);
+    const count = items => items.flatMap(p => p.atoms).filter(a => a.e === this.target.e).length;
+    el('count').textContent = `${this.target.e} atom sayısı: önce ${count(this.frames[0])} · sonra ${count(this.frames[1])}`;
+    MebiDesignSystem.applyActivity(this.root);
+    this.renderPhone();
+  }
+  renderPhone() {
+    const phone = LandscapeTasks.active();
+    if (this.mode === 'guided' && this.phoneView === 'reason') this.phoneView = 'source';
+    this.root.dataset.view = this.phoneView;
+    this.root.querySelector('.workshop-header h2').textContent = phone ? (this.mode === 'inquiry' ? 'Tahmin et ve gerekçeni seç' : 'Aynı atomun izini takip et') : 'Bir atom, iki formül';
+    this.root.classList.toggle('is-tracking', Boolean(this.animating));
+    this.root.classList.toggle('is-done', Boolean(this.done));
+    this.el('sources').parentElement.hidden = phone && this.phoneView !== 'source';
+    this.el('products').parentElement.hidden = phone && this.phoneView !== 'product';
+    this.el('view-product').disabled = !this.marked || this.mode === 'guided' && !this.watched;
+    this.el('view-reason').hidden = this.mode !== 'inquiry'; this.el('view-reason').disabled = !this.selected;
+    for (const view of ['source', 'product', 'reason']) this.el('view-' + view).setAttribute('aria-pressed', String(this.phoneView === view));
+    LandscapeTasks.paginate(this.el('sources'), 3); LandscapeTasks.paginate(this.el('products'), 3);
+    if (phone) this.container.scrollTop = 0;
+  }
+  save() { this.state.atomTraceDraft = { reactionId: this.reaction.id, targetId: this.target.id, mode: this.mode, marked: this.marked, selected: this.selected, reason: this.reason, inquiryDone: this.inquiryDone, watched: this.watched, done: this.done, feedback: this.feedback }; }
+  dispose() { this.disposed = true; this.unsubscribeViewport?.(); clearTimeout(this.timer); }
 }
-class AtomTraceScene{
-constructor(manager,canvas,index){this.manager=manager;this.canvas=canvas;this.index=index;const T=THREE;this.scene=new T.Scene();this.models=new T.Group();this.scene.add(this.models);this.camera=new T.PerspectiveCamera(42,1,.1,100);this.camera.position.set(0,2,15);this.camera.lookAt(0,.5,0);this.renderer=new T.WebGLRenderer({canvas,antialias:true,alpha:true});this.renderer.setPixelRatio(Math.min(devicePixelRatio||1,2));this.scene.add(new T.HemisphereLight(0xffffff,0x658379,.8));const light=new T.DirectionalLight(0xffffff,.9);light.position.set(-5,8,10);this.scene.add(light);this.ray=new T.Raycaster();this.marker=null;this.positions=[this.getPositions(0),this.getPositions(1)];this.observer=new ResizeObserver(()=>this.resize());this.observer.observe(canvas);this.load(index);this.bind();}
-getPositions(index){const out=new Map(),items=this.manager.frames[index];items.forEach((p,i)=>{const {pos}=StudentParticleLayout(p),origin=new THREE.Vector3((i%3-1)*3.5,1.8-Math.floor(i/3)*2.4,0);p.atoms.forEach((a,k)=>out.set(a.id,pos[k].clone().add(origin)));});return out;}
-load(index){this.showing=index;this.clear();this.nodes=new Map();this.manager.frames[index].forEach((p,i)=>{const g=new THREE.Group();g.userData.item=p.id;g.position.set((i%3-1)*3.5,1.8-Math.floor(i/3)*2.4,0);const {pos,links}=StudentParticleLayout(p);p.atoms.forEach((a,k)=>{const r=a.e==='H'?.23:.36,mesh=new THREE.Mesh(new THREE.SphereGeometry(r,24,18),new THREE.MeshStandardMaterial({color:StudentCPKColors[a.e]||0x909090,roughness:.32}));mesh.position.copy(pos[k]);mesh.userData.item=p.id;g.add(mesh);this.nodes.set(a.id,{mesh,group:g});if(a.id===this.manager.target.id){const c=document.createElement('canvas');c.width=c.height=128;const ctx=c.getContext('2d');ctx.strokeStyle='#00aabd';ctx.lineWidth=5;ctx.beginPath();ctx.arc(64,64,56,0,Math.PI*2);ctx.stroke();this.marker=new THREE.Sprite(new THREE.SpriteMaterial({map:new THREE.CanvasTexture(c),transparent:true,depthWrite:false}));this.marker.scale.set(r*2.8,r*2.8,1);this.marker.position.z=.1;mesh.add(this.marker);}});links.forEach(([a,b])=>{const d=pos[b].clone().sub(pos[a]),mesh=new THREE.Mesh(new THREE.CylinderGeometry(.07,.07,d.length(),10),new THREE.MeshStandardMaterial({color:0x64898b}));mesh.position.copy(pos[a]).add(pos[b]).multiplyScalar(.5);mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),d.normalize());mesh.userData.item=p.id;mesh.userData.bond=true;g.add(mesh);});this.models.add(g);});this.updateMarker();this.resize();}
-updateMarker(){if(this.marker)this.marker.visible=this.manager.marked&&(this.index===0||this.manager.mode==='guided'&&this.manager.watched||this.manager.mode==='inquiry'&&this.manager.inquiryDone||this.manager.done);this.draw();}
-interpolate(t){this.nodes.forEach(({mesh,group},id)=>{const a=this.positions[0].get(id),b=this.positions[1].get(id);if(a&&b)mesh.position.copy(a).lerp(b,t).sub(group.position);});this.models.traverse(o=>{if(o.userData.bond)o.visible=t===0;});this.draw();}
-resize(){const r=this.canvas.getBoundingClientRect();if(r.width<1)return;this.renderer.setSize(r.width,r.height,false);this.camera.aspect=r.width/r.height;this.camera.position.z=Math.max(15,13/this.camera.aspect);this.camera.updateProjectionMatrix();this.draw();}
-draw(){this.renderer.render(this.scene,this.camera);}
-hit(e){const r=this.canvas.getBoundingClientRect();this.ray.setFromCamera(new THREE.Vector2((e.clientX-r.x)/r.width*2-1,1-(e.clientY-r.y)/r.height*2),this.camera);return this.ray.intersectObject(this.models,true).find(v=>v.object.userData.item)?.object.userData.item;}
-bind(){let drag;this.canvas.addEventListener('pointerdown',e=>{if(this.manager.animating)return;this.canvas.setPointerCapture(e.pointerId);const id=this.hit(e),group=this.models.children.find(g=>g.userData.item===id);drag={id,group,x:e.clientX,y:e.clientY,startX:e.clientX,startY:e.clientY,moved:false};});this.canvas.addEventListener('pointermove',e=>{if(!drag)return;drag.moved ||= Math.hypot(e.clientX-drag.startX,e.clientY-drag.startY)>4;if(drag.moved&&drag.group){const group=drag.group;group.rotation.y+=(e.clientX-drag.x)*.014;group.rotation.x+=(e.clientY-drag.y)*.014;this.draw();}drag.x=e.clientX;drag.y=e.clientY;});this.canvas.addEventListener('pointerup',()=>{if(drag?.id&&!drag.moved){if(this.showing===0)this.manager.chooseSource(drag.id);else this.manager.chooseProduct(drag.id);}drag=null;});this.canvas.addEventListener('pointercancel',()=>drag=null);this.canvas.addEventListener('wheel',e=>{e.preventDefault();const scale=Math.max(.65,Math.min(1.8,this.models.scale.x*Math.exp(-e.deltaY*.001)));this.models.scale.setScalar(scale);this.draw();},{passive:false});}
-clear(){this.models.children.forEach(g=>g.traverse(o=>{o.geometry?.dispose();o.material?.map?.dispose();o.material?.dispose();}));this.models.clear();}
-dispose(){this.observer.disconnect();this.clear();this.renderer.dispose();this.renderer.forceContextLoss();}
-}
-window.StudentAtomTraceManager=StudentAtomTraceManager;
+window.StudentAtomTraceManager = StudentAtomTraceManager;

@@ -1,0 +1,96 @@
+/* The inquiry activity scrolls as a whole so feedback and text remain readable. */
+.development-controls[hidden] { display:none!important; }
+body[data-stage="2"] #stageScaffoldView { overflow:auto; scrollbar-width:thin; }
+#formula-modeling.inquiry-workshop { height:auto; min-height:100%; overflow:visible; gap:14px; padding:18px; }
+.inquiry-workshop .workshop-layout { flex:0 0 auto; min-height:0; grid-template-columns:minmax(210px,260px) minmax(0,1fr); align-items:start; gap:18px; }
+.inquiry-workshop .formula-pool { overflow:visible; }
+.inquiry-workshop .formula-workspace { display:block; }
+.inquiry-workshop #fm-panel { display:block; }
+.inquiry-workshop .workshop-header { padding:14px; }
+.inquiry-workshop .workshop-header h2 { font-size:clamp(19px,2vw,26px); }
+.inquiry-workshop p,.inquiry-workshop .muted { font-size:13px; line-height:1.55; }
+.inquiry-workshop h3 { font-size:16px; }
+.inquiry-workshop button { min-height:44px; font-size:13px; }
+.inquiry-workshop .liquid-segments { flex-wrap:wrap; }
+.inquiry-workshop .liquid-segments button { flex:1 1 140px; font-size:12px; text-align:left; }
+.inquiry-workshop details { font-size:13px; }
+.inquiry-workshop summary { cursor:pointer; min-height:32px; padding:4px 0; color:var(--liquid-ink); }
+.inquiry-evidence { border-left:4px solid var(--liquid-accent); background:var(--liquid-subtle); padding:10px 14px; border-radius:0 12px 12px 0; }
+.inquiry-workshop .formula-bank { grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; margin:12px 0; }
+.inquiry-workshop .formula-card { min-height:70px; padding:10px; border:1px solid var(--liquid-line); background:var(--liquid-solid); border-radius:14px; text-align:center; }
+.inquiry-workshop .formula-card small { font-size:12px; color:var(--liquid-muted); }
+.inquiry-workshop .atom-pool { margin-top:18px; padding-top:14px; }
+.inquiry-workshop .atom-pool p:last-child { display:block; }
+.atom-name-list { display:flex; flex-wrap:wrap; gap:8px; padding-top:12px; }
+.atom-name-list span { font-size:13px; color:var(--liquid-ink); padding:5px 8px; border-radius:8px; background:var(--liquid-subtle); }
+.inquiry-properties { margin-top:12px; }
+.inquiry-workshop .workspace-heading { margin:16px 0 8px; }
+.inquiry-workshop #fm-task { display:block; font-size:13px; margin-bottom:14px; }
+.inquiry-field { display:grid; gap:12px; background:var(--liquid-subtle); border:1px solid var(--liquid-line); border-radius:16px; padding:12px; }
+.inquiry-field.source-fields { grid-template-columns:repeat(2,minmax(0,1fr)); }
+.inquiry-workshop { --inquiry-error:#b5473a; --inquiry-incomplete:#b98316; }
+[data-theme="dark"] .inquiry-workshop { --inquiry-error:#ff968b; --inquiry-incomplete:#e8be63; }
+.inquiry-workshop .inquiry-zone { padding:12px; min-height:125px; border:2px solid var(--liquid-line); background:var(--liquid-solid); border-radius:12px; }
+.inquiry-workshop .inquiry-zone h4 { display:block; font-size:13px; margin:0 0 12px; }
+.inquiry-workshop .inquiry-zone[data-status="incomplete"] { border-color:var(--inquiry-incomplete); }
+.inquiry-workshop .inquiry-zone[data-status="incorrect"] { border-color:var(--inquiry-error); }
+.inquiry-workshop .inquiry-zone[data-status="correct"] { border-color:var(--liquid-success); }
+.inquiry-zone-heading { display:flex; align-items:flex-start; gap:10px; justify-content:space-between; }
+.inquiry-zone-heading h4 { flex:1; }
+.zone-status { font-size:12px; flex:0 0 auto; font-weight:600; }
+[data-status="incomplete"]>.inquiry-zone-heading .zone-status { color:var(--liquid-warning); }
+[data-status="incorrect"]>.inquiry-zone-heading .zone-status { color:var(--inquiry-error); }
+[data-status="correct"]>.inquiry-zone-heading .zone-status { color:var(--liquid-success); }
+.inquiry-workshop .inquiry-zone[data-region="unplaced"] { background:var(--liquid-subtle); }
+.inquiry-workshop .formula-items { gap:10px; }
+.inquiry-workshop .formula-token { min-height:64px; min-width:70px; padding:9px 12px; display:flex; flex-direction:column; border-radius:12px; }
+.inquiry-workshop .formula-token .chemical-formula { font-size:24px; }
+.inquiry-workshop .formula-token small { font-size:12px; font-weight:400; color:var(--liquid-muted); }
+.inquiry-workshop .source-target { margin-top:14px; text-align:left; width:100%; border:1px dashed var(--liquid-line); font-size:12px; }
+.inquiry-workshop .workshop-actions { margin:14px 0; gap:8px; }
+.inquiry-workshop #fm-selection { display:block; font-size:12px; }
+.inquiry-workshop .workshop-feedback { font-size:14px; line-height:1.6; margin:14px 0; padding:12px 14px; color:var(--liquid-ink); border-left:4px solid var(--liquid-line); }
+.inquiry-workshop .workshop-feedback.good { border-left-color:var(--liquid-success); }
+.inquiry-workshop .workshop-feedback.guidance { border-left-color:var(--liquid-warning); }
+.inquiry-proposals,.inquiry-explanation,.inquiry-transfer { margin:16px 0; padding-top:16px; border-top:1px solid var(--liquid-line); }
+.inquiry-workshop .inquiry-proposals h4 { font-size:14px; margin-bottom:10px; }
+.inquiry-workshop .inquiry-proposals button { border-radius:12px; text-align:left; }
+.interaction-preview { padding:12px; background:var(--liquid-subtle); border-left:4px solid var(--liquid-success); border-radius:0 12px 12px 0; font-size:14px; animation:inquiry-shift .35s ease-out; }
+.inquiry-workshop select,.inquiry-workshop textarea { width:100%; margin-top:5px; min-height:44px; font:inherit; font-size:14px; color:var(--liquid-ink); background:var(--liquid-solid); border:1px solid var(--liquid-line); border-radius:10px; padding:9px; }
+.inquiry-workshop textarea { resize:vertical; }
+.inquiry-explanation label { display:block; margin:12px 0; font-size:13px; }
+#fm-transfer-options label { display:flex; gap:10px; align-items:center; min-height:48px; padding:8px; margin:8px 0; border:1px solid var(--liquid-line); border-radius:10px; }
+#fm-transfer-options input { flex:0 0 auto; width:18px; height:18px; accent-color:var(--liquid-accent); }
+.returned-species button { display:block; width:100%; margin-top:8px; text-align:left; border-radius:10px; }
+.inquiry-workshop .workshop-footer { flex-wrap:wrap; margin-top:14px; padding-top:14px; }
+.inquiry-workshop .inquiry-note { display:block; font-size:12px; margin:0; padding:8px; }
+.inquiry-workshop .model-result { position:fixed; inset:0; margin:auto; height:fit-content; width:min(470px,calc(100% - 28px)); max-height:calc(100dvh - 32px); padding:24px; border-radius:20px; border:2px solid var(--inquiry-incomplete); }
+.inquiry-workshop .model-result[data-status="correct"] { border-color:var(--liquid-success); }
+.inquiry-workshop .model-result[data-status="incorrect"] { border-color:var(--inquiry-error); }
+.model-result-heading { display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; }
+.result-symbol { display:grid; place-items:center; width:44px; height:44px; border-radius:50%; background:var(--liquid-subtle); font-size:28px; color:var(--liquid-warning); }
+[data-status="correct"] .result-symbol { color:var(--liquid-success); }
+[data-status="incorrect"] .result-symbol { color:var(--inquiry-error); }
+.inquiry-workshop .model-result h3 { font-size:21px; margin-bottom:12px; }
+.inquiry-workshop .model-result p { font-size:15px; line-height:1.65; }
+.model-result-actions { display:flex; flex-wrap:wrap; gap:8px; margin-top:22px; justify-content:flex-end; }
+.model-result-actions button { flex:1 1 auto; }
+@keyframes inquiry-shift { from { transform:translateY(8px); } to { transform:translateY(0); } }
+@media(max-width:800px) {
+  .inquiry-workshop .workshop-layout { grid-template-columns:1fr; }
+  .inquiry-workshop .formula-bank { grid-template-columns:repeat(4,minmax(0,1fr)); }
+  .inquiry-workshop .workshop-header { flex-wrap:wrap; }
+  .inquiry-workshop .workshop-header>button { max-width:none; }
+}
+@media(max-width:480px) {
+  #formula-modeling.inquiry-workshop { padding:10px; }
+  .inquiry-workshop .formula-bank { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .inquiry-field.source-fields { grid-template-columns:1fr; }
+  .inquiry-workshop .liquid-segments button { flex:1 1 100%; }
+  .inquiry-workshop .workshop-actions { display:flex; flex-wrap:wrap; }
+  .inquiry-workshop .workshop-actions button { font-size:13px; padding:8px 10px; }
+  .inquiry-workshop select,.inquiry-workshop textarea { font-size:16px; }
+  .inquiry-workshop .workshop-footer { flex-wrap:wrap; }
+  .inquiry-workshop .workshop-footer button { flex:1 1 auto; font-size:13px; padding:9px 12px; }
+}
+@media(prefers-reduced-motion:reduce) { .interaction-preview { animation:none; } }
