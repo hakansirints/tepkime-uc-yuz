@@ -60,9 +60,12 @@ document.addEventListener("DOMContentLoaded", () => {
   }
   settingsButton.addEventListener('click', () => setSettingsOpen(settingsPanel.hidden));
   document.getElementById('btnCloseLabSettings').addEventListener('click', () => setSettingsOpen(false, true));
-  document.addEventListener('click', event => {
-    if (!event.target.closest('.lab-settings-wrap')) setSettingsOpen(false);
-  });
+  const dismissSettingsOutside = event => {
+    if (!settingsPanel.hidden && !event.target.closest('.lab-settings-wrap')) setSettingsOpen(false);
+  };
+  // Capture before the 3D canvas takes over touch/drag events.
+  document.addEventListener('pointerdown', dismissSettingsOutside, true);
+  document.addEventListener('click', dismissSettingsOutside, true);
   document.addEventListener('keydown', event => {
     if (event.key === 'Escape' && !settingsPanel.hidden) setSettingsOpen(false, true);
   });
@@ -72,7 +75,6 @@ document.addEventListener("DOMContentLoaded", () => {
   const reactionExpandCard = document.getElementById("reactionExpandCard");
   const btnReactionToggle = document.getElementById("btnReactionToggle");
   const reactionListContent = document.getElementById("reactionListContent");
-  const reactionCardSubtext = document.getElementById("reactionCardSubtext");
   const reactionStatusBadge = document.getElementById("reactionStatusBadge");
 
   // Material colors describe the reactants without revealing the experiment's result.
@@ -122,10 +124,11 @@ document.addEventListener("DOMContentLoaded", () => {
       tileBtn.setAttribute("aria-pressed", "false");
 
       tileBtn.innerHTML = `
-        <span class="m3-tile-name">${index}. ${reaction.title}</span><span class="reaction-completion" hidden>Tamamlandı</span>
+        <span class="m3-tile-name">${index}. ${reaction.title}</span>
         <span class="reaction-materials-pair">
           ${materialCard(reaction.fixedVessel, '01 · Sabit kap')}
           ${materialCard(reaction.addedVessel, '02 · Eklenen')}
+          <span class="reaction-completion" hidden>Tamamlandı</span>
         </span>
       `;
 
@@ -179,7 +182,6 @@ document.addEventListener("DOMContentLoaded", () => {
     document.getElementById('experimentMaterials').textContent = reaction ? reaction.fixedVessel.name + ' + ' + reaction.addedVessel.name + ' deneyi' : '';
     updateGlasswareLabels(reaction);
     reactionExpandCard.classList.toggle('needs-selection', !reaction);
-    reactionCardSubtext.textContent = reaction ? 'Başka bir deney seçmek için aç' : 'İncelemek istediğin deneyi seç';
     reactionListContent.querySelectorAll('.m3-reaction-tile').forEach(tile => {
       const selected = tile.dataset.reactionId === reaction?.id;
       tile.classList.toggle('is-active', selected);
@@ -188,7 +190,7 @@ document.addEventListener("DOMContentLoaded", () => {
     reactionStatusBadge.textContent = reaction ? 'Reaktifler Masada' : 'Masa Boş';
     document.querySelector('.m3-reaction-card-title').textContent = reaction ? 'Tepkimeyi değiştir' : 'Tepkime seç';
     document.getElementById('selectedReactionPair').innerHTML = reaction
-      ? `<span class="selected-pair-label">✓ Seçili madde çifti</span><span class="reaction-completion" hidden>Tamamlandı</span><div class="reaction-materials-pair">${materialCard(reaction.fixedVessel, '01 · Sabit kap')}${materialCard(reaction.addedVessel, '02 · Eklenen')}</div>`
+      ? `<span class="selected-pair-label">✓ Seçili madde çifti</span><div class="reaction-materials-pair">${materialCard(reaction.fixedVessel, '01 · Sabit kap')}${materialCard(reaction.addedVessel, '02 · Eklenen')}<span class="reaction-completion" hidden>Tamamlandı</span></div>`
       : '<p>Bir madde çifti seçerek başla.</p>';
     refreshCompletion();
     setReactionCardExpanded(false);
@@ -256,8 +258,6 @@ document.addEventListener("DOMContentLoaded", () => {
         window.__skipFillAnimation = true;
         window.labState.setReaction(targetId);
         window.__skipFillAnimation = false;
-        const idx = keys.indexOf(targetId) + 1;
-        if (reactionCardSubtext) reactionCardSubtext.textContent = `${idx}. ${window.REACTIONS_DATA[targetId].title}`;
         if (reactionStatusBadge) {
           reactionStatusBadge.textContent = "Reaktifler Masada";
           reactionStatusBadge.className = "mebi-badge mebi-badge-success";
@@ -306,7 +306,8 @@ document.addEventListener("DOMContentLoaded", () => {
     };
     syncAudio();
     btnToggleAudio.addEventListener("click", () => {
-      window.labAudio.toggleMute(); syncAudio();
+      const enabled = window.labAudio.toggleMute(); syncAudio();
+      if (enabled) window.labAudio.playClick();
     });
   }
 

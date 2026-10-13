@@ -19,19 +19,48 @@ class LabAudioEngine {
     } catch (e) {
       this.isMuted = false;
     }
+    // Touch devices have no hover; unlock within a real user gesture.
+    const unlockFromGesture = event => {
+      if (event.isTrusted && !this.isMuted && this.ctx?.state !== 'running') this.unlock();
+    };
+    document.addEventListener('pointerup', unlockFromGesture, true);
+    document.addEventListener('click', unlockFromGesture, true);
+    document.addEventListener('keydown', unlockFromGesture, true);
   }
 
   getAudioContext() {
-    if (!this.ctx) {
+    if (!this.ctx || this.ctx.state === 'closed') {
       const AudioCtx = window.AudioContext || window.webkitAudioContext;
       if (AudioCtx) {
-        this.ctx = new AudioCtx();
+        try { this.ctx = new AudioCtx(); } catch { return null; }
       }
     }
-    if (this.ctx && this.ctx.state === 'suspended') {
-      this.ctx.resume();
-    }
     return this.ctx;
+  }
+
+  unlock() {
+    if (this.isMuted) return Promise.resolve(false);
+    const ctx = this.getAudioContext();
+    if (!ctx) return Promise.resolve(false);
+    if (ctx.state === 'running') return Promise.resolve(true);
+    try {
+      // Resume both suspended and interrupted contexts (e.g. after backgrounding).
+      const resumed = ctx.resume();
+      const silent = ctx.createBufferSource();
+      silent.buffer = ctx.createBuffer(1, 1, ctx.sampleRate);
+      silent.connect(ctx.destination); silent.onended = () => silent.disconnect();
+      silent.start();
+      return Promise.resolve(resumed).then(() => ctx.state === 'running', () => false);
+    } catch { return Promise.resolve(false); }
+  }
+
+  readyContext(retry) {
+    const ctx = this.getAudioContext();
+    if (!ctx) return null;
+    if (ctx.state === 'running') return ctx;
+    // Schedule the effect only after resuming, using the new currentTime.
+    this.unlock().then(ready => { if (ready && !this.isMuted) retry(); });
+    return null;
   }
 
   toggleMute() {
@@ -46,7 +75,7 @@ class LabAudioEngine {
   playHover() {
     if (this.isMuted) return;
     const ctx = this.getAudioContext();
-    if (!ctx) return;
+    if (!ctx || ctx.state !== 'running') return;
 
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
@@ -69,7 +98,7 @@ class LabAudioEngine {
   // 2. Tıklama Sesi (3D Dokunsal Pop)
   playClick() {
     if (this.isMuted) return;
-    const ctx = this.getAudioContext();
+    const ctx = this.readyContext(() => this.playClick());
     if (!ctx) return;
 
     const now = ctx.currentTime;
@@ -108,7 +137,7 @@ class LabAudioEngine {
   // 3. Sıvı Dökme Sesi (Filtrelenmiş Beyaz Gürültü Uğultusu)
   playPour(durationSec = 2.0) {
     if (this.isMuted) return;
-    const ctx = this.getAudioContext();
+    const ctx = this.readyContext(() => this.playPour(durationSec));
     if (!ctx) return;
 
     const bufferSize = ctx.sampleRate * durationSec;
@@ -146,7 +175,7 @@ class LabAudioEngine {
   // 4. Gaz Kabarcığı ve Köpürme Sesi (Fizz / Effervescence)
   playFizz(durationSec = 4.0) {
     if (this.isMuted) return;
-    const ctx = this.getAudioContext();
+    const ctx = this.readyContext(() => this.playFizz(durationSec));
     if (!ctx) return;
 
     const bufferSize = ctx.sampleRate * durationSec;
@@ -188,7 +217,7 @@ class LabAudioEngine {
   // 5. Başarı / Onay Akordu (C5 - E5 - G5 - C6 Majör Akor)
   playSuccess() {
     if (this.isMuted) return;
-    const ctx = this.getAudioContext();
+    const ctx = this.readyContext(() => this.playSuccess());
     if (!ctx) return;
 
     const notes = [523.25, 659.25, 783.99, 1046.50]; // C5, E5, G5, C6
@@ -219,7 +248,7 @@ class LabAudioEngine {
   // 6. İpucu / Düşünme Sesi (Yumuşak Marimba)
   playHint() {
     if (this.isMuted) return;
-    const ctx = this.getAudioContext();
+    const ctx = this.readyContext(() => this.playHint());
     if (!ctx) return;
 
     const now = ctx.currentTime;
@@ -243,7 +272,7 @@ class LabAudioEngine {
   // 7. Uyarı / Yanılgı Sesi (Yumuşak Düşük Tonlu Çift Ton)
   playWarning() {
     if (this.isMuted) return;
-    const ctx = this.getAudioContext();
+    const ctx = this.readyContext(() => this.playWarning());
     if (!ctx) return;
 
     const now = ctx.currentTime;

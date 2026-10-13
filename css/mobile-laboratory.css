@@ -9,6 +9,9 @@
 [data-theme="dark"] .experiment-title { color:#7de0f5; }
 #labAppFrame #observationLayout.has-reaction { padding-top:var(--experiment-title-height,40px); }
 #labSettingsPanel { width:300px; padding:10px 12px; border-radius:18px; background:var(--activity-glass); backdrop-filter:blur(12px); max-height:calc(var(--visible-height,100dvh) - 76px); }
+#labSettingsPanel:not([hidden]) { transform-origin:top right; animation:lab-settings-unfold 240ms cubic-bezier(.2,.7,.2,1); }
+@keyframes lab-settings-unfold { from { clip-path:inset(0 0 100% 0 round 18px); } to { clip-path:inset(0 0 0 0 round 18px); } }
+@media(prefers-reduced-motion:reduce) { #labSettingsPanel:not([hidden]) { animation:none; } }
 #labSettingsPanel .lab-settings-heading { margin:0 0 8px; padding:0 0 6px; font-size:13px; }
 #labSettingsPanel .lab-settings-heading button { min-height:28px; height:28px; width:28px; }
 .lab-settings-quick { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:6px; }
