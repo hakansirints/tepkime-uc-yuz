@@ -237,14 +237,12 @@ body[data-pour-ready=true] .lab-scene-caption>span:last-child {color:#315e50; fo
 .lab-settings-heading button {border:0; background:transparent; color:var(--mebi-text-secondary); font-size:22px; width:32px; height:32px; cursor:pointer;}
 .lab-settings-section {padding-top:12px; margin-top:10px; border-top:1px solid var(--lab-line);}
 .lab-settings-label {display:block; margin-bottom:8px; font-size:10px; font-weight:650; color:var(--mebi-text-secondary);}
-.lab-settings-views,.lab-settings-colors {display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:5px;}
+.lab-settings-views {display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:5px;}
 .lab-settings-section button {min-height:36px; padding:7px; border:1px solid var(--lab-line); border-radius:8px; background:transparent; color:var(--mebi-text-main); font-size:11px; cursor:pointer;}
 .lab-settings-section button:hover {background:var(--mebi-primary-light);}
 .lab-settings-section button[aria-pressed='true'] {border-color:var(--mebi-primary); background:var(--mebi-primary-light); color:var(--mebi-primary); font-weight:650;}
 .lab-settings-reset {width:100%; margin-top:5px;}
 .lab-settings-light {width:100%; text-align:left;}
-.lab-settings-colors button {display:flex; flex-direction:column; align-items:center; gap:5px;}
-.lab-settings-colors button span {width:20px; height:20px; border-radius:50%; background:var(--swatch); border:1px solid #8d9b9566;}
 .chemical-formula .ion-charge {display:inline; position:relative; top:-.48em; vertical-align:baseline; margin-left:2px; font-size:.68em; line-height:0; font-weight:750; color:inherit;}
 [data-theme='dark'] .lab-settings-section button[aria-pressed='true'] {background:#354c40; border-color:#9bbb9e; color:#e5f2e5;}
 [data-theme='dark'] .lab-settings-section button:hover {background:#354c40;}

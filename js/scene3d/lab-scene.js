@@ -2,14 +2,19 @@ class LabSceneEngine {
   constructor(containerId,stateMachine) {
     this.container=document.getElementById(containerId); this.state=stateMachine;
     this.initThree(); this.initLights(); this.environment=buildWarmClassroom(this.scene);
-    this.initLaboratoryLighting();
-    this.glassware=new LabGlassware(this.scene); this.particles=new LabParticleManager(this.scene,this.glassware);
+    this.initGlassEnvironment();
+    this.laboratoryLighting='light';
+    try{localStorage.removeItem('three-faces-laboratory-lighting');localStorage.removeItem('three-faces-table-color');}catch{}
+    this.glassware=new LabGlassware(this.scene,this.glassEnvironment.texture,this.renderer.capabilities.getMaxAnisotropy()); this.particles=new LabParticleManager(this.scene,this.glassware);
     this.thermometer=new LabThermometer(this.scene);
     const main=LAB_VESSELS.main;
     this.thermometer.group.position.set(main.x-main.radius*.7,LAB_VESSELS.tableY+main.height+.085,main.z-.03);
     this.thermometer.group.rotation.set(0,0,0); this.thermometer.group.scale.setScalar(main.height/.38);
+    this.thermometer.group.visible=false;
     this.pourController=new LabPourController(this.glassware,this.thermometer,this.particles,this.state);
-    this.createMaterialPreview();
+    this.reagentTables=new LabReagentTables(this);
+    this.reagentTableIndex=0;
+    this.createPourIndicator();
     this.initEvents(); this.lastTime=performance.now(); this.animate=this.animate.bind(this); requestAnimationFrame(this.animate);
     this.startOpeningTour();
   }
@@ -33,6 +38,8 @@ class LabSceneEngine {
     this.controls.screenSpacePanning=true; this.controls.mouseButtons.RIGHT=THREE.MOUSE.PAN;
     this.controls.target.copy(this.cameraPresets[initial].target); this.controls.minDistance=1.2; this.controls.maxDistance=9;
     this.controls.maxPolarAngle=Math.PI*.47; this.controls.minPolarAngle=.35;
+    this.controls.minAzimuthAngle=THREE.MathUtils.degToRad(-75);
+    this.controls.maxAzimuthAngle=THREE.MathUtils.degToRad(75);
     this.controls.update(); this.onResize();
   }
 
@@ -45,49 +52,146 @@ class LabSceneEngine {
     this.roomLights=[ambient,sun,fill];
   }
 
-  initLaboratoryLighting() {
-    const seen=new Set(); this.roomMaterialColors=[];
-    this.environment.room.traverse(object=>{
-      const materials=Array.isArray(object.material)?object.material:[object.material];
-      materials.filter(Boolean).forEach(material=>{
-        if(!material.color||seen.has(material)||material===this.environment.tableMaterial)return;
-        seen.add(material); this.roomMaterialColors.push({material,color:material.color.clone()});
-      });
-    });
-    const button=document.getElementById('btnLabLighting');
-    button.addEventListener('click',()=>this.setLaboratoryLighting(this.laboratoryLighting==='dark'?'light':'dark'));
-    let mode='light'; try{mode=localStorage.getItem('three-faces-laboratory-lighting')||'light';}catch{}
-    this.setLaboratoryLighting(mode);
+  initGlassEnvironment() {
+    // Match antigravity/tepkime-arenasi's dedicated Cam Atolyesi reflection studio.
+    const studio=new THREE.Scene(); studio.background=new THREE.Color('#53615f').convertSRGBToLinear();
+    for(const [x,y,z,w,h,color,intensity,targetY] of [
+      [-12,7,3,8,18,0xffffff,3,4],[10,10,-5,6,19,0xffffff,2.5,4],
+      [0,18,0,18,16,0xffffff,2,0],[0,7,16,5,15,0xffffff,1.5,4],
+      [-9,6,-7,3,16,0x172321,.7,4],[7,6,9,1.4,17,0x26332e,.6,4]
+    ]) {
+      const card=new THREE.Mesh(new THREE.PlaneGeometry(w,h),new THREE.MeshBasicMaterial({color,side:THREE.DoubleSide}));
+      card.material.color.convertSRGBToLinear().multiplyScalar(intensity);
+      card.position.set(x,y,z); card.lookAt(0,targetY,0); studio.add(card);
+    }
+    const pmrem=new THREE.PMREMGenerator(this.renderer);
+    this.glassEnvironment=pmrem.fromScene(studio,.025);
+    pmrem.dispose();
+    studio.traverse(object=>{if(object.isMesh){object.geometry.dispose();object.material.dispose();}});
   }
 
-  setLaboratoryLighting(mode) {
-    const dark=mode==='dark'; this.laboratoryLighting=dark?'dark':'light';
-    this.roomMaterialColors.forEach(({material,color})=>{material.color.copy(color);if(dark)material.color.multiplyScalar(.30);});
-    this.scene.background.set(dark?'#181b21':'#e7e6dd');
-    this.roomLights[0].intensity=dark?.65:.95; this.roomLights[1].intensity=dark?.50:1.35; this.roomLights[2].intensity=dark?.35:.50;
-    this.renderer.toneMappingExposure=dark?.80:.92;
-    const button=document.getElementById('btnLabLighting');
-    button.textContent=dark?'☾ Ortam: Karanlık':'☀ Ortam: Aydınlık';
-    button.setAttribute('aria-pressed',String(dark)); button.setAttribute('aria-label',dark?'Laboratuvarı aydınlık yap':'Laboratuvarı karanlık yap');
-    try{localStorage.setItem('three-faces-laboratory-lighting',this.laboratoryLighting);}catch{}
-  }
-
-  setCameraPreset(key, duration=600) {
+  setCameraPreset(key, duration=600, table=null) {
     clearTimeout(this.openingTimer);
-    const preset=this.cameraPresets[key]; if(!preset) return;
+    const preset=table===null?this.cameraPresets[key]:this.reagentTables.preset(table);
+    if(!preset) return;
     this.currentPreset=key;
+    this.reagentTables.show(table);
+    this.controls.enabled=(table===null||table===-1)&&this.state.currentStage===1;
+    this.cameraReady=false;
     const version=this.cameraVersion=(this.cameraVersion||0)+1;
     const position=this.camera.position.clone(),target=this.controls.target.clone(),fov=this.camera.fov,start=performance.now();
+    this.onResize();
     const step=now=>{
       if(version!==this.cameraVersion) return;
       const p=Math.min(1,(now-start)/duration),ease=.5-Math.cos(p*Math.PI)/2;
       this.camera.position.lerpVectors(position,preset.pos,ease); this.controls.target.lerpVectors(target,preset.target,ease);
-      this.camera.fov=THREE.MathUtils.lerp(fov,this.presetFov(preset),ease); this.camera.updateProjectionMatrix(); this.controls.update();
+      const destination=table===null?preset:this.reagentTables.preset(table);
+      this.camera.fov=THREE.MathUtils.lerp(fov,this.presetFov(destination),ease); this.camera.updateProjectionMatrix(); this.controls.update();
       if(p<1) requestAnimationFrame(step);
+      else {
+        this.cameraReady=true;
+        this.updateReagentLabels();
+      }
     };
     requestAnimationFrame(step);
     for(const [id,value] of [['btnCamDesk','desk'],['btnCamWide','wide']]) {
       const button=document.getElementById(id); button.classList.toggle('is-active',key===value); button.setAttribute('aria-pressed',String(key===value));
+    }
+  }
+
+  showReagentTable(index) {
+    if(this.state.currentStage!==1) return;
+    this.reagentTableIndex=index;
+    this.setCameraPreset('wide',this.prefersReducedMotion()?1:600,index);
+  }
+
+  updateReagentLabels() {
+    if(this.cameraReady) this.reagentTables?.project(this.camera,this.renderWidth,this.renderHeight);
+  }
+
+  prefersReducedMotion() {
+    return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  }
+
+  selectReagentPair(pair) {
+    if(!pair||!this.reagentTables.canSelect) return;
+    this.reagentTableIndex=pair.table;
+    window.labAudio?.playClick();
+    if(pair===this.deskPair) {
+      if(this.reagentTables.index!=null) this.setCameraPreset('desk',this.prefersReducedMotion()?1:600);
+    } else if(this.deskPair&&!this.prefersReducedMotion()&&!window.__skipFillAnimation) {
+      this.startReagentTransfer(this.deskPair,pair);
+      this.glassware.isFilled=false;
+      this.thermometer.group.visible=false;
+      this.particles.clearAll();
+      this.state.setSimulationState('waiting_pour');
+      document.getElementById('obsWaitingTitle').textContent='Beherler değiştiriliyor';
+      document.getElementById('obsWaitingDesc').textContent='Önceki çift karşı masadaki yerine dönüyor.';
+    } else {
+      this.applyReagentPair(pair);
+    }
+  }
+
+  applyReagentPair(pair) {
+    this.pendingReagentPair=pair;
+    this.state.setReaction(pair.id);
+    this.pendingReagentPair=null;
+    document.getElementById('btnReactionToggle').focus({preventScroll:true});
+  }
+
+  startReagentTransfer(pair, nextPair=null) {
+    const {main,added,beaker250RestPos,beaker80RestPos}=this.glassware;
+    const vessels=[main.group,added.group], desk=[beaker250RestPos,beaker80RestPos];
+    const shelf=pair.vessels.map(shell=>pair.group.localToWorld(shell.position.clone()));
+    const origins=nextPair?desk:shelf, destinations=nextPair?shelf:desk;
+    const solid=(!nextPair||this.state.simulationState==='waiting_pour')
+      ?pair.vessels[0].getObjectByName('reagent-solid')?.clone():null;
+    if(solid) main.group.add(solid);
+    document.querySelector('.m3-stepper-pills').inert=true;
+    this.reagentTransfer={pair,nextPair,vessels,desk,destinations,origins,solid,start:performance.now()};
+    this.updateReagentTransfer(this.reagentTransfer.start);
+  }
+
+  updateReagentTransfer(time) {
+    const transfer=this.reagentTransfer;
+    if(!transfer) return;
+    const progress=THREE.MathUtils.clamp((time-transfer.start)/1250,0,1);
+    const travel=THREE.MathUtils.smoothstep(progress,.16,.84);
+    const lift=THREE.MathUtils.smoothstep(progress,0,.22);
+    const lower=THREE.MathUtils.smoothstep(progress,.77,1);
+    transfer.vessels.forEach((vessel,i)=>{
+      vessel.position.lerpVectors(transfer.origins[i],transfer.destinations[i],travel);
+      vessel.position.y+=.51*lift*(1-lower);
+      const shelfWeight=transfer.nextPair?travel:1-travel;
+      vessel.scale.setScalar(THREE.MathUtils.lerp(1,transfer.pair.scale,shelfWeight));
+    });
+    if(progress<1) return;
+    this.clearReagentTransfer();
+    if(transfer.nextPair) {
+      this.applyReagentPair(transfer.nextPair);
+      return;
+    }
+    this.glassware.markFilled();
+    this.thermometer.group.visible=true;
+    this.showInitialSolid(this.state.getReaction());
+    this.updateReagentLabels();
+  }
+
+  clearReagentTransfer() {
+    const transfer=this.reagentTransfer;
+    if(!transfer) return;
+    if(transfer.solid) transfer.vessels[0].remove(transfer.solid);
+    document.querySelector('.m3-stepper-pills').inert=false;
+    transfer.vessels.forEach((vessel,i)=>{
+      vessel.position.copy(transfer.desk[i]);
+      vessel.scale.setScalar(1);
+    });
+    this.reagentTransfer=null;
+  }
+
+  showInitialSolid(reaction) {
+    if(reaction?.fixedVessel.hasPrecipitate) {
+      this.particles.spawnDissolveParticles(reaction.fixedVessel.precipitateColor??0xffffff,35);
     }
   }
 
@@ -102,28 +206,10 @@ class LabSceneEngine {
     this.openingTimer=setTimeout(()=>this.setCameraPreset('desk',2500),1100);
   }
 
-  createMaterialPreview() {
-    this.previewGroup=new THREE.Group(); this.scene.add(this.previewGroup); this.hoverIndex=null;
-    const material=new THREE.MeshBasicMaterial({color:'#b69842',transparent:true,opacity:.9,depthWrite:false});
-    this.previewDots=Array.from({length:8},()=>{const dot=new THREE.Mesh(new THREE.SphereGeometry(.011,8,6),material); dot.renderOrder=7; this.previewGroup.add(dot); return dot;});
-    this.previewGroup.visible=false;
+  createPourIndicator() {
     this.readyRing=new THREE.Mesh(new THREE.TorusGeometry(.043,.004,8,48),new THREE.MeshBasicMaterial({color:'#e2bf70',transparent:true,opacity:.85,depthWrite:false}));
     this.readyRing.position.set(-this.glassware.added.radius,this.glassware.added.height,0);
     this.glassware.added.group.add(this.readyRing); this.readyRing.visible=false;
-  }
-
-  setMaterialHover(index) {this.hoverIndex=this.state.getReaction()?index:null;}
-  previewMaterial(index) {this.setMaterialHover(index); clearTimeout(this.previewTimer); this.previewTimer=setTimeout(()=>this.setMaterialHover(null),1500);}
-
-  updateMaterialPreview(time) {
-    this.previewGroup.visible=this.hoverIndex!==null&&this.state.simulationState==='waiting_pour'&&!this.drag;
-    if(this.previewGroup.visible) {
-      const vessel=this.hoverIndex===0?this.glassware.main:this.glassware.added;
-      this.previewGroup.position.copy(vessel.group.position);
-      this.previewDots.forEach((dot,i)=>{const a=time*.001+i*Math.PI/4;
-        dot.position.set(Math.cos(a)*vessel.insideRadius*.65,vessel.bottom+this.glassware.heightForVolume(vessel,vessel.volume)*(.4+.18*Math.sin(a*1.8+i)),Math.sin(a)*vessel.insideRadius*.65);});
-    }
-    if(this.readyRing.visible) {this.readyRing.scale.setScalar(1+.12*Math.sin(time*.008));}
   }
 
   pointerRay(event) {
@@ -154,21 +240,19 @@ class LabSceneEngine {
     document.getElementById('observationLayout').addEventListener('scroll', () => this.onResize(), { passive: true });
     document.getElementById('btnAutoPour').addEventListener('click',()=>this.pourController.startAutomaticPour());
     document.getElementById('btnResetPour').addEventListener('click',()=>this.state.setReaction(this.state.selectedReactionId,{restart:true}));
-    document.querySelectorAll('[data-table-color]').forEach(button=>button.addEventListener('click',()=>{
-      this.environment.tableMaterial.color.set(button.dataset.tableColor).convertSRGBToLinear();
-      document.querySelectorAll('[data-table-color]').forEach(b=>b.setAttribute('aria-pressed',String(b===button)));
-      try{localStorage.setItem('three-faces-table-color',button.dataset.tableColor);}catch{}
-    }));
-    try{
-      const saved=localStorage.getItem('three-faces-table-color');
-      const button=Array.from(document.querySelectorAll('[data-table-color]')).find(b=>b.dataset.tableColor===saved);
-      if(button) button.click();
-    }catch{}
     const canvas=this.renderer.domElement;
     canvas.addEventListener('pointerdown',e=>{
-      clearTimeout(this.openingTimer); this.cameraVersion=(this.cameraVersion||0)+1;
-      if(e.button!==0||this.state.simulationState!=='waiting_pour'||!this.glassware.isFilled) return;
-      if(!this.pointerRay(e).intersectObject(this.glassware.beaker80Group,true).length) return;
+      const inRoom=this.reagentTables.index!=null;
+      if(!inRoom) {clearTimeout(this.openingTimer); this.cameraVersion=(this.cameraVersion||0)+1;}
+      if(e.button!==0||this.state.currentStage!==1) return;
+      const ray=this.pointerRay(e);
+      const pair=this.reagentTables.hit(ray);
+      if(pair) {
+        this.reagentPress={pair,id:e.pointerId,x:e.clientX,y:e.clientY};
+        return;
+      }
+      if(inRoom||this.state.simulationState!=='waiting_pour'||!this.glassware.isFilled) return;
+      if(!ray.intersectObject(this.glassware.beaker80Group,true).length) return;
       e.stopImmediatePropagation(); this.controls.enabled=false; canvas.setPointerCapture(e.pointerId);
       this.drag={x:e.clientX,y:e.clientY,id:e.pointerId,progress:0}; document.body.dataset.grabbing='true';
     },true);
@@ -182,26 +266,48 @@ class LabSceneEngine {
         return;
       }
       const ray=this.pointerRay(e);
-      const liquids=[this.glassware.main.liquid,this.glassware.added.liquid];
-      const liquidHit=ray.intersectObjects(liquids.filter(mesh=>mesh.visible))[0];
-      this.setMaterialHover(liquidHit?liquids.indexOf(liquidHit.object):null);
-      canvas.style.cursor=ray.intersectObject(this.glassware.beaker80Group,true).length?'grab':'default';
+      const canDrag=this.reagentTables.index==null&&this.state.currentStage===1&&
+        this.state.simulationState==='waiting_pour'&&this.glassware.isFilled;
+      canvas.style.cursor=this.reagentTables.hit(ray)?'pointer':
+        canDrag&&ray.intersectObject(this.glassware.beaker80Group,true).length?'grab':'default';
     });
-    canvas.addEventListener('pointerup',e=>{if(this.drag) {e.stopImmediatePropagation(); this.endDrag();}},true);
-    canvas.addEventListener('pointercancel',()=>this.endDrag(true));
+    canvas.addEventListener('pointerup',e=>{
+      const press=this.reagentPress;
+      this.reagentPress=null;
+      if(press&&press.id===e.pointerId&&Math.hypot(e.clientX-press.x,e.clientY-press.y)<12&&
+          this.reagentTables.hit(this.pointerRay(e))===press.pair) this.selectReagentPair(press.pair);
+      if(this.drag) {e.stopImmediatePropagation(); this.endDrag();}
+    },true);
+    canvas.addEventListener('pointercancel',()=>{this.reagentPress=null;this.endDrag(true);});
     canvas.addEventListener('lostpointercapture',()=>this.endDrag(true));
-    canvas.addEventListener('pointerleave',()=>this.setMaterialHover(null));
-    canvas.addEventListener('wheel',()=>{clearTimeout(this.openingTimer); this.cameraVersion=(this.cameraVersion||0)+1;},{passive:true});
+    canvas.addEventListener('pointerleave',()=>{this.reagentPress=null;});
+    canvas.addEventListener('wheel',()=>{
+      if(this.reagentTables.index!=null) return;
+      clearTimeout(this.openingTimer); this.cameraVersion=(this.cameraVersion||0)+1;
+    },{passive:true});
     this.state.on('reactionChange',reaction=>{
-      this.endDrag(true); this.setMaterialHover(null); this.setCameraPreset('desk'); this.glassware.setupReaction(reaction,!window.__skipFillAnimation);
+      const pair=this.reagentTables.pairs.find(entry=>entry.id===reaction?.id);
+      const fromShelf=pair&&pair===this.pendingReagentPair;
+      const move=fromShelf&&!this.prefersReducedMotion()&&!window.__skipFillAnimation;
+      this.clearReagentTransfer();
+      this.endDrag(true);
+      if(this.deskPair) this.deskPair.group.visible=true;
+      this.deskPair=pair;
+      if(pair) pair.group.visible=false;
+      this.setCameraPreset('desk',move?1100:fromShelf?1:600);
+      this.glassware.setupReaction(reaction,!fromShelf&&!window.__skipFillAnimation,!move);
+      this.thermometer.group.visible=Boolean(reaction)&&!move;
       this.thermometer.reset(reaction?.fixedVessel.initialTemp??22); this.particles.clearAll();
-      if(reaction?.fixedVessel.hasPrecipitate) this.particles.spawnDissolveParticles(reaction.fixedVessel.precipitateColor??0xffffff,35);
-      this.onResize();
+      if(move) this.startReagentTransfer(pair);
+      else this.showInitialSolid(reaction);
     });
+    this.state.on('simulationChange',()=>this.updateReagentLabels());
     this.state.on('stageChange',()=>{
       document.body.dataset.stage=String(this.state.currentStage);
       if (this.state.currentStage !== 1) this.endDrag(true);
-      this.controls.enabled = this.state.currentStage === 1;
+      if(this.state.currentStage!==1&&this.reagentTables.index!=null) this.setCameraPreset('desk');
+      const table=this.reagentTables.index;
+      this.controls.enabled = this.state.currentStage === 1&&(table==null||table===-1);
       requestAnimationFrame(() => this.onResize());
     });
   }
@@ -214,16 +320,19 @@ class LabSceneEngine {
       this.renderer.setSize(w,h); this.renderWidth = w; this.renderHeight = h;
     }
     this.camera.aspect=w/h;
-    this.camera.fov=this.presetFov(this.cameraPresets[this.currentPreset]);
+    const table=this.reagentTables?.index;
+    this.camera.fov=this.presetFov(table==null?this.cameraPresets[this.currentPreset]:this.reagentTables.preset(table));
     const area = document.querySelector('.lab-scene-window').getBoundingClientRect();
     const header = document.querySelector('.m3-top-app-bar').getBoundingClientRect();
     if (this.state.currentStage === 1 && area.width && area.height) {
       const top = Math.max(area.top, header.bottom + 8), bottom = Math.min(area.bottom, h - 12);
       this.observationView = { x: (area.left + area.width / 2) / w, y: (bottom > top ? (top + bottom) / 2 : h * .58) / h };
     }
-    const centre = this.observationView || { x: .5, y: .58 };
+    const centre = table==null?(this.observationView || { x: .5, y: .58 }):{x:.5,y:.5};
+    if(table!=null) this.reagentTables.panel.style.setProperty('--reagent-nav-top',`${header.bottom+8}px`);
     this.camera.setViewOffset(w,h,w*(.5-centre.x),h*(.5-centre.y),w,h);
     this.camera.updateProjectionMatrix();
+    this.updateReagentLabels();
   }
 
   projectLabels() {
@@ -233,7 +342,9 @@ class LabSceneEngine {
   animate(time) {
     requestAnimationFrame(this.animate);
     const delta=Math.min(.1,(time-this.lastTime)/1000); this.lastTime=time;
-    this.pourController.update(time); this.updateMaterialPreview(time); this.thermometer.update(delta); this.particles.update(time/1000,delta); this.controls.update();
+    this.updateReagentTransfer(time);
+    if(this.readyRing.visible) this.readyRing.scale.setScalar(1+.12*Math.sin(time*.008));
+    this.pourController.update(time); this.thermometer.update(delta); this.particles.update(time/1000,delta); this.controls.update();
     this.camera.position.y=Math.max(1.52,this.camera.position.y);
     this.camera.position.x=THREE.MathUtils.clamp(this.camera.position.x,-5.4,5.4); this.camera.position.z=THREE.MathUtils.clamp(this.camera.position.z,-4.2,8.5);
     this.projectLabels(); this.renderer.render(this.scene,this.camera);

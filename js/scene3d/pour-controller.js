@@ -57,8 +57,8 @@ class LabPourController {
       if (window.labAudio) window.labAudio.playPour(2.9);
     }
 
-    // Reaksiyon ortasında parçacıkları ve sıcaklığı tetikle
-    if (this.pourProgress >= 0.45 && this.state.simulationState === "pouring") {
+    // İlk sıvı temasında parçacıkları ve sıcaklık geçişini başlat.
+    if (this.pourProgress >= 0.24 && this.state.simulationState === "pouring") {
       this.triggerReactionEffects();
     }
 
@@ -105,6 +105,15 @@ class LabPourController {
     if (!reaction) return;
 
     const result = reaction.result;
+    // Replaying or switching to a non-gas reaction cannot retain an old emitter.
+    this.particleManager.stopBubbles();
+    this.particleManager.stopSmoke();
+    this.particleManager.stopPrecipitate();
+
+    if (reaction.id === "caco3_hcl") {
+      if (!this.particleManager.dissolveParticles.length) this.particleManager.spawnDissolveParticles(0xffffff, 40);
+      this.particleManager.beginDissolution(result.effects.gas.duration);
+    }
 
     // Sıcaklık değişimi
     if (result.targetTemp) {
@@ -122,12 +131,7 @@ class LabPourController {
       this.particleManager.startPrecipitate(result.precipitate);
     }
 
-    // Katı çözünme (CaCO3)
-    if (reaction.id === "caco3_hcl") {
-      this.particleManager.spawnDissolveParticles(0xffffff, 45);
-    }
-
-    // Duman / Sis
+    // NH4Cl katı aerosolü; renksiz gaz veya yalnız sıcaklık için sis üretilmez.
     if (result.vapor) {
       this.particleManager.startSmoke(result.vapor);
     }

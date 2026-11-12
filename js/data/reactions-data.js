@@ -114,7 +114,7 @@ const REACTIONS_DATA = {
         action: "dissolve", // katı eriyip yok olur!
         finalAmount: 0.0
       },
-      vapor: { intensity: "low", color: 0xffffff },
+      vapor: null, // Renksiz CO2 görünür beyaz sis oluşturmaz.
       evidenceSummary: "Katının çözünmesi/erimesi ve şiddetli gaz kabarcığı çıkışı"
     },
     pedagogy: {
@@ -177,7 +177,7 @@ const REACTIONS_DATA = {
         durationMs: 6500
       },
       precipitate: null,
-      vapor: { intensity: "low", color: 0xffffff },
+      vapor: null,
       evidenceSummary: "Hızlı gaz kabarcığı çıkışı"
     },
     pedagogy: {
@@ -241,8 +241,8 @@ const REACTIONS_DATA = {
         durationMs: 8000
       },
       precipitate: null,
-      vapor: { intensity: "high", color: 0xffffff },
-      evidenceSummary: "Ani köpürme, yoğun gaz çıkışı, sararma ve yüksek sıcaklık artışı"
+      vapor: null, // 44.5 °C tek başına görünür yoğuşma sisi için yeterli bir koşul değildir.
+      evidenceSummary: "Yoğun oksijen kabarcıkları, kısa süreli yüzey köpürmesi, sararma ve sıcaklık artışı"
     },
     pedagogy: {
       expectedKeyEvidence: ["köpürme", "kabarcık", "gaz", "oksijen", "köpük"],
@@ -296,7 +296,7 @@ const REACTIONS_DATA = {
       finalOpacity: 0.35,
       bubbles: null, // Kabarcık yok!
       precipitate: null, // Çökelti yok!
-      vapor: { intensity: "low", color: 0xffffff },
+      vapor: null, // Isınma, gaz oluşumu veya görünür su sisi anlamına gelmez.
       evidenceSummary: "Sıvı tamamen berrak kalır; termometrede ani ve yüksek sıcaklık artışı olur"
     },
     pedagogy: {
@@ -334,7 +334,7 @@ const REACTIONS_DATA = {
   nh3_hcl: {
     id: "nh3_hcl",
     title: "Amonyak + Hidroklorik asit",
-    description: "Amonyak çözeltisi ile hidroklorik asit buharlarının tuz oluşturma tepkimesi",
+    description: "Amonyak ve hidroklorik asit çözeltilerinin üzerindeki kaynak buharlarının temasında katı aerosol oluşumu",
     fixedVessel: {
       name: "Amonyak çözeltisi",
       state: "Sulu çözelti",
@@ -776,8 +776,46 @@ const REACTIONS_DATA = {
   }
 };
 
+// Makroskobik efekt profilleri: kimyasal üretim ile görünür kabarcık kaynağı ayrıdır.
+// Hızlar derişim/karıştırma ölçümü değil, bu etkinlik için nitel görsel ölçeklerdir.
+// CO2 ve O2 renksizdir. NH4Cl bulutunun beyazlığı gaz rengi değil katı aerosoldür.
+const REACTION_EFFECT_PROFILES = {
+  nahco3_hcl: { gas: { species: 'CO2', appearance: 'colorless', source: 'mixing-zone', mixedSource: 'volume', mixingSeconds: 2.5,
+    rate: 34, radius: [.0022, .0048], riseSpeed: [.045, .082], attack: .12, sustain: 1.8, duration: 13, tail: .12,
+    surfaceHold: .09, description: 'Karışma bölgesinde hızlı başlangıç; karışan hacme yayılıp azalan CO2 çıkışı.' }, aerosol: null },
+  caco3_hcl: { gas: { species: 'CO2', appearance: 'colorless', source: 'solid-surface',
+    rate: 27, radius: [.0026, .0058], riseSpeed: [.042, .078], attack: .4, sustain: 6, duration: 22, tail: .08,
+    surfaceHold: .12, description: 'Asitle temas eden CaCO3 parçalarının yüzeyinden daha sürekli, katı tükendikçe azalan CO2.' }, aerosol: null },
+  na2co3_hcl: { gas: { species: 'CO2', appearance: 'colorless', source: 'mixing-zone', mixedSource: 'volume', mixingSeconds: 3,
+    rate: 29, radius: [.0022, .0050], riseSpeed: [.044, .080], attack: .6, sustain: 2.4, duration: 14, tail: .1,
+    surfaceHold: .08, description: 'Asitleşen temas bölgesinden başlayıp hacme yayılan ve azalan CO2; yeterli asit varsayımı.' }, aerosol: null },
+  h2o2_ki: { gas: { species: 'O2', appearance: 'colorless', source: 'volume',
+    rate: 43, radius: [.0020, .0055], riseSpeed: [.05, .094], attack: .8, sustain: 7, duration: 24, tail: .08,
+    surfaceHold: .22, description: 'Çözünmüş KI ile hacme yayılmış, hızlanıp sonra azalan O2; sabunsuz kısa ömürlü yüzey kabarcıkları.' }, aerosol: null },
+  hcl_naoh: { gas: null, aerosol: null },
+  nh3_hcl: { gas: null, aerosol: { kind: 'solid-aerosol', species: 'NH4Cl', source: 'vapor-contact', color: 0xffffff,
+    rate: 19, attack: .35, sustain: 3, duration: 13, tail: .05, life: [1.8, 3.2],
+    description: 'Çözeltilerin üstündeki NH3/HCl kaynak buharlarının temasında beyaz katı aerosol; sıvıda gaz kabarcığı yok.' } },
+  pbno32_ki: { gas: null, aerosol: null },
+  agno3_hcl: { gas: null, aerosol: null },
+  cuno32_naoh: { gas: null, aerosol: null },
+  cacl2_na2co3: { gas: null, aerosol: null },
+  agno3_ki: { gas: null, aerosol: null },
+  cuno32_na2co3: { gas: null, aerosol: null,
+    modelCondition: 'Etkinliğin CuCO3 çökelme modeli. Bazik bakır karbonat/CO2 yan oluşumu için pH, derişim ve farklı ürün modeli tanımlı değildir.' }
+};
+Object.entries(REACTIONS_DATA).forEach(([id, reaction]) => {
+  const profile = REACTION_EFFECT_PROFILES[id];
+  reaction.result.effects = profile;
+  // Eski tüketiciler (ses vb.) de aynı kaynaktan gelen süre ve renksiz gaz bilgisini kullanır.
+  reaction.result.bubbles = profile.gas ? { ...reaction.result.bubbles, color: 0xffffff, ...profile.gas,
+    durationMs: profile.gas.duration * 1000 } : null;
+  reaction.result.vapor = profile.aerosol ? { ...profile.aerosol, intensity: 'dense_smoke', durationMs: profile.aerosol.duration * 1000 } : null;
+});
+
 // Global dışa aktarma (Vanilla stack uyumlu)
 if (typeof window !== "undefined") {
   window.REACTIONS_DATA = REACTIONS_DATA;
+  window.REACTION_EFFECT_PROFILES = REACTION_EFFECT_PROFILES;
 }
 

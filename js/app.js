@@ -98,7 +98,6 @@ document.addEventListener("DOMContentLoaded", () => {
     btnReactionToggle.setAttribute('aria-expanded', String(expanded));
     picker.hidden = !expanded;
     reactionExpandCard.classList.toggle('is-expanded', expanded);
-    document.getElementById('selectedReactionPair').hidden = expanded;
   }
   const experimentTitle = document.getElementById('experimentTitle');
   const observationLayout = document.getElementById('observationLayout');
@@ -110,8 +109,6 @@ document.addEventListener("DOMContentLoaded", () => {
     reactionListContent.querySelectorAll('[data-reaction-id]').forEach(tile => {
       tile.querySelector('.reaction-completion').hidden = !completed[tile.dataset.reactionId];
     });
-    const pinned = document.querySelector('#selectedReactionPair .reaction-completion');
-    if (pinned) pinned.hidden = !completed[window.labState.selectedReactionId];
   }
   window.labState.on('completionChange', refreshCompletion);
 
@@ -133,9 +130,8 @@ document.addEventListener("DOMContentLoaded", () => {
       `;
 
       tileBtn.addEventListener("click", () => {
-        if (["pouring", "reacting"].includes(window.labState.simulationState)) return;
-        if (window.labAudio) window.labAudio.playClick();
-        window.labState.setReaction(id);
+        if (!labScene.reagentTables.canSelect) return;
+        labScene.selectReagentPair(labScene.reagentTables.pairs.find(pair=>pair.id===id));
         setReactionCardExpanded(false);
 
         btnReactionToggle.focus({ preventScroll: true });
@@ -188,15 +184,15 @@ document.addEventListener("DOMContentLoaded", () => {
       tile.setAttribute('aria-pressed', String(selected));
     });
     reactionStatusBadge.textContent = reaction ? 'Reaktifler Masada' : 'Masa Boş';
-    document.querySelector('.m3-reaction-card-title').textContent = reaction ? 'Tepkimeyi değiştir' : 'Tepkime seç';
-    document.getElementById('selectedReactionPair').innerHTML = reaction
-      ? `<span class="selected-pair-label">✓ Seçili madde çifti</span><div class="reaction-materials-pair">${materialCard(reaction.fixedVessel, '01 · Sabit kap')}${materialCard(reaction.addedVessel, '02 · Eklenen')}<span class="reaction-completion" hidden>Tamamlandı</span></div>`
-      : '<p>Bir madde çifti seçerek başla.</p>';
+    const toggleLabel = reaction ? 'Tepkimeyi değiştir' : 'Tepkime seç';
+    document.querySelector('.m3-reaction-card-title').textContent = toggleLabel;
+    btnReactionToggle.setAttribute('aria-label', toggleLabel);
+    btnReactionToggle.title = toggleLabel;
     refreshCompletion();
     setReactionCardExpanded(false);
   });
   reactionExpandCard.classList.toggle('needs-selection', !window.labState.getReaction());
-  setReactionCardExpanded(!window.labState.getReaction());
+  setReactionCardExpanded(false);
 
   function syncMobileTools() {
     document.getElementById("btnMobileReactions").setAttribute("aria-expanded", String(document.body.dataset.mobilePanel === "reactions"));
@@ -328,7 +324,11 @@ document.addEventListener("DOMContentLoaded", () => {
     camSegmentButtons.forEach(btn => btn.classList.remove("is-active"));
     if (activeBtn) activeBtn.classList.add("is-active");
     if (window.labAudio) window.labAudio.playClick();
-    labScene.setCameraPreset(presetName);
+    if (presetName === 'wide' && window.labState.currentStage === 1) {
+      labScene.showReagentTable(labScene.reagentTableIndex);
+    } else {
+      labScene.setCameraPreset(presetName);
+    }
   }
 
   if (btnCamDesk) {

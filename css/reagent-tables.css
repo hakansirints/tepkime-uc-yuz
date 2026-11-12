@@ -1,0 +1,75 @@
+[data-reagent-tables][data-stage="1"] #observationLayout {
+  visibility: hidden;
+  pointer-events: none;
+}
+
+#labAppFrame #reactionExpandCard:not(.is-expanded) {
+  width: 46px;
+  min-width: 0;
+  padding: 0;
+  border-radius: 13px;
+}
+
+#labAppFrame #reactionExpandCard:not(.is-expanded) #btnReactionToggle {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+}
+
+#reactionExpandCard:not(.is-expanded) .m3-reaction-title-wrap { display: none; }
+#btnReactionToggle .reaction-list-icon { background: transparent; border: 0; }
+#btnReactionToggle[aria-expanded="true"] .reaction-list-icon svg { transform: none; }
+
+#reagentTables {
+  position: fixed;
+  inset: 0;
+  z-index: 39;
+  pointer-events: none;
+}
+
+.reagent-table-nav {
+  position: absolute;
+  top: var(--reagent-nav-top, 108px);
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  background: var(--mebi-bg-surface);
+  border: 1px solid var(--mebi-border);
+  border-radius: 12px;
+  pointer-events: auto;
+}
+
+.reagent-table-nav button {
+  width: auto;
+  min-width: 0;
+  min-height: 40px;
+  padding: 5px 12px;
+  white-space: nowrap;
+}
+
+.reagent-table-nav button[aria-pressed="true"] {
+  background: var(--mebi-success-light);
+  border-color: var(--mebi-success);
+}
+
+.reagent-pair-label {
+  position: absolute;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+.reagent-pair-label:hover,
+.reagent-pair-label:focus-visible {
+  outline: 2px solid #86c3fd;
+}
+
+.reagent-pair-label:disabled { cursor: default; }

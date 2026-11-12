@@ -2,7 +2,7 @@
  * 3D Laboratuvar Sahnesi Parçacık Simülasyon Motoru
  * - Gaz Kabarcıkları (CO2, O2 köpürmesi)
  * - Çökelek Kristalleri (PbI2, AgCl, Cu(OH)2 vb. çökeltileri ve dibe yerleşme)
- * - Duman ve Buhar (NH4Cl sisi, su buharı)
+ * - Gaz fazında temas sonucu NH4Cl katı aerosolü
  * - 250 mL beher boyutlarına göre orantılanmış parçacık ölçeği
  */
 
@@ -40,68 +40,18 @@ class LabParticleManager {
     this.isSmoking = false;
 
     // Orantılı geometriler
-    this.bubbleGeo = new THREE.SphereBufferGeometry(0.007, 8, 8);
     this.precipitateGeo = new THREE.BoxBufferGeometry(0.006, 0.006, 0.006);
-    this.smokeGeo = new THREE.DodecahedronBufferGeometry(0.035, 1);
     this.sedimentGeo = new THREE.CylinderGeometry(this.vessel.insideRadius * 0.94, this.vessel.insideRadius * 0.94, 1, 48);
+    this.gasEffects = new LabReactionGasEffects(this);
   }
 
   // 1. Gaz Kabarcığı Efektini Başlat
   startBubbles(options = {}) {
-    this.stopBubbles();
-    this.isBubbling = true;
-    this.bubbleOptions = {
-      color: options.color || 0xffffff,
-      intensity: options.intensity || "high",
-      speed: options.speed || 1.5,
-      liquidRadius: this.vessel.insideRadius,
-      liquidBottom: this.vessel.bottom,
-      liquidTop: this.vessel.bottom + this.glassware.beaker250LiquidHeight
-    };
-
-    const count = this.bubbleOptions.intensity === "high" ? 65 : 30;
-    const bubbleMat = new THREE.MeshPhysicalMaterial({
-      color: this.bubbleOptions.color,
-      transmission: 0.85,
-      opacity: 0.9,
-      transparent: true,
-      roughness: 0.1,
-      ior: 1.1
-    });
-
-    for (let i = 0; i < count; i++) {
-      const scale = 0.5 + Math.random() * 0.9;
-      const mesh = new THREE.Mesh(this.bubbleGeo, bubbleMat);
-      mesh.scale.set(scale, scale, scale);
-
-      const r = Math.sqrt(Math.random()) * this.bubbleOptions.liquidRadius * 0.85;
-      const theta = Math.random() * Math.PI * 2;
-      mesh.position.set(
-        Math.cos(theta) * r,
-        this.bubbleOptions.liquidBottom +
-          Math.random() * (this.bubbleOptions.liquidTop - this.bubbleOptions.liquidBottom),
-        Math.sin(theta) * r
-      );
-
-      mesh.userData = {
-        vy: (0.0022 + Math.random() * 0.0035) * this.bubbleOptions.speed,
-        wobbleSpeed: 2 + Math.random() * 4,
-        wobbleDist: 0.0012 + Math.random() * 0.0018,
-        seed: Math.random() * 100
-      };
-
-      this.bubbleGroup.add(mesh);
-      this.bubbles.push(mesh);
-    }
+    this.gasEffects.startBubbles(options);
   }
 
   stopBubbles() {
-    this.isBubbling = false;
-    this.disposeMaterials(this.bubbleGroup);
-    while (this.bubbleGroup.children.length > 0) {
-      this.bubbleGroup.remove(this.bubbleGroup.children[0]);
-    }
-    this.bubbles = [];
+    this.gasEffects.stopBubbles();
   }
 
   // 2. Çökelek Parçacık Efektini Başlat
@@ -165,52 +115,15 @@ class LabParticleManager {
 
   // 3. Duman / Sis Efekti
   startSmoke(options = {}) {
-    this.stopSmoke();
-    this.isSmoking = true;
-    this.smokeOptions = options;
+    this.gasEffects.startSmoke(options);
   }
 
   emitSmokePuff() {
-    if (!this.isSmoking) return;
-    if (this.smokePuffs.length > 40) return;
-
-    const mat = new THREE.MeshBasicMaterial({
-      color: 0xffffff,
-      transparent: true,
-      opacity: 0.45,
-      depthWrite: false
-    });
-
-    const mesh = new THREE.Mesh(this.smokeGeo, mat);
-    const r = Math.random() * 0.08;
-    const theta = Math.random() * Math.PI * 2;
-    mesh.position.set(
-      Math.cos(theta) * r,
-      this.vessel.height + Math.random() * 0.04,
-      Math.sin(theta) * r
-    );
-
-    mesh.scale.setScalar(0.4 + Math.random() * 0.4);
-    mesh.userData = {
-      vy: 0.0022 + Math.random() * 0.0035,
-      vx: (Math.random() - 0.5) * 0.0015,
-      vz: (Math.random() - 0.5) * 0.0015,
-      growth: 0.0022 + Math.random() * 0.002,
-      life: 1.0,
-      decay: 0.008 + Math.random() * 0.006
-    };
-
-    this.smokeGroup.add(mesh);
-    this.smokePuffs.push(mesh);
+    this.gasEffects.emitSmokePuff();
   }
 
   stopSmoke() {
-    this.isSmoking = false;
-    this.disposeMaterials(this.smokeGroup);
-    while (this.smokeGroup.children.length > 0) {
-      this.smokeGroup.remove(this.smokeGroup.children[0]);
-    }
-    this.smokePuffs = [];
+    this.gasEffects.stopSmoke();
   }
 
   // 4. Katı Çözünme Efekti
@@ -231,15 +144,14 @@ class LabParticleManager {
         Math.sin(theta) * r
       );
       mesh.scale.setScalar(0.6 + Math.random() * 0.7);
-      mesh.userData = {
-        shrink: 0.0025 + Math.random() * 0.0045
-      };
+      mesh.userData = { initialScale: mesh.scale.x, elapsed: 0, lifetime: 22 };
       this.dissolveGroup.add(mesh);
       this.dissolveParticles.push(mesh);
     }
   }
 
   clearDissolveParticles() {
+    this.isDissolving = false;
     this.disposeMaterials(this.dissolveGroup);
     while (this.dissolveGroup.children.length > 0) {
       this.dissolveGroup.remove(this.dissolveGroup.children[0]);
@@ -247,28 +159,13 @@ class LabParticleManager {
     this.dissolveParticles = [];
   }
 
+  beginDissolution(duration) {
+    this.isDissolving = true;
+    this.dissolveParticles.forEach(mesh => { mesh.userData.lifetime = duration * (.8 + Math.random() * .2); });
+  }
+
   update(time, delta) {
-    if (this.isBubbling) {
-      this.bubbleOptions.liquidTop = this.vessel.bottom + this.glassware.beaker250LiquidHeight;
-      const top = this.bubbleOptions.liquidTop;
-      const bottom = this.bubbleOptions.liquidBottom;
-
-      this.bubbles.forEach((b) => {
-        b.position.y += b.userData.vy;
-        b.position.x +=
-          Math.sin(time * b.userData.wobbleSpeed + b.userData.seed) * b.userData.wobbleDist;
-        b.position.z +=
-          Math.cos(time * b.userData.wobbleSpeed + b.userData.seed) * b.userData.wobbleDist;
-
-        if (b.position.y >= top) {
-          b.position.y = bottom;
-          const r = Math.sqrt(Math.random()) * this.bubbleOptions.liquidRadius * 0.85;
-          const theta = Math.random() * Math.PI * 2;
-          b.position.x = Math.cos(theta) * r;
-          b.position.z = Math.sin(theta) * r;
-        }
-      });
-    }
+    this.gasEffects.update(delta);
 
     if (this.isPrecipitating) {
       this.precipitateGrowth = Math.min(1, this.precipitateGrowth + delta * 0.55);
@@ -289,32 +186,11 @@ class LabParticleManager {
       });
     }
 
-    if (this.isSmoking) {
-      if (Math.random() < 0.35) {
-        this.emitSmokePuff();
-      }
-
-      for (let i = this.smokePuffs.length - 1; i >= 0; i--) {
-        const puff = this.smokePuffs[i];
-        puff.position.y += puff.userData.vy;
-        puff.position.x += puff.userData.vx;
-        puff.position.z += puff.userData.vz;
-        puff.scale.addScalar(puff.userData.growth);
-        puff.userData.life -= puff.userData.decay;
-        puff.material.opacity = Math.max(0, puff.userData.life * 0.45);
-
-        if (puff.userData.life <= 0) {
-          this.smokeGroup.remove(puff);
-          puff.material.dispose();
-          this.smokePuffs.splice(i, 1);
-        }
-      }
-    }
-
-    if (this.dissolveParticles.length > 0) {
+    if (this.isDissolving && this.dissolveParticles.length > 0) {
       for (let i = this.dissolveParticles.length - 1; i >= 0; i--) {
         const dp = this.dissolveParticles[i];
-        dp.scale.subScalar(dp.userData.shrink);
+        dp.userData.elapsed += delta;
+        dp.scale.setScalar(dp.userData.initialScale * Math.max(0, 1 - dp.userData.elapsed / dp.userData.lifetime));
         if (dp.scale.x <= 0.05) {
           this.dissolveGroup.remove(dp);
           this.dissolveParticles.splice(i, 1);

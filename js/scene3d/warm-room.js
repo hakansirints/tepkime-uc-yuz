@@ -1,34 +1,65 @@
 /** Warm classroom geometry derived from sicak-sinif-laboratuvari/lab.js. */
 function buildWarmClassroom(scene) {
   const room=new THREE.Group(); room.name='warm-classroom'; scene.add(room);
-  const t={wall:'#efe1c8',floor:'#c6ad8b',cabinet:'#a6b69a',wood:'#aa7a49',tile:'#eee7d9',metal:'#76664f'};
+  // Approved darker "Bulut ve çelik" palette from the room color previews.
+  const t={wall:'#b2bec7',floor:'#818e98',cabinet:'#627b8b',wood:'#aa7a49',tile:'#303b40',metal:'#76664f'};
   const mat=(color,roughness=.7)=>{
     const material=new THREE.MeshStandardMaterial({color,roughness});
     material.color.convertSRGBToLinear(); return material;
   };
   const M=Object.fromEntries(Object.entries(t).map(([k,v])=>[k,mat(v)]));
+  const tableMaterial=mat('#3d4547',.78),rearWorktops=[];
   function box(w,h,d,x,y,z,m) {
     const o=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),m); o.position.set(x,y,z);
     o.castShadow=true; o.receiveShadow=true; room.add(o); return o;
   }
   function cabinet(x,z,w) {
-    box(w,1.13,.64,x,.62,z,M.cabinet); box(w+.08,.1,.76,x,1.23,z,mat('#f0e8d7',.45));
+    box(w,1.13,.64,x,.62,z,M.cabinet);
+    const worktop=box(w+.08,.1,.76,x,1.23,z,tableMaterial);
+    worktop.name=`rear-worktop-${rearWorktops.length}`; rearWorktops.push(worktop);
     const n=Math.round(w/.85);
     for(let i=0;i<n;i++) {const cx=x-w/2+(i+.5)*w/n; box(w/n-.025,.96,.026,cx,.66,z+.334,M.cabinet); box(.24,.032,.045,cx,1.02,z+.369,M.wood);}
     box(w,.09,.6,x,.095,z,M.metal);
   }
-  box(12,.12,12,0,-.06,0,M.floor);
-  const grout=mat('#b79b79');
+  const floor=box(12,.12,12,0,-.06,0,M.floor); floor.name='laboratory-floor';
+  const grout=mat('#697680');
   for(let x=-6;x<=6;x+=1.2) box(.012,.002,12,x,.003,0,grout);
   for(let z=-6;z<=6;z+=1.2) box(12,.002,.012,0,.004,z,grout);
-  box(12,4.8,.15,0,2.4,-4.8,M.wall); box(12,.11,.12,0,.1,-4.68,M.metal);
+  const backWall=box(12,4.8,.15,0,2.4,-4.8,M.wall); backWall.name='laboratory-back-wall';
+  box(12,.11,.12,0,.1,-4.68,M.metal);
   // Four wall sections leave a real opening behind the existing window frame.
   box(.15,1.795,10,-6,.8975,.1,M.wall); box(.15,.955,10,-6,4.3225,.1,M.wall);
   box(.15,2.05,2.15,-6,2.82,-3.825,M.wall); box(.15,2.05,4.75,-6,2.82,2.725,M.wall);
-  box(9.2,1.55,.035,0,2.03,-4.69,M.tile);
-  const tileGrout=mat('#c2c9c4');
-  for(let x=-4.6;x<4.7;x+=.32) box(.009,1.55,.01,x,2.03,-4.663,tileGrout);
-  for(let y=1.3;y<2.8;y+=.32) box(9.2,.009,.01,0,y,-4.66,tileGrout);
+  // Approved "Grafit porselen" model: 60 x 30 horizontal tiles, 5 mm joints.
+  // Keep the preview's material, grain seed and placement for a faithful match.
+  const tileWall=new THREE.Group(); tileWall.name='graphite-porcelain-wall'; room.add(tileWall);
+  tileWall.userData={tileWidth:.60,tileHeight:.30,joint:.005};
+  const tileGrout=mat('#252d31',.85);
+  const backing=new THREE.Mesh(new THREE.BoxGeometry(9.2,1.55,.035),tileGrout);
+  backing.position.set(0,2.03,-4.69); backing.receiveShadow=true; tileWall.add(backing);
+  const noise=document.createElement('canvas'); noise.width=noise.height=128;
+  const noiseContext=noise.getContext('2d'),pixels=noiseContext.createImageData(128,128);
+  let grainSeed=239;
+  const random=()=>{grainSeed=(grainSeed*1664525+1013904223)>>>0;return grainSeed/4294967296;};
+  for(let i=0;i<pixels.data.length;i+=4) {
+    const n=123+Math.floor(random()*10); pixels.data.set([n,n,n,255],i);
+  }
+  noiseContext.putImageData(pixels,0,0);
+  M.tile.roughness=.47; M.tile.bumpMap=new THREE.CanvasTexture(noise); M.tile.bumpScale=.00035;
+  const tileMaterials=Array.from({length:5},(_,i)=>{
+    const material=i===2?M.tile:M.tile.clone();
+    material.color.set(t.tile).convertSRGBToLinear().multiplyScalar(.98+i*.01); return material;
+  });
+  const tileBottom=2.03-1.55/2,joint=tileWall.userData.joint;
+  for(let row=0;row<Math.ceil(1.55/.30);row++) {
+    const y0=tileBottom+row*.30,y1=Math.min(tileBottom+1.55,y0+.30);
+    for(let x=-4.6,column=0;x<4.6;x+=.60,column++) {
+      const x0=Math.max(-4.6,x),x1=Math.min(4.6,x+.60);
+      const tile=new THREE.Mesh(new THREE.BoxGeometry(x1-x0-joint,y1-y0-joint,.022),tileMaterials[Math.floor(random()*tileMaterials.length)]);
+      tile.name=`graphite-tile-${row}-${column}`; tile.position.set((x0+x1)/2,(y0+y1)/2,-4.658);
+      tile.receiveShadow=true; tileWall.add(tile);
+    }
+  }
   for(const x of [-3,0,3]) cabinet(x,-4.25,2.8);
   for(const y of [2.85,3.5]) {box(7.8,.075,.36,0,y,-4.48,M.wood); for(const x of [-3.2,3.2]) box(.035,.28,.035,x,y-.15,-4.57,M.metal);}
   for(let i=0;i<16;i++) box(.07,2.9,.06,4.75+i*.064,2.45,-4.65,M.wood);
@@ -46,13 +77,15 @@ function buildWarmClassroom(scene) {
   const sign=new THREE.Mesh(new THREE.PlaneGeometry(4.6,.39),new THREE.MeshBasicMaterial({map:signTexture}));
   sign.name='laboratory-sign'; sign.userData.label=signText;
   sign.position.set(0,4.23,-4.7); room.add(sign);
-  const tableMaterial=mat('#315e50',.78),table=box(7,.15,2.2,0,1.34,0,tableMaterial); table.name='experiment-table';
-  box(6.95,.035,2.16,0,1.255,0,M.wood); box(6.5,1.13,1.75,0,.65,0,M.wood);
+  const table=box(7,.15,2.2,0,1.34,0,tableMaterial); table.name='experiment-table';
+  box(6.95,.035,2.16,0,1.255,0,M.wood);
+  const cabinetBodyMaterial=M.cabinet.clone(); cabinetBodyMaterial.color.multiplyScalar(.92);
+  const cabinetBody=box(6.5,1.13,1.75,0,.65,0,cabinetBodyMaterial); cabinetBody.name='experiment-cabinet-body';
   for(let i=0;i<7;i++) {const x=-2.79+i*.93; box(.89,.96,.025,x,.69,.889,M.cabinet); box(.28,.025,.04,x,1.03,.918,M.wood);}
   box(6.28,.1,1.56,0,.13,0,M.metal);
   for(const x of [-2,2]) {box(.022,.7,.022,x,4.4,.05,M.metal); box(1.45,.065,.38,x,4.04,.05,M.metal); box(1.34,.012,.3,x,4,.05,new THREE.MeshBasicMaterial({color:'#fff9dc'}));}
   const courtyard=buildSchoolCourtyard(scene);
-  return {room,tableMaterial,courtyard};
+  return {room,tableMaterial,rearWorktops,tileWall,tileMaterials,tileMaterial:M.tile,tileGroutMaterial:tileGrout,courtyard};
 }
 
 /** School courtyard, built once; vegetation, seating and distant plain wall. */

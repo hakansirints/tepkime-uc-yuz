@@ -82,7 +82,7 @@ class Stage1ObservationManager {
       if (this.activeStateBox) this.activeStateBox.style.display = "none";
       if (this.obsWaitingTitle) this.obsWaitingTitle.textContent = "Tepkime Bekleniyor";
       if (this.obsWaitingDesc) {
-        this.obsWaitingDesc.textContent = "Deney masası başlangıçta boştur. Tepkime seçiminden bir tepkime seçtiğinizde reaktifler beherlere yerleştirilecek ve karışımdan sonra gözlem paneli aktifleşecektir.";
+        this.obsWaitingDesc.textContent = 'Soldaki listeden veya Ayarlar → Oda görünümündeki karşı masalardan bir madde çifti seç.';
       }
     } else if (simState === "waiting_pour") {
       if (this.waitingStateBox) this.waitingStateBox.style.display = "block";
@@ -106,10 +106,13 @@ class Stage1ObservationManager {
       if (this.activeStateBox) this.activeStateBox.style.display = "block";
       this.updateSubmitButtonState();
     }
-    if (LandscapeTasks.active() && simState !== 'reacted') this.obsWaitingDesc.textContent = simState === 'no_reaction'
-      ? 'Bir madde çifti seç. Karışımın görünümünü ve sıcaklığını izle.'
-      : simState === 'waiting_pour' ? 'Küçük beheri sola ve yukarı sürükle veya dökme düğmesini kullan.'
+    if (LandscapeTasks.active() && simState !== 'reacted' && simState !== 'no_reaction') this.obsWaitingDesc.textContent = simState === 'waiting_pour'
+      ? 'Küçük beheri sola ve yukarı sürükle veya dökme düğmesini kullan.'
       : 'Maddeler karışıyor. Kabarcık, katı ve sıcaklık değişimini izle.';
+    if (simState === 'waiting_pour' && window.labScene?.reagentTransfer) {
+      this.obsWaitingTitle.textContent = 'Beherler taşınıyor';
+      this.obsWaitingDesc.textContent = 'Seçtiğin iki beher ana deney masasına geliyor.';
+    }
     this.updateSubmitButtonState();
     this.fitNotebook();
     cancelAnimationFrame(this.layoutFrame); this.layoutFrame = requestAnimationFrame(() => this.fitNotebook());

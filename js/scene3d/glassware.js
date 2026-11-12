@@ -1,4 +1,3 @@
-/** Shell adapted from Tepkime Arenası. All experiment data belongs to this project. */
 const LAB_VESSELS = (() => {
   const height = 0.38 * 1.5, radius = height * (67 / 92) / 2, ratio = Math.cbrt(80 / 250);
   return Object.freeze({tableY: 1.425,
@@ -7,9 +6,25 @@ const LAB_VESSELS = (() => {
 })();
 window.LAB_VESSELS = LAB_VESSELS;
 
+function loadBeakerGeometry(model) {
+  // The Blender export is a classic script so baslat.cmd also works under file://.
+  const bytes=Uint8Array.from(atob(model.bytes),byte=>byte.charCodeAt(0));
+  const data=new DataView(bytes.buffer);
+  const positions=new Float32Array(model.vertexCount*3);
+  const indexOffset=positions.length*2;
+  const indices=new Uint16Array((bytes.length-indexOffset)/2);
+  for(let i=0;i<positions.length;i++) positions[i]=data.getInt16(i*2,true)*LAB_BEAKER_MESHES.step;
+  for(let i=0;i<indices.length;i++) indices[i]=data.getUint16(indexOffset+i*2,true);
+  const geometry=new THREE.BufferGeometry();
+  geometry.setAttribute('position',new THREE.BufferAttribute(positions,3));
+  geometry.setIndex(new THREE.BufferAttribute(indices,1));
+  geometry.computeVertexNormals();
+  return geometry;
+}
+
 class LabGlassware {
-  constructor(scene) {
-    this.scene=scene; this.fillVersion=0;
+  constructor(scene,envMap=null,maxAnisotropy=1) {
+    this.scene=scene; this.fillVersion=0; this.envMap=envMap; this.maxAnisotropy=maxAnisotropy;
     this.main=this.createBeaker(LAB_VESSELS.main); this.added=this.createBeaker(LAB_VESSELS.added);
     this.beaker250Group=this.main.group; this.beaker80Group=this.added.group;
     this.beaker250RestPos=this.main.group.position.clone(); this.beaker80RestPos=this.added.group.position.clone();
@@ -29,47 +44,63 @@ class LabGlassware {
   }
 
   createBeaker(config) {
-    const {radius,height,capacity}=config, unit=height/1.1;
+    const {radius,height,capacity}=config;
     const group=new THREE.Group(); group.name=`beaker-${capacity}ml`;
     group.position.set(config.x,LAB_VESSELS.tableY,config.z); this.scene.add(group);
-    // Arena's lathed inner/outer profile, with a common scale for every dimension.
-    const points=[[0,.02],[radius-.05*unit,.02],[radius,.07],[radius,1.1],
-      [radius-.022*unit,1.1],[radius-.022*unit,.075],[0,.075]].map(([x,y])=>new THREE.Vector2(x,y*unit));
-    const glass=new THREE.MeshPhysicalMaterial({color:'#ffffff',metalness:0,roughness:.12,transparent:true,opacity:.23,side:THREE.DoubleSide,depthWrite:false});
-    const shell=new THREE.Mesh(new THREE.LatheGeometry(points,64),glass); shell.renderOrder=4; group.add(shell);
-    const edge=new THREE.MeshStandardMaterial({color:'#d4e6e7',roughness:.22,transparent:true,opacity:.65,metalness:.1});
-    for(const y of [.07*unit,height]) {
-      const rim=new THREE.Mesh(new THREE.TorusGeometry(radius-.011*unit,.012*unit,8,64),edge);
-      rim.rotation.x=Math.PI/2; rim.position.y=y; rim.renderOrder=5; group.add(rim);
-    }
-    const lip=new THREE.Mesh(new THREE.SphereGeometry(.035*unit,20,12),glass);
-    lip.scale.set(1.6,.35,1.1); lip.position.set(-radius,height,0); group.add(lip);
-    const bottom=.075*unit, usable=height*.80;
-    const c=document.createElement('canvas'); c.width=512; c.height=1024;
-    const ctx=c.getContext('2d'); ctx.strokeStyle='#274d46'; ctx.fillStyle='#274d46'; ctx.lineWidth=5;
-    ctx.font='600 47px Segoe UI'; ctx.textBaseline='middle';
+    const model=LAB_BEAKER_MESHES[capacity];
+    const geometry=loadBeakerGeometry(model);
+    const {bottom,insideRadius}=model;
+    const spoutPoint=new THREE.Vector3(...model.spout);
+    const usable=height*.80;
+    // Fresnel opacity keeps the rolled lip and heel visible against the worktop.
+    const glass=new THREE.MeshPhysicalMaterial({color:'#f5ffff',metalness:0,roughness:.055,transmission:.96,reflectivity:.47,
+      clearcoat:.13,clearcoatRoughness:.08,envMap:this.envMap,envMapIntensity:1.15,
+      transparent:true,opacity:1,side:THREE.FrontSide,depthWrite:false});
+    glass.onBeforeCompile=shader=>{
+      shader.fragmentShader=shader.fragmentShader.replace('gl_FragColor = vec4( outgoingLight, diffuseColor.a );',`
+        float glassEdge = pow(1.0 - abs(dot(normal, normalize(vViewPosition))), 2.4);
+        outgoingLight = mix(outgoingLight, vec3(0.25, 0.32, 0.34), glassEdge * 0.48);
+        diffuseColor.a = max(diffuseColor.a, 0.035 + glassEdge * 0.57);
+        gl_FragColor = vec4(outgoingLight, diffuseColor.a);
+      `);
+    };
+    glass.customProgramCacheKey=()=> 'blender-beaker-glass';
+    const shell=new THREE.Mesh(geometry,glass); shell.name='borosilicate-shell'; shell.renderOrder=4; group.add(shell);
+    const c=document.createElement('canvas'); c.width=256; c.height=512;
+    const ctx=c.getContext('2d'); ctx.fillStyle='#edf1e8'; ctx.lineCap='round';
+    ctx.textBaseline='middle';
     const step=capacity===250?50:20;
+    const pixelY=ml=>(1-(bottom+usable*ml/capacity)/height)*c.height;
+    const print=(text,x,y,size)=>{
+      ctx.font=`600 ${size}px "Segoe UI", sans-serif`;
+      ctx.strokeStyle='#33403f'; ctx.lineWidth=2; ctx.strokeText(text,x,y);
+      ctx.fillText(text,x,y);
+    };
     for(let ml=step/2;ml<=capacity;ml+=step/2) {
-      const y=(1-(bottom+usable*ml/capacity)/height)*1024, major=ml%step===0;
-      ctx.beginPath(); ctx.moveTo(28,y); ctx.lineTo(major?170:100,y); ctx.stroke();
-      if(major) ctx.fillText(String(ml),190,y);
+      const y=pixelY(ml),major=ml%step===0;
+      ctx.beginPath(); ctx.moveTo(50,y); ctx.lineTo(major?112:88,y);
+      ctx.strokeStyle='#33403f'; ctx.lineWidth=major?5:4; ctx.stroke();
+      ctx.strokeStyle=ctx.fillStyle; ctx.lineWidth=major?3:2; ctx.stroke();
+      if(major) print(String(ml),132,y,28);
     }
-    ctx.font='500 34px Segoe UI'; ctx.fillText(`${capacity} mL`,28,920);
-    ctx.font='26px Segoe UI'; ctx.fillText('BORO 3.3',28,968);
-    const marks=new THREE.Mesh(new THREE.CylinderGeometry(radius+.001,radius+.001,height,48,1,true,-.58,1.16),
-      new THREE.MeshBasicMaterial({map:new THREE.CanvasTexture(c),transparent:true,side:THREE.FrontSide,depthWrite:false}));
+    print(`${capacity} mL`,50,c.height*.893,33);
+    const marksTexture=new THREE.CanvasTexture(c); marksTexture.encoding=THREE.sRGBEncoding; marksTexture.anisotropy=Math.min(8,this.maxAnisotropy);
+    const marks=new THREE.Mesh(new THREE.CylinderGeometry(radius+.001,radius+.001,height,64,1,true,-.58,1.16),
+      new THREE.MeshBasicMaterial({map:marksTexture,transparent:true,side:THREE.FrontSide,depthWrite:false}));
     marks.position.y=height/2; marks.renderOrder=6; group.add(marks);
-    const material=new THREE.MeshPhysicalMaterial({color:0xffffff,transparent:true,opacity:.4,roughness:.21,metalness:0,side:THREE.DoubleSide,depthWrite:false});
-    const insideRadius=radius-.027*unit;
+    const material=new THREE.MeshPhysicalMaterial({color:0xffffff,transparent:true,opacity:.4,roughness:.1,metalness:0,envMap:this.envMap,envMapIntensity:.4,side:THREE.DoubleSide,depthWrite:false});
     const liquid=new THREE.Mesh(new THREE.CylinderGeometry(insideRadius,insideRadius,1,64),material);
-    const positions=liquid.geometry.attributes.position;
-    const topVertices=Array.from({length:positions.count},(_,i)=>positions.getY(i)>0);
+    const liquidPositions=liquid.geometry.attributes.position;
+    const topVertices=Array.from({length:liquidPositions.count},(_,i)=>liquidPositions.getY(i)>0);
     liquid.renderOrder=1; group.add(liquid);
     const surface=new THREE.Group(), disc=new THREE.Mesh(new THREE.CircleGeometry(insideRadius,64),material);
     disc.rotation.x=-Math.PI/2; surface.add(disc);
-    const ring=new THREE.Mesh(new THREE.TorusGeometry(insideRadius-.002,.0025,8,64),edge);
+    const meniscus=new THREE.MeshPhysicalMaterial({color:'#9eafab',roughness:.045,
+      transmission:.63,reflectivity:.47,envMap:this.envMap,envMapIntensity:1.5,
+      transparent:true,opacity:.22,depthWrite:false});
+    const ring=new THREE.Mesh(new THREE.TorusGeometry(insideRadius-.002,.0025,8,96),meniscus);
     ring.rotation.x=Math.PI/2; surface.add(ring); surface.renderOrder=2; group.add(surface);
-    return {...config,group,bottom,usable,insideRadius,liquid,surface,topVertices,volume:0};
+    return {...config,group,bottom,usable,insideRadius,spoutPoint,liquid,surface,topVertices,volume:0};
   }
 
   heightForVolume(vessel,volume) { return vessel.usable*THREE.MathUtils.clamp(volume/vessel.capacity,0,1); }
@@ -99,13 +130,16 @@ class LabGlassware {
   setEmptyState() {
     this.fillVersion++; this.isFilled=false;
     this.setVolume(this.main,0); this.setVolume(this.added,0);
+    this.main.group.visible=false; this.added.group.visible=false;
+    this.main.group.position.copy(this.beaker250RestPos);
     this.added.group.position.copy(this.beaker80RestPos); this.added.group.rotation.set(0,0,0);
     this.streamMesh.visible=false;
     this.ripples.forEach(ring=>ring.visible=false); this.drops.forEach(drop=>drop.visible=false);
   }
 
-  setupReaction(reaction,animate=true) {
+  setupReaction(reaction,animate=true,ready=true) {
     this.setEmptyState(); if(!reaction) return;
+    this.main.group.visible=true; this.added.group.visible=true;
     this.reaction=reaction; this.initialMainVolume=reaction.fixedVessel.volume; this.initialAddedVolume=reaction.addedVessel.volume;
     for(const [vessel,data] of [[this.main,reaction.fixedVessel],[this.added,reaction.addedVessel]]) {
       vessel.liquid.material.color.setHex(data.color); vessel.liquid.material.opacity=data.liquidOpacity??.55;
@@ -119,19 +153,22 @@ class LabGlassware {
       this.setVolume(this.main,this.initialMainVolume*eased); this.setVolume(this.added,this.initialAddedVolume*eased);
       this.updateVolumeLabels();
       if(p<1) requestAnimationFrame(fill);
-      else {
-        this.isFilled=true;
-        const button=document.getElementById('btnAutoPour');
-        if(window.labState.simulationState==='waiting_pour') {
-          if(button) button.disabled=false;
-          const description=document.getElementById('obsWaitingDesc');
-          if(description) description.textContent=window.LandscapeTasks?.active()
-            ? 'Küçük beheri sola ve yukarı sürükle veya dökme düğmesini kullan.'
-            : "İki beher de hazır. 'Beheri dök ve karıştır' düğmesini kullan veya küçük beheri sola ve yukarı sürükleyip uygun açıda bırak; karışımda oluşan değişimleri gözlemle.";
-        }
-      }
+      else if(ready) this.markFilled();
     };
     fill(start);
+  }
+
+  markFilled() {
+    this.isFilled=true;
+    if(window.labState.simulationState!=='waiting_pour') return;
+    const button=document.getElementById('btnAutoPour');
+    if(button) button.disabled=false;
+    const title=document.getElementById('obsWaitingTitle');
+    if(title) title.textContent='Reaktifler Masada Hazır';
+    const description=document.getElementById('obsWaitingDesc');
+    if(description) description.textContent=window.LandscapeTasks?.active()
+      ? 'Küçük beheri sola ve yukarı sürükle veya dökme düğmesini kullan.'
+      : "İki beher de hazır. 'Beheri dök ve karıştır' düğmesini kullan veya küçük beheri sola ve yukarı sürükleyip uygun açıda bırak; karışımda oluşan değişimleri gözlemle.";
   }
 
   updateVolumeLabels() {
@@ -143,8 +180,8 @@ class LabGlassware {
   setPourProgress(progress) {
     if(!this.isFilled) return;
     progress=THREE.MathUtils.clamp(progress,0,1);
-    const {radius:r,height:h}=this.added;
-    const rest=this.beaker80RestPos.clone().add(new THREE.Vector3(-r,h,0));
+    const localSpout=this.added.spoutPoint;
+    const rest=this.beaker80RestPos.clone().add(localSpout);
     const target=this.beaker250RestPos.clone().add(new THREE.Vector3(this.main.radius*.30,this.main.height+.18,0));
     const mix=THREE.MathUtils.clamp((progress-.22)/.58,0,1), ease=p=>.5-Math.cos(p*Math.PI)/2;
     let theta,spout;
@@ -154,7 +191,8 @@ class LabGlassware {
     else {
       const p=ease((progress-.8)/.2); theta=1.32*(1-p); spout=target.clone().lerp(rest,p); spout.y+=Math.sin(p*Math.PI)*.12;
     }
-    this.added.group.position.set(spout.x+r*Math.cos(theta)+h*Math.sin(theta),spout.y+r*Math.sin(theta)-h*Math.cos(theta),spout.z);
+    this.added.group.position.set(spout.x-localSpout.x*Math.cos(theta)+localSpout.y*Math.sin(theta),
+      spout.y-localSpout.x*Math.sin(theta)-localSpout.y*Math.cos(theta),spout.z-localSpout.z);
     this.added.group.rotation.z=theta;
     this.setVolume(this.added,this.initialAddedVolume*(1-mix),theta);
     this.setVolume(this.main,this.initialMainVolume+this.initialAddedVolume*mix);
