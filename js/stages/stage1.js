@@ -60,7 +60,128 @@
         // dokunmatik ekranda klavye açılıp sahneyi kapatmasın
         if (!ta2.disabled && !matchMedia('(pointer: coarse)').matches) ta2.focus({ preventScroll: true });
       });
-      T.Lab.on('mixStart', () => { U.$('#btn-pour').disabled = true; this.timer('start'); });
+      T.Lab.on('mixStart', () => { U.$('#btn-pour').disabled = true; this.timer('start'); this.graph('start'); });
+      T.Lab.on('state', (st) => { if (st === 'idle' || st === 'ready') this.graph('hide'); this.syncSafety(); });
+      T.Lab.on('done', () => this.graph('draw'));
+      // güvenlik: ilk dökümden önce tek dokunuşla gözlük + eldiven
+      T.Lab.beforePour = () => {
+        if (T.Lab.safetyWorn()) return true;
+        this.safetyCard(true, true);
+        return false;
+      };
+      U.$('#btn-wear').addEventListener('click', () => this.wear());
+      T.Lab.on('safetyTap', () => this.wear());
+      T.Lab.on('safety', () => this.syncSafety());
+      if (T.Lab.safetyWorn() && T.Lab.safetyGear) T.Lab.safetyGear.visible = false;
+      this.syncSafety();
+      let rz;
+      window.addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(() => { this.graph('draw'); this.placeSafety(); }, 120); });
+      new MutationObserver(() => this.graph('draw')).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+    },
+    /* ---------- Güvenlik adımı ----------
+       Cezalandırmaz, uyarı rengi kullanmaz: tek dokunuşluk bir alışkanlık adımı. Takılınca masadan
+       kalkar ve alt çubukta 🥽🧤 simgesi olarak kalır. */
+    safetyCard(show, wantPour) {
+      const c = U.$('#safety-card');
+      this._pourAfterWear = !!wantPour || (show && this._pourAfterWear);
+      c.classList.toggle('hidden', !show);
+      if (show) { this.placeSafety(); c.classList.remove('pop'); void c.offsetWidth; c.classList.add('pop'); }
+    },
+    /** Kart alt çubuğun hemen üstünde durur (çubuğun yüksekliği ipucu satırıyla değişir) */
+    placeSafety() {
+      const c = U.$('#safety-card'), dock = U.$('#lab-dock');
+      if (c.classList.contains('hidden')) return;
+      const top = dock.getBoundingClientRect().top;
+      if (top > 0) c.style.bottom = Math.round(window.innerHeight - top + 8) + 'px';
+    },
+    wear() {
+      const go = this._pourAfterWear;
+      this._pourAfterWear = false;
+      if (!T.Lab.safetyWorn()) { T.Lab.wearSafety(); T.Audio.click(); U.toast('🥽🧤 Gözlük ve eldiven takıldı. İyi deneyler!'); }
+      this.safetyCard(false);
+      if (go && T.Lab.state === 'ready') setTimeout(() => { if (T.Lab.pour()) T.Audio.click(); }, 450);
+    },
+    syncSafety() {
+      const worn = T.Lab.safetyWorn();
+      U.$('#safety-badge').hidden = !worn;
+      const want = !worn && !!S.reaction && T.Lab.state === 'ready' && !U.$('#lab-ui').classList.contains('hidden');
+      if (want && U.$('#safety-card').classList.contains('hidden')) this.safetyCard(true);
+      else if (!want) this.safetyCard(false);
+    },
+    /* ---------- Canlı sıcaklık–zaman grafiği ----------
+       Termometredeki sayıyı eğriye çevirir: "ısındı" gözlemi nicel kanıta dönüşür.
+       x: gözlem süresi (hızlandırılmış saat, süre barıyla aynı), y: °C; kesik çizgi = başlangıç (oda) sıcaklığı. */
+    graph(cmd) {
+      const el = U.$('#temp-graph');
+      if (cmd === 'hide') { clearInterval(this._gm); el.classList.remove('show'); return; }
+      if (cmd === 'start') {
+        el.classList.add('show');
+        clearInterval(this._gm);
+        this._gm = setInterval(() => {
+          this.drawGraph();
+          const s = T.Lab.sim;
+          if (!s || T.Lab.state === 'done' || s.t > T.Lab.obsDuration() + 4) clearInterval(this._gm);
+        }, 150);
+      }
+      if (el.classList.contains('show')) this.drawGraph();
+    },
+    drawGraph() {
+      const SPEED = 12, T0 = 22;
+      const cv = U.$('#tg-canvas'), s = T.Lab.sim;
+      const log = (s && s.log) || [];
+      const dpr = Math.min(2, window.devicePixelRatio || 1);
+      const W = cv.clientWidth, H = cv.clientHeight;
+      if (!W || !H) return;
+      if (cv.width !== Math.round(W * dpr) || cv.height !== Math.round(H * dpr)) { cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr); }
+      const g = cv.getContext('2d');
+      g.setTransform(dpr, 0, 0, dpr, 0, 0);
+      g.clearRect(0, 0, W, H);
+      const css = getComputedStyle(document.documentElement);
+      const col = (n, f) => (css.getPropertyValue(n).trim() || f);
+      const cText = col('--text', '#fff'), cMuted = col('--muted', '#999'), cLine = col('--line-strong', 'rgba(127,127,127,.35)');
+      const now = log.length ? log[log.length - 1][1] : T.Lab.thermo.temp;
+      U.$('#temp-graph .tg-now').textContent = now.toFixed(1).replace('.', ',') + ' °C';
+      // eksen aralıkları: x tüm gözlem süresi; y başlangıç sıcaklığını ve ölçümleri kapsar
+      const xMax = T.Lab.obsDuration() * SPEED;
+      let lo = T0 - 1, hi = T0 + 1;
+      log.forEach((p) => { lo = Math.min(lo, p[1] - 0.6); hi = Math.max(hi, p[1] + 0.6); });
+      const span = hi - lo, step = span > 24 ? 10 : span > 10 ? 5 : span > 5 ? 2 : 1;
+      lo = Math.floor(lo / step) * step; hi = Math.ceil(hi / step) * step;
+      const fs = W < 220 ? 9 : 10;
+      g.font = `600 ${fs}px ${col('--font', 'system-ui')}`;
+      const L = fs * 2.6, R = 6, Tp = 5, B = fs + 7;
+      const px = (x) => L + (x / xMax) * (W - L - R), py = (y) => Tp + (1 - (y - lo) / (hi - lo)) * (H - Tp - B);
+      // ızgara + y etiketleri
+      g.lineWidth = 1; g.strokeStyle = cLine; g.fillStyle = cMuted; g.textBaseline = 'middle'; g.textAlign = 'right';
+      for (let y = lo; y <= hi + 1e-6; y += step) {
+        const yy = Math.round(py(y)) + 0.5;
+        g.globalAlpha = 0.55; g.beginPath(); g.moveTo(L, yy); g.lineTo(W - R, yy); g.stroke(); g.globalAlpha = 1;
+        g.fillText(String(y), L - 4, yy);
+      }
+      // x etiketleri (dk:ss)
+      g.textAlign = 'center'; g.textBaseline = 'alphabetic';
+      // etiketler arası en az ~36 px kalsın
+      const xs = [30, 60, 120, 300].find((v) => (W - L - R) / (xMax / v) >= 36) || 300;
+      for (let x = 0; x <= xMax + 1e-6; x += xs) {
+        const lbl = Math.floor(x / 60) + ':' + String(x % 60).padStart(2, '0');
+        g.fillText(lbl, Math.min(W - R - 10, Math.max(L + 8, px(x))), H - 2);
+      }
+      // başlangıç (oda) sıcaklığı: kesik çizgi
+      g.setLineDash([4, 4]); g.strokeStyle = cMuted; g.globalAlpha = 0.8;
+      g.beginPath(); g.moveTo(L, py(T0)); g.lineTo(W - R, py(T0)); g.stroke();
+      g.setLineDash([]); g.globalAlpha = 1;
+      // ölçüm eğrisi
+      if (log.length > 1) {
+        g.strokeStyle = cText; g.lineWidth = 2; g.lineJoin = 'round'; g.lineCap = 'round';
+        g.beginPath();
+        log.forEach((p, i) => { const X = px(Math.min(xMax, p[0] * SPEED)), Y = py(p[1]); if (i) g.lineTo(X, Y); else g.moveTo(X, Y); });
+        g.stroke();
+      }
+      if (log.length) {
+        const p = log[log.length - 1];
+        g.fillStyle = cText; g.beginPath(); g.arc(px(Math.min(xMax, p[0] * SPEED)), py(p[1]), 3, 0, Math.PI * 2); g.fill();
+      }
+      U.$('#tg-canvas').setAttribute('aria-label', `Sıcaklık ${T0} °C'den ${now.toFixed(1)} °C'ye`);
     },
     enter() {
       this.build();
@@ -75,6 +196,9 @@
       this.refresh();
       const st = T.Lab.state;
       if (st === 'done') this.timer('done'); else if (st === 'reacting' || (st === 'pouring' && T.Lab.sim && T.Lab.sim.started)) this.timer('start'); else this.timer('hide');
+      if (st === 'done' && T.Lab.sim && T.Lab.sim.started) U.$('#temp-graph').classList.add('show');
+      if (T.Lab.sim && T.Lab.sim.started) this.graph(st === 'done' ? 'draw' : 'start'); else this.graph('hide');
+      this.syncSafety();
       U.$('#notebook').classList.remove('nb-glow');
     },
     leave() {

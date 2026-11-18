@@ -20,8 +20,9 @@
 <body>
   <!-- 3B laboratuvar -->
   <canvas id="lab-canvas" aria-label="3B kimya laboratuvarı"></canvas>
+  <!-- odak modu: deney sürerken ekran kenarlarını (odayı) yumuşakça bulanıklaştırır, masa net kalır -->
+  <div id="focus-veil" aria-hidden="true"></div>
   <div id="lab-tags" aria-hidden="true"></div>
-
   <!-- Yükleme ekranı -->
   <div id="loader">
     <div class="loader-card">
@@ -104,9 +105,23 @@
       <div class="ot-track"><i class="ot-fill"></i></div>
     </div>
 
+    <!-- Canlı sıcaklık–zaman grafiği: termometredeki sayıyı eğriye çevirir -->
+    <figure id="temp-graph" class="temp-graph glass-panel" aria-label="Sıcaklık–zaman grafiği">
+      <figcaption class="tg-head"><span class="tg-title">🌡 Sıcaklık (°C) – zaman</span><b class="tg-now">22,0 °C</b></figcaption>
+      <canvas id="tg-canvas" role="img" aria-label="Sıcaklığın zamana göre değişimi"></canvas>
+    </figure>
+
+    <!-- Güvenlik adımı (ilk deneyde bir kez): gözlük ve eldiveni tak -->
+    <div id="safety-card" class="safety-card glass-panel hidden" role="dialog" aria-labelledby="sc-title">
+      <span class="sc-ic" aria-hidden="true">🥽🧤</span>
+      <div class="sc-txt"><b id="sc-title">Önce güvenlik</b><span>Deneye başlamadan gözlüğünü ve eldivenini tak.</span></div>
+      <button id="btn-wear" class="btn primary">Tak</button>
+    </div>
+
     <div id="lab-dock" class="glass-panel">
       <div id="dock-hint" class="dock-hint">💡 Önce soldan bir tepkime seç.</div>
       <div class="dock-row">
+        <span id="safety-badge" class="safety-badge" title="Gözlük ve eldiven takılı" aria-label="Gözlük ve eldiven takılı" hidden>🥽🧤</span>
         <button id="btn-pour" class="btn primary" disabled>⤵ <span class="lbl-long">Otomatik dök ve karıştır</span><span class="lbl-short">Dök ve karıştır</span></button>
         <button id="btn-reset-exp" class="btn ghost" disabled>↺ <span class="lbl-long">Deneyi yenile</span><span class="lbl-short">Yenile</span></button>
       </div>

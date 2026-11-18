@@ -264,12 +264,14 @@
     faucet.scale.setScalar(0.9);
     g.add(faucet);
 
-    // diğer eşyalar
-    const wash = P.washBottle(); wash.position.set(-0.72, BENCH_Y, -0.12); wash.rotation.y = 2.4; g.add(wash);
-    const rack = P.testTubeRack(); rack.position.set(0.6, BENCH_Y, -0.2); rack.rotation.y = -0.1; g.add(rack);
-    const er1 = P.erlen({ fill: 0xf3f6f8, op: 0.25 }); er1.position.set(-0.55, BENCH_Y, -0.28); g.add(er1);
-    const er2 = P.erlen({ s: 0.8 }); er2.position.set(-0.42, BENCH_Y, -0.32); g.add(er2);
-    const gc = P.gradCylinder(); gc.position.set(0.82, BENCH_Y, -0.3); g.add(gc);
+    // Sade masa: deney masasında yalnızca o deneyde kullanılanlar (beherler, termometre) ve kayıt için
+    // defter durur. Kullanılmayan cam malzeme arka tezgâhta, reaktif şişeleri rafta (etiketleri okunur).
+    const bz = ROOM.z0 + 0.325; // arka tezgâhın orta çizgisi
+    const wash = P.washBottle(); wash.position.set(-2.55, BENCH_Y, bz + 0.02); wash.rotation.y = 0.5; g.add(wash);
+    const rack = P.testTubeRack(); rack.position.set(-3.2, BENCH_Y, bz - 0.04); rack.rotation.y = 0.05; g.add(rack);
+    const er1 = P.erlen({ fill: 0xf3f6f8, op: 0.25 }); er1.position.set(0.95, BENCH_Y, bz + 0.02); g.add(er1);
+    const er2 = P.erlen({ s: 0.8 }); er2.position.set(1.12, BENCH_Y, bz - 0.06); g.add(er2);
+    const gc = P.gradCylinder(); gc.position.set(2.15, BENCH_Y, bz - 0.04); g.add(gc);
     // açık laboratuvar defteri ve tükenmez kalem
     const nb = P.notebook(); nb.position.set(-0.8, BENCH_Y, 0.33); nb.rotation.y = 0.22; g.add(nb);
     const pen = P.pen(); pen.position.set(0.1, 0.0125, 0.02); pen.rotation.y = 0.5; nb.add(pen);

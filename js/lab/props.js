@@ -456,6 +456,144 @@
     return g;
   };
 
+  /** Kimyasal sıçrama gözlüğü (dolaylı havalandırmalı): iki yönde kavisli şeffaf siperlik, arkasında
+      koyu yumuşak conta, üstte havalandırma kapakçıkları, arkaya dolanan düz lastik bant.
+      Masada alt kenarı üstünde durur; ön yüz +z. */
+  P.splashGoggles = function () {
+    const g = new THREE.Group();
+    const R = 0.1, ph = 0.68, th = 0.27, cy = 0.032, cz = -0.06;
+    const lensMat = new THREE.MeshPhysicalMaterial({ color: 0xe8f1f4, roughness: 0.04, metalness: 0, transparent: true, opacity: 0.26,
+      clearcoat: 1, clearcoatRoughness: 0.05, side: THREE.DoubleSide, depthWrite: false });
+    const sealMat = new THREE.MeshStandardMaterial({ color: 0x3a4149, roughness: 0.7 });
+    const strapMat = new THREE.MeshStandardMaterial({ color: 0x23272c, roughness: 0.85 });
+    // küre parçası: phi = π/2 → +z (ön)
+    const lens = P.mesh(new THREE.SphereGeometry(R, 40, 12, Math.PI / 2 - ph, ph * 2, Math.PI / 2 - th, th * 2), lensMat, { pos: [0, cy, cz], cast: false });
+    lens.renderOrder = 2;
+    g.add(lens);
+    // siperliğin çevresi: küre üzerindeki kenar noktaları (biraz geride ve dışta)
+    const at = (p, t, r) => new THREE.Vector3(-r * Math.cos(p) * Math.sin(t), cy + r * Math.cos(t), cz + r * Math.sin(p) * Math.sin(t));
+    const p0 = Math.PI / 2 - ph, p1 = Math.PI / 2 + ph, t0 = Math.PI / 2 - th, t1 = Math.PI / 2 + th;
+    const rim = [];
+    const N = 14;
+    for (let i = 0; i <= N; i++) rim.push(at(p0 + (p1 - p0) * i / N, t1, R - 0.002));   // alt kenar
+    for (let i = 1; i < 4; i++) rim.push(at(p1, t1 + (t0 - t1) * i / 4, R - 0.002));    // yan
+    for (let i = 0; i <= N; i++) rim.push(at(p1 + (p0 - p1) * i / N, t0, R - 0.002));   // üst kenar
+    for (let i = 1; i < 4; i++) rim.push(at(p0, t0 + (t1 - t0) * i / 4, R - 0.002));    // yan
+    const frontC = new THREE.CatmullRomCurve3(rim, true, 'centripetal');
+    g.add(P.mesh(new THREE.TubeGeometry(frontC, 120, 0.0026, 6, true), sealMat)); // ince ön kenar
+    // gövde: siperlik kenarından yüze doğru uzanan tek parça yumuşak etek (arkaya doğru hafif daralır)
+    const backC = new THREE.CatmullRomCurve3(rim.map((v) => new THREE.Vector3(v.x * 0.93, cy + (v.y - cy) * 0.9, v.z - 0.02)), true, 'centripetal');
+    {
+      const n = 120, pos = [], idx = [];
+      for (let i = 0; i <= n; i++) {
+        const u = (i % n) / n, a = frontC.getPointAt(u), b = backC.getPointAt(u);
+        pos.push(a.x, a.y, a.z, b.x, b.y, b.z);
+        if (i < n) { const k = i * 2; idx.push(k, k + 2, k + 1, k + 1, k + 2, k + 3); }
+      }
+      const sk = new THREE.BufferGeometry();
+      sk.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); sk.setIndex(idx); sk.computeVertexNormals();
+      const skirtMat = new THREE.MeshStandardMaterial({ color: 0x4a535d, roughness: 0.6, transparent: true, opacity: 0.85, side: THREE.DoubleSide });
+      g.add(P.mesh(sk, skirtMat));
+    }
+    // üst havalandırma kapakçıkları (her yanda iki)
+    [-0.42, -0.2, 0.2, 0.42].forEach((k) => {
+      const v = at(Math.PI / 2 + k, t0 + 0.02, R - 0.006);
+      const cap = P.box(0.013, 0.0035, 0.009, sealMat, [v.x, v.y + 0.003, v.z - 0.006]);
+      cap.rotation.y = -k; g.add(cap);
+    });
+    // bant tokaları ve düz lastik bant (arkada U biçiminde masaya yatık)
+    const sideL = at(p1, Math.PI / 2, R - 0.004), sideR = at(p0, Math.PI / 2, R - 0.004);
+    [sideL, sideR].forEach((v) => g.add(P.box(0.006, 0.016, 0.012, sealMat, [v.x, v.y, v.z - 0.012])));
+    const sx = Math.abs(sideL.x);
+    const pts = [
+      new THREE.Vector3(-sx - 0.002, cy, sideL.z - 0.016), new THREE.Vector3(-sx - 0.008, 0.012, sideL.z - 0.04),
+      new THREE.Vector3(-sx + 0.005, 0.0025, sideL.z - 0.075), new THREE.Vector3(0, 0.0025, sideL.z - 0.092),
+      new THREE.Vector3(sx - 0.005, 0.0025, sideL.z - 0.075), new THREE.Vector3(sx + 0.008, 0.012, sideL.z - 0.04),
+      new THREE.Vector3(sx + 0.002, cy, sideL.z - 0.016)
+    ];
+    const curve = new THREE.CatmullRomCurve3(pts);
+    // yassı bant: eğri boyunca dar bir şerit
+    const seg = 60, wdt = 0.011, pos = [], idx = [];
+    for (let i = 0; i <= seg; i++) {
+      const u = i / seg, p = curve.getPointAt(u), tg = curve.getTangentAt(u);
+      // bant yüzü yatayda masaya, yanlarda dikeye döner
+      const lie = U.smooth(Math.min(1, Math.max(0, (cy - p.y) / (cy - 0.006))));
+      const up = new THREE.Vector3(0, 1, 0), side = new THREE.Vector3().crossVectors(tg, up).normalize();
+      const across = up.clone().lerp(side, lie).normalize();
+      pos.push(p.x + across.x * wdt / 2, p.y + across.y * wdt / 2 + (lie > 0.9 ? 0.0005 : 0), p.z + across.z * wdt / 2,
+               p.x - across.x * wdt / 2, Math.max(0.0008, p.y - across.y * wdt / 2), p.z - across.z * wdt / 2);
+      if (i < seg) { const a = i * 2; idx.push(a, a + 1, a + 2, a + 1, a + 3, a + 2); }
+    }
+    const sg = new THREE.BufferGeometry();
+    sg.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); sg.setIndex(idx); sg.computeVertexNormals();
+    const strap = P.mesh(sg, strapMat); strap.material = strapMat.clone(); strap.material.side = THREE.DoubleSide;
+    g.add(strap);
+    return g;
+  };
+  /** Kutudaki tek kullanımlık nitril eldiven: karton dağıtıcı kutu, üstte yırtma ağzından çıkan eldiven ucu. */
+  function gloveBoxTex(kind) {
+    const c = document.createElement('canvas');
+    const W = kind === 'top' ? 256 : kind === 'long' ? 512 : 256, H = kind === 'top' ? 480 : 152;
+    c.width = W; c.height = H;
+    const x = c.getContext('2d');
+    const blue = '#2f6fc4';
+    x.fillStyle = '#f4f6f8'; x.fillRect(0, 0, W, H);
+    if (kind === 'top') {
+      x.fillStyle = blue; x.fillRect(0, 0, W, 54); x.fillRect(0, H - 54, W, 54);
+      // yırtma ağzı (oval), ağzın içi gölgeli
+      x.fillStyle = '#c9d0d8'; x.beginPath(); x.ellipse(W / 2, H / 2, 70, 150, 0, 0, Math.PI * 2); x.fill();
+      x.fillStyle = '#5d6670'; x.beginPath(); x.ellipse(W / 2, H / 2, 58, 136, 0, 0, Math.PI * 2); x.fill();
+      x.fillStyle = '#fff'; x.font = '700 26px system-ui, sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle';
+      x.fillText('NİTRİL', W / 2, 28); x.fillText('M', W / 2, H - 27);
+    } else {
+      x.fillStyle = blue; x.fillRect(0, H - 40, W, 40);
+      x.fillStyle = blue; x.font = `800 ${kind === 'long' ? 44 : 34}px system-ui, sans-serif`; x.textAlign = 'center'; x.textBaseline = 'middle';
+      x.fillText(kind === 'long' ? 'NİTRİL ELDİVEN' : 'M', W / 2, (H - 40) / 2 + 4);
+      x.fillStyle = '#fff'; x.font = '600 18px system-ui, sans-serif';
+      x.fillText(kind === 'long' ? 'pudrasız · 100 adet' : '100', W / 2, H - 20);
+    }
+    const t = new THREE.CanvasTexture(c);
+    t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 8;
+    return t;
+  }
+  P.gloveBox = function () {
+    const g = new THREE.Group();
+    const w = 0.125, h = 0.068, d = 0.235;
+    const card = (map) => new THREE.MeshStandardMaterial({ map, roughness: 0.8 });
+    const long = gloveBoxTex('long'), end = gloveBoxTex('end');
+    const plain = new THREE.MeshStandardMaterial({ color: 0xe9ecef, roughness: 0.85 });
+    // BoxGeometry yüz sırası: +x, -x, +y, -y, +z, -z
+    const box = P.mesh(new THREE.BoxGeometry(w, h, d), [card(long), card(long), card(gloveBoxTex('top')), plain, card(end), card(end)], { pos: [0, h / 2, 0] });
+    g.add(box);
+    // ağızdan çıkan eldiven: ince, buruşuk bir nitril tabaka; ortası ağızdan kabarır, kenarları kutuya yatar
+    const nit = new THREE.MeshStandardMaterial({ color: 0x6f9be0, roughness: 0.5, side: THREE.DoubleSide });
+    // yuvarlak hatlı (oval) tabaka: halka geometrisi iç bölmeleri sayesinde kırışabilir
+    const sheet = new THREE.RingGeometry(0.0005, 1, 56, 14);
+    sheet.rotateX(-Math.PI / 2);
+    const sp = sheet.attributes.position;
+    for (let i = 0; i < sp.count; i++) {
+      const ox = sp.getX(i), oz = sp.getZ(i), ang = Math.atan2(oz, ox);
+      const edge = 1 + Math.sin(ang * 5 + 1) * 0.08 + Math.sin(ang * 9) * 0.05;   // düzensiz kenar
+      const px = ox * 0.036 * edge, pz = oz * 0.056 * edge;
+      sp.setX(i, px); sp.setZ(i, pz);
+      const r = Math.hypot(px / 0.035, pz / 0.055);           // 0 merkez .. 1 kenar
+      const puff = Math.max(0, 1 - r * r) * 0.016;              // ağızdan kabarma
+      const wr = Math.sin(px * 260 + pz * 90) * 0.0014 + Math.sin(pz * 210 - px * 140) * 0.0012; // kırışıklık
+      sp.setY(i, h + 0.0012 + puff + wr * (0.4 + (1 - r) * 0.8));
+    }
+    sheet.computeVertexNormals();
+    g.add(P.mesh(sheet, nit, { pos: [0.002, 0, 0.004] }));
+    return g;
+  };
+  /** Masadaki güvenlik ekipmanı: eldiven kutusu (arkada) + koruyucu gözlük (önde), tek grup. */
+  P.safetyGear = function () {
+    const g = new THREE.Group();
+    g.name = 'safetyGear';
+    const box = P.gloveBox(); box.position.set(-0.01, 0, -0.06); box.rotation.y = 0.12; g.add(box);
+    const gog = P.splashGoggles(); gog.position.set(0.0, 0, 0.165); gog.rotation.y = 0.28; g.add(gog);
+    return g;
+  };
+
   /** Spatül ve saat camı */
   P.watchGlass = function () {
     const geo = new THREE.SphereGeometry(0.05, 32, 8, 0, Math.PI * 2, Math.PI * 0.82, Math.PI * 0.18);

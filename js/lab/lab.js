@@ -43,6 +43,8 @@
 
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0xd8dedd);
+    // Odak modu sisi: baştan sahnede (yoğunluk 0) — sonradan eklemek tüm gölgelendiricileri yeniden derletir
+    scene.fog = new THREE.FogExp2(0xa9b1ba, 0);
     Lab.scene = scene;
     const camera = new THREE.PerspectiveCamera(40, window.innerWidth / window.innerHeight, 0.02, 40);
     Lab.camera = camera;
@@ -52,9 +54,11 @@
     say(30);
 
     // Işıklar
-    const hemi = new THREE.HemisphereLight(0xf2f6ff, 0x8b8577, 0.7);
+    // ortam ışığı biraz kısık: masadaki gölgeler yıkanıp kaybolmasın
+    const hemi = new THREE.HemisphereLight(0xf2f6ff, 0x8b8577, 0.5);
     scene.add(hemi);
-    const sun = new THREE.DirectionalLight(0xfff0dc, 2.2);
+    // pencere ışığı nötr ve biraz kısık: masadaki belirgin gölgeyi tavan lambası verir
+    const sun = new THREE.DirectionalLight(0xfff6ec, 1.75);
     sun.position.set(-4.2, 3.6, 1.2);
     sun.target.position.set(0, BY(), 0);
     sun.castShadow = true;
@@ -63,9 +67,12 @@
     sc.left = -2.2; sc.right = 2.2; sc.top = 2.0; sc.bottom = -2.0; sc.near = 1; sc.far = 12;
     sun.shadow.bias = -0.0004; sun.shadow.normalBias = 0.02; sun.shadow.radius = 4;
     scene.add(sun, sun.target);
-    const ceil = new THREE.SpotLight(0xf6f9ff, 9, 6, 1.0, 1, 2);
-    ceil.position.set(0.2, 2.95, 0.4);
-    ceil.target.position.set(0, BY(), 0.05);
+    // deney masasının üstünde tavan lambası: gün ışığına yakın nötr beyaz (≈5500 K, çözelti renklerini
+    // kaydırmaz), dar ve yumuşak kenarlı ışık havuzu; dar açı gölge haritasının çözünürlüğünü masaya toplar
+    const ceil = new THREE.SpotLight(0xfffaf4, 16, 6, 0.62, 0.7, 2);
+    // lamba öğrencinin biraz önünde-sağında: gölgeler kapların altında kaybolmaz, geriye-sola düşer
+    ceil.position.set(0.45, 2.95, 0.95);
+    ceil.target.position.set(-0.04, BY(), 0.16);
     ceil.castShadow = true;
     ceil.shadow.mapSize.set(1024, 1024);
     ceil.shadow.bias = -0.0003; ceil.shadow.normalBias = 0.015; ceil.shadow.radius = 6;
@@ -83,6 +90,17 @@
     Lab.room = T.Room.buildRoom(scene);
     say(70);
     await tick();
+
+    // güvenlik ekipmanı: gözlük ve eldiven kutusu masada, termometrenin solunda
+    {
+      const P = T.Props;
+      Lab.SAFETY_HOME = new THREE.Vector3(-0.38, T.Room.BENCH_Y, 0.1);
+      if (P.safetyGear) { // önbellekte eski props.js kalmışsa laboratuvar yine açılsın
+        Lab.safetyGear = P.safetyGear();
+        Lab.safetyGear.position.copy(Lab.SAFETY_HOME);
+        scene.add(Lab.safetyGear);
+      }
+    }
 
     // Beherler + termometre
     const by = BY();
@@ -241,8 +259,46 @@
      keser, kaldırır ve yerine yumuşakça bırakır. */
   function bez(p0, p1, p2, k) { const a = p0.clone().lerp(p1, k), b = p1.clone().lerp(p2, k); return a.lerp(b, k); }
 
+  /* ---------------- Güvenlik ekipmanı ----------------
+     İlk deneyde gözlük ve eldiven masada durur; "takmak" tek dokunuşluk bir adımdır (ceza yok).
+     Takılınca masadan kalkar (kullanıcıya geçer) ve arayüzde simge olarak kalır. */
+  const SAFETY_KEY = 'tuy-guvenlik';
+  Lab.safetyWorn = function () { try { return localStorage.getItem(SAFETY_KEY) === '1'; } catch (e) { return !!Lab._safetyMem; } };
+  /** Dökmeden önce çağrılır: false dönerse döküm başlamaz (arayüz önce güvenlik adımını gösterir). */
+  Lab.beforePour = null;
+  Lab.wearSafety = function (instant) {
+    Lab._safetyMem = true;
+    try { localStorage.setItem(SAFETY_KEY, '1'); } catch (e) { /* özel pencere */ }
+    const g = Lab.safetyGear;
+    if (g && g.visible) {
+      if (instant) g.visible = false;
+      else Lab.safetyAnim = { t: 0, from: g.position.clone() };
+    }
+    Lab.emit('safety', true);
+  };
+  Lab.resetSafety = function () {
+    Lab._safetyMem = false;
+    try { localStorage.removeItem(SAFETY_KEY); } catch (e) { /* */ }
+    const g = Lab.safetyGear;
+    if (g) { g.visible = true; g.scale.setScalar(1); g.position.copy(Lab.SAFETY_HOME); }
+    Lab.safetyAnim = null;
+    Lab.emit('safety', false);
+  };
+  function updateSafetyAnim(dt) {
+    const a = Lab.safetyAnim, g = Lab.safetyGear;
+    if (!a) return;
+    a.t += dt;
+    // kaldırılıp kameraya (kullanıcıya) doğru süzülür ve küçülerek kaybolur
+    const k = U.easeInOut(Math.min(1, a.t / 0.7));
+    const to = Lab.camera.position.clone().lerp(a.from, 0.55);
+    g.position.lerpVectors(a.from, to, k);
+    g.scale.setScalar(1 - 0.85 * k);
+    if (a.t >= 0.7) { g.visible = false; g.position.copy(a.from); g.scale.setScalar(1); Lab.safetyAnim = null; }
+  }
+
   Lab.pour = function () {
     if (Lab.state !== 'ready') return false;
+    if (Lab.beforePour && !Lab.beforePour()) return false;
     T.Audio.init(); T.Audio.resume();
     const b = Lab.added;
     b.group.updateMatrixWorld(true);
@@ -372,6 +428,9 @@
     const T0 = 22.0, Tf = o.temp || 22;
     const temp = T0 + (Tf - T0) * Math.pow(m, 0.9) * (1 - Math.exp(-t / 2.4));
     Lab.thermo.set(temp + (Math.random() - 0.5) * 0.02);
+    // sıcaklık–zaman kaydı (grafik için): 0,1 sn simülasyon aralıkla, gözlem penceresi + birkaç sn
+    s.log = s.log || [];
+    if (t < Lab.obsDuration() + 4 && (!s.log.length || t - s.log[s.log.length - 1][0] >= 0.1)) s.log.push([t, Lab.thermo.temp]);
 
     let liqC = s.baseColor ? s.baseColor.clone() : new THREE.Color(r.fixed.color);
     let liqO = s.baseOpacity != null ? s.baseOpacity : r.fixed.opacity;
@@ -404,6 +463,8 @@
     // çökelti
     if (o.precip) {
       if (t < 1.2 && Lab.state === 'reacting') Lab.precip.emit(Math.ceil(dt * 120 * o.precip.amount), null, Lab.fixed.Ri * 0.8);
+      // ses ipucu: çökelti belirdiği anda yumuşak bir ton (görme dışında ikinci kanal)
+      if (t > 0.35 && !s.precipCue && Lab.state === 'reacting') { s.precipCue = true; T.Audio.precipCue(); }
       const tb = Lab.precip.turbidity;
       const pc = new THREE.Color(o.precip.color);
       liqC.lerp(pc, U.clamp(tb * 0.9, 0, 0.9));
@@ -458,6 +519,11 @@
     return hits.length > 0;
   }
   Lab._pointerDown = function (e) {
+    // masadaki gözlük/eldivene dokunmak da onları takar
+    if (!Lab.paused && Lab.safetyGear && Lab.safetyGear.visible && !Lab.safetyAnim) {
+      setNdc(e);
+      if (ray.intersectObject(Lab.safetyGear, true).length) { T.Audio.init(); T.Audio.resume(); Lab.emit('safetyTap'); return true; }
+    }
     if (Lab.state !== 'ready' || Lab.paused) return false;
     if (!hitAdded(e)) return false;
     T.Audio.init(); T.Audio.resume();
@@ -492,8 +558,7 @@
       const near = Lab.dragging.near;
       Lab.dragging = null;
       dom.style.cursor = '';
-      if (near) { Lab.pour(); }
-      else {
+      if (!(near && Lab.pour())) {
         // geri bırak (hafif animasyon)
         const g = Lab.added.group;
         const from = g.position.clone();
@@ -515,7 +580,8 @@
   Lab.invalidate = function () { Lab._needsRender = true; };
   /** Canlandırılan bir şey var mı? (efektler, döküm, sürükleme, tanıtım kamerası) */
   Lab._active = function () {
-    if (Lab.pourAnim || Lab.dropAnim || Lab.dragging) return true;
+    if (Lab.pourAnim || Lab.dropAnim || Lab.dragging || Lab.safetyAnim) return true;
+    if (Math.abs(Lab.focus - Lab._focusTarget()) > 0.002) return true;
     if (Lab.state === 'pouring' || Lab.state === 'reacting') return true;
     const b = Lab.bubbles, f = Lab.foam, p = Lab.precip, sm = Lab.smoke, st = Lab.stream, s = Lab.sim;
     if (b.items.length || b.rate > 0.3) return true;
@@ -527,6 +593,25 @@
     if (s && s.started && s.t < Lab.obsDuration() + 6) return true;
     return false;
   };
+  /* ---------- Odak modu ----------
+     Döküm ve tepkime sürerken oda hafifçe sise gömülür (uzaklıkla artan, masada ~%1) ve ekran kenarları
+     bulanıklaşır (#focus-veil); masa ve kaplar net kalır. Gerçekçilik korunur, dikkat kaplara toplanır. */
+  Lab.focus = 0;
+  const FOCUS_DENSITY = 0.15;
+  Lab._focusTarget = function () {
+    return !Lab.paused && (Lab.state === 'pouring' || Lab.state === 'reacting') ? 1 : 0;
+  };
+  function updateFocus(dt) {
+    const target = Lab._focusTarget();
+    if (Lab.focus === target) return;
+    // girişte yumuşak (~0,8 sn), çıkışta biraz daha yavaş
+    const k = 1 - Math.exp(-dt / (target > Lab.focus ? 0.28 : 0.45));
+    Lab.focus += (target - Lab.focus) * k;
+    if (Math.abs(target - Lab.focus) < 0.002) Lab.focus = target;
+    Lab.scene.fog.density = FOCUS_DENSITY * Lab.focus;
+    document.body.classList.toggle('lab-focus', target === 1);
+  }
+
   const _lastCam = new THREE.Matrix4(), _lastProj = new THREE.Matrix4();
   // kamera yumuşak yaklaşımı sonsuza dek ~1e-16 kıpırdar: gözle görülmeyen farkı yok say
   function nearEq(a, b) {
@@ -564,12 +649,14 @@
       }
       const ddt = Lab.paused ? dt * 5 : dt;
       Lab.controls.update(ddt);
+      updateFocus(dt);
       if (Lab.dropAnim) {
         const a = Lab.dropAnim; a.t += ddt;
         const k = U.easeInOut(a.t / 0.5);
         Lab.added.group.position.lerpVectors(a.from, Lab.addedHome, k);
         if (a.t >= 0.5) Lab.dropAnim = null;
       }
+      updateSafetyAnim(ddt);
       Lab._updatePour(ddt);
       if (!Lab.pourAnim) Lab.added.update(ddt);
       Lab._updateSim(ddt);
@@ -604,6 +691,8 @@
     Lab.paused = p;
     Lab.controls.enabled = !p;
     document.getElementById('lab-tags').style.display = p ? 'none' : '';
+    // çalışma kartı açılınca odak modu hemen kalkar (kart zaten sahneyi örter)
+    if (p) { Lab.focus = 0; if (Lab.scene) Lab.scene.fog.density = 0; document.body.classList.remove('lab-focus'); }
   };
 
   T.Lab = Lab;

@@ -48,7 +48,7 @@
     { stage: 1, title: 'Çözeltileri karıştır', target: () => $('#btn-pour'),
       text: 'Sağdaki küçük beheri fareyle tutup büyük kabın üzerine <b>sürükle</b> ya da <b>⤵ Otomatik dök ve karıştır</b> düğmesine bas.',
       check: () => ['pouring', 'reacting', 'done'].includes(T.Lab.state),
-      auto: async () => { T.Lab.pour(); } },
+      auto: async () => { if (!T.Lab.safetyWorn()) T.Lab.wearSafety(); T.Lab.pour(); } },
     { stage: 1, title: 'Dikkatle izle 👀', target: () => null, at: 'left',
       text: 'Kabın içine ve termometreye bak. İki berrak çözelti karışınca ne oluyor? Sıvının görünüşü değişiyor mu, kabın dibinde bir şey birikiyor mu?<br><span class="muted">Üstteki ince bar gözlem süresini gösterir; süre dolunca “İleri” açılır.</span>',
       check: () => T.Lab.state === 'done' || !!S.data.done[1] },

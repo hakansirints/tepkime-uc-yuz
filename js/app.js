@@ -104,7 +104,7 @@
           U.h('p', { text: 'Tüm aşamalardaki ilerlemen silinir ve tepkime seçiminden yeniden başlarsın.' }),
           U.h('div.modal-actions', null,
             U.h('button.btn.ghost', { text: 'Vazgeç', onclick: () => close() }),
-            U.h('button.btn.primary', { text: 'Baştan başla', onclick: () => { close(); S.reset(); T.Lab.setReaction(null); T.Stage1.passed = false; U.$('#obs-feedback').classList.add('hidden'); this.renderStepper(); this.go(1, true); } }))));
+            U.h('button.btn.primary', { text: 'Baştan başla', onclick: () => { close(); S.reset(); T.Lab.resetSafety(); T.Lab.setReaction(null); T.Stage1.passed = false; U.$('#obs-feedback').classList.add('hidden'); this.renderStepper(); this.go(1, true); } }))));
       });
       U.$('#btn-to-lab').addEventListener('click', () => this.peekLab(true));
       document.addEventListener('keydown', (e) => { if (e.key === 'Escape') U.closeModal(); });
