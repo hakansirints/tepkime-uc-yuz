@@ -141,7 +141,9 @@
     // dar ekranlarda biraz uzaklaş
     Lab.camera.fov = w / h < 1.2 ? 52 : 40;
     Lab.camera.updateProjectionMatrix();
-    Lab.invalidate();   // setSize tuvali temizler: en az bir kare çiz
+    Lab.invalidate();
+    // setSize tuvali temizler: boş kare görünmesin diye hemen yeniden çiz
+    if (Lab.ready) Lab.renderer.render(Lab.scene, Lab.camera);
   };
 
   Lab.setView = function (name) {
@@ -587,9 +589,11 @@
       _lastCam.copy(cam.matrixWorld); _lastProj.copy(cam.projectionMatrix);
       Lab._needsRender = false;
       Lab._updateTags();
-      Lab.renderer.render(Lab.scene, Lab.camera);
-      // yalnızca art arda çizilen karelerde ölç (tek seferlik saat karesi yanıltmasın)
+      // yalnızca art arda çizilen karelerde ölç (tek seferlik saat karesi yanıltmasın).
+      // Oran değişirse setSize tuvali temizler: bu yüzden ÇİZİMDEN ÖNCE uygulanır; sonra
+      // yapılırsa o kare boş tuval olarak ekrana düşer (açık temada beyaz parlama).
       if (busy && renderedLast && !Lab.paused) adaptPixelRatio(dt);
+      Lab.renderer.render(Lab.scene, Lab.camera);
       renderedLast = busy;
     };
     loop();

@@ -328,7 +328,9 @@
       const shellMat = new THREE.MeshStandardMaterial({ color: 0xdfe3e7, roughness: 0.5 });
       // roundBox kenar yumuşatması dış ölçüye ~6 mm ekler
       const shell = P.roundBox(mw - 0.012, mh, md - 0.0115, 0.002, shellMat);
-      shell.position.set(0, 0, md / 2);
+      // roundBox dikeyde ortalıdır: tabanı y=0'a oturt (önceden yarısı tezgâhın içindeydi,
+      // ön panelin üst yarısının arkası boş kalıyordu)
+      shell.position.set(0, mh / 2, md / 2);
       tiltG.add(shell);
       const faceW = mw - 0.006, faceH = mh - 0.008, fz = md + 0.0004;
       const face = new THREE.Mesh(new THREE.PlaneGeometry(faceW, faceH), new THREE.MeshStandardMaterial({ map: makeFaceTex(), roughness: 0.6 }));
@@ -355,29 +357,24 @@
       const sockX = 0, sockTop = mh + 0.006;
       tiltG.add(P.cyl(0.0042, 0.0042, 0.006, M.blackPlastic, [sockX, mh + 0.003, md / 2], 18));
       tiltG.add(P.cyl(0.0024, 0.0034, 0.008, handleMat, [sockX, mh + 0.009, md / 2], 18));
-      // arka gövde: kasanın sırtına oturan, tezgâha inen kapalı destek kaması
-      // (eski ince ayak havada duruyordu; arkadan bakınca ölçer boş görünüyordu)
-      const tiltPt = (y, z) => [y * Math.cos(tilt) + z * Math.sin(tilt), -y * Math.sin(tilt) + z * Math.cos(tilt)];
-      const [ay, az] = tiltPt(0.003, 0.004);          // sırtın alt ucu (gövdenin içine hafifçe gömülü)
-      const [by2, bz] = tiltPt(mh * 0.72, 0.004);      // sırtın üst ucu
-      const fz2 = bz - 0.024;                          // tezgâhtaki ayak ucu
-      const prof = new THREE.Shape();
-      prof.moveTo(-az, 0); prof.lineTo(-az, ay); prof.lineTo(-bz, by2); prof.lineTo(-fz2, 0.004); prof.lineTo(-fz2, 0); prof.closePath();
-      const kw = mw - 0.016;
-      const kGeo = new THREE.ExtrudeGeometry(prof, { depth: kw, bevelEnabled: true, bevelThickness: 0.0015, bevelSize: 0.0012, bevelSegments: 2, curveSegments: 4 });
-      kGeo.rotateY(Math.PI / 2); kGeo.translate(-kw / 2, 0, 0);
-      const kick = new THREE.Mesh(kGeo, shellMat);
-      kick.castShadow = true; kick.receiveShadow = true;
-      meter.add(kick);
-      // eğik sırt yüzünde pil kapağı (siyah ayrıntı)
-      const bk = new THREE.Vector3(0, by2, bz), ft = new THREE.Vector3(0, 0.004, fz2);
-      const dir = bk.clone().sub(ft).normalize();
-      const nrm = new THREE.Vector3(0, -dir.z, dir.y); // eğik yüzün normali
-      if (nrm.z > 0) nrm.negate();                     // dışa (arkaya) baksın
-      const lid = P.box(kw * 0.62, bk.distanceTo(ft) * 0.4, 0.0012, M.blackPlastic, [0, 0, 0], { cast: false });
-      lid.position.copy(bk).lerp(ft, 0.45).addScaledVector(nrm, 0.0021);
-      lid.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir);
-      meter.add(lid);
+      // sırt: koyu pil kapağı (gövdenin arka yüzü z≈0'da)
+      const backMat = new THREE.MeshStandardMaterial({ color: 0x8d949b, roughness: 0.55 });
+      tiltG.add(P.box(mw - 0.018, mh * 0.42, 0.0012, backMat, [0, mh * 0.3, -0.0009], { cast: false }));
+      [0.62, 0.68, 0.74].forEach((k) => tiltG.add(P.box(mw * 0.4, 0.0012, 0.001, M.blackPlastic, [0, mh * k, -0.0007], { cast: false })));
+      // açılır destek ayağı: sırttaki menteşeden tezgâha inen siyah plaka
+      const hingeY = mh * 0.62, hingeZ = -0.0022;
+      tiltG.add(P.box(mw * 0.7, 0.006, 0.003, M.blackPlastic, [0, hingeY, -0.0012], { cast: false })); // menteşe yuvası
+      const hinge = P.cyl(0.0021, 0.0021, mw * 0.66, M.blackPlastic, [0, hingeY, hingeZ], 12);
+      hinge.rotation.z = Math.PI / 2; tiltG.add(hinge);
+      const back = new THREE.Vector3(0, hingeY * Math.cos(tilt) + hingeZ * Math.sin(tilt), -hingeY * Math.sin(tilt) + hingeZ * Math.cos(tilt));
+      const foot = new THREE.Vector3(0, 0.0016, back.z - 0.03);
+      const leg = P.box(mw * 0.62, back.distanceTo(foot), 0.0028, M.blackPlastic, [0, 0, 0]);
+      leg.position.copy(back).add(foot).multiplyScalar(0.5);
+      leg.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), back.clone().sub(foot).normalize());
+      meter.add(leg);
+      // ayağın ucunda kauçuk şerit
+      const pad = P.box(mw * 0.6, 0.0022, 0.005, new THREE.MeshStandardMaterial({ color: 0x2a2a2a, roughness: 0.95 }), [0, 0.0011, foot.z + 0.0012], { cast: false });
+      meter.add(pad);
       // kauçuk ayaklar
       [-0.018, 0.018].forEach((fx) => meter.add(P.box(0.008, 0.002, 0.005, M.blackPlastic, [fx, 0.001, md * 0.25])));
       this.group.add(meter);
