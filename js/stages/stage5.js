@@ -197,6 +197,10 @@
       const keys = Object.keys(this.termEls || {});
       const n = keys.filter((k) => this.seen.has(k)).length;
       this.progressEl.innerHTML = `İncelenen terim: <b>${n} / ${keys.length}</b>` + (n < keys.length ? ' — denklemdeki bütün terimlere dokun.' : ' ✓');
+      if (!this.quizShown && n < keys.length && !S.data.done[5]) {
+        T.App.task({ target: this.eqEl.parentNode, step: [1, 2], text: `Denklemdeki bütün terimlere dokun (${n} / ${keys.length})`,
+          hint: 'Dokunduğun terim kapta ve tanecik modelinde de vurgulanır. Üç gösterimin aynı şeyi nasıl anlattığına bak.' });
+      }
       if ((n >= keys.length || S.data.done[5]) && !this.quizShown) this.showQuiz();
     },
 
@@ -227,6 +231,7 @@
             fb.appendChild(h('div.feedback.ok', { html: '<b>✓ Doğru bağlantı</b>Gözle gördüğün değişimi taneciklerle ve formüllerle ilişkilendirdin. Aynı tepkimeyi üç farklı yolla gösterebiliyorsun.' }));
             fb.appendChild(next());
             T.App.complete(5);
+            T.App.task({ target: el, step: [2, 2], text: 'Doğru bağlantı!', hint: '<b>Temsil değiştirmeye geç</b> düğmesiyle devam et.' });
           } else {
             b.classList.add('wrong');
             T.Audio.error();
@@ -237,7 +242,9 @@
       });
       el.appendChild(wrap);
       el.appendChild(fb);
+      T.App.task({ target: el, step: [2, 2], text: q.q, hint: 'Doğru taneciği seçeneklerden seç. Emin değilsen kaptaki bölgeye dokunup hangi taneciğin parladığına bak.' });
       if (S.data.done[5]) fb.appendChild(next());
+      el.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
     },
 
     leave() {

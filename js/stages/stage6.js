@@ -70,8 +70,16 @@
       this.renderTabs();
       return rec;
     },
+    /** Görev şeridi (hedef alan, görev cümlesi, ayrıntı) */
+    taskBar(target, text, hint) {
+      this._tb = { target, text, hint };
+      T.App.task({ step: [this.idx + 1, TASKS.length], target, text, hint });
+    },
     afterSuccess(fbEl) {
       const allDone = TASKS.every((t) => S.data.tasks6[t.key] && S.data.tasks6[t.key].ok);
+      T.App.task({ step: [this.idx + 1, TASKS.length], target: this._tb && this._tb.target,
+        text: allDone ? 'Üç görev de tamam!' : 'Doğru! Sıradaki göreve geç',
+        hint: allDone ? '<b>Son aşama: Bozuk modeli onar</b> düğmesiyle devam et.' : '<b>Sıradaki göreve geç</b> düğmesine bas ya da üstteki görev sekmelerinden birini seç.' });
       if (allDone) {
         T.App.complete(6);
         const b = h('button.btn.success.block.pulse', { text: 'Son aşama: Bozuk modeli onar →', style: { marginTop: '6px' } });
@@ -136,7 +144,6 @@
     /* ---------- Görev 1: tanecik modeli eksik ---------- */
     taskMicro(r) {
       const A = this.area;
-      A.appendChild(h('div.feedback.info', { style: { margin: '0' }, html: `<b>Görev 1 · ${r.name}</b>Deneyin sonucu ve denklemi verildi. <b>Tepkime öncesi</b> tanecikler hazır. Sen <b>tepkime sonrası</b> tanecikleri yerleştir.` }));
       const m = this.colMacro(r, 'after', false, true), s = this.colSym(r);
       s.col.querySelector('.sym-panel').appendChild(h('div.small', { style: { textAlign: 'center', color: 'var(--macro-ink)' }, text: '👁 ' + macroSentence(r) }));
       const strip = h('div.given-strip', null, m.col, s.col);
@@ -153,6 +160,8 @@
       });
       const fb = h('div');
       this.builder.rightSlot.appendChild(fb);
+      this.taskBar(this.builder.regEl.after, 'Tepkime sonrasındaki tanecikleri yerleştir',
+        `<b>${r.name}</b>: deneyin sonucu ve denklem verildi, tepkime öncesi tanecikler hazır. Bitince sağdaki <b>Modelimi kontrol et</b> düğmesine bas.`);
       const chk = h('button.btn.primary.block', { text: '✓ Modelimi kontrol et', style: { marginTop: '8px' } });
       this.builder.rightSlot.insertBefore(chk, fb);
       chk.addEventListener('click', () => {
@@ -176,8 +185,8 @@
     /* ---------- Görev 2: makroskobik eksik ---------- */
     taskMacro(r) {
       const A = this.area;
-      A.appendChild(h('div.feedback.info', { style: { margin: '0' }, html: `<b>Görev 2 · ${r.name}</b>Tanecik modeli ve denklem verildi. İki çözelti karıştırıldığında kapta <b>ne gözlenir</b>? Tahmin et.` }));
       const q = this.qCol('Makroskobik gözlem', 'Kapta ne görürsün?');
+      this.taskBar(q.box, 'Kapta ne gözlenir? Tahmin et', `<b>${r.name}</b>: tanecik modeli ve denklem verildi. Soru işaretli kutudaki seçeneklerden birini seç.`);
       const mi = this.colMicro(r), s = this.colSym(r);
       const grid = h('div.grid-tasks', null, q.col, mi.col, s.col);
       A.appendChild(grid);
@@ -236,9 +245,10 @@
     /* ---------- Görev 3: sembolik eksik ---------- */
     taskSym(r) {
       const A = this.area;
-      A.appendChild(h('div.feedback.info', { style: { margin: '0' }, html: `<b>Görev 3 · ${r.name}</b>Deneyin sonucu ve tanecik modeli verildi. Denklemdeki <b>katsayıları</b> ve <b>fiziksel hâlleri</b> seç. Katsayıyı tanecik modelindeki sayılardan bulabilirsin.` }));
       const m = this.colMacro(r, 'after', true), mi = this.colMicro(r);
       const q = this.qCol('Sembolik gösterim', 'Katsayı ve hâl seç');
+      this.taskBar(q.box, 'Denklemdeki katsayıları ve fiziksel hâlleri seç',
+        `<b>${r.name}</b>: deneyin sonucu ve tanecik modeli verildi. Katsayıları tanecik modelindeki sayılardan bulabilirsin.`);
       A.appendChild(h('div.grid-tasks', null, m.col, mi.col, q.col));
       m.mount(); mi.mount();
       q.box.innerHTML = '';

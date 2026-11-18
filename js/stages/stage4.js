@@ -32,6 +32,7 @@
       this.side.appendChild(this.fbEl);
       this.side.appendChild(this.countEl);
       this.renderCriteria(null);
+      T.App.task({ target: this.side, text: 'Modelini çalıştır ve test et', hint: 'Sağdaki <b>▶ Modeli çalıştır</b> düğmesine bas; sonra hangi ölçütlerin geçtiğine bak.' });
       if (S.data.done[4]) {
         this.fbEl.appendChild(h('div.feedback.ok', { html: '<b>Bu aşamayı tamamladın</b>Modelin daha önce doğrulandı. İstersen yeniden çalıştırabilirsin.' }));
         this.fbEl.appendChild(this.nextButton());
@@ -59,6 +60,7 @@
       this.panel.fit(true, this.rearr.fitBoth());
       S.data.testRuns = (S.data.testRuns || 0) + 1; S.save();
       this.fbEl.appendChild(h('div.feedback.info', { html: '<b>Model çalışıyor…</b>Atomların nereye gittiğini izle.' }));
+      T.App.task({ target: this.panelEl, text: 'Atomların nereye gittiğini izle', hint: 'Kırmızı halkalı atom var mı? Varsa o atom yok oluyor ya da yoktan ortaya çıkıyor demektir.' });
       this.rearr.play(() => this.showResult());
     },
     showResult() {
@@ -80,8 +82,10 @@
         T.Audio.success();
         T.App.complete(4);
         this.fbEl.appendChild(this.nextButton());
+        T.App.task({ target: this.side, text: 'Modelin testi geçti', hint: 'Sağdaki <b>Üç gösterime geç</b> düğmesiyle devam et.' });
       } else {
         T.Audio.error();
+        T.App.task({ target: this.side, text: 'Modelinde sorun var: hatayı bul', hint: 'Kırmızı ölçütlere ve atom sayımına bak, sonra <b>✎ Modeli düzenle</b> düğmesine bas.' });
         const edit = h('button.btn.block', { text: '✎ Modeli düzenle', style: { marginTop: '6px' } });
         edit.addEventListener('click', () => this.showEdit());
         this.fbEl.appendChild(edit);
@@ -103,7 +107,9 @@
       });
       const back = h('button.btn.primary', { text: '▶ Düzenlenmiş modeli test et' });
       back.addEventListener('click', () => { this.showRun(); setTimeout(() => this.run(), 200); });
-      body.appendChild(h('div.ws-footer', null, h('span.grow', { html: 'Modelini düzelt. <b>Atom sayacı</b> sana yardımcı olabilir; ama türlerin tepkimeye uygun olup olmadığını sen düşünmelisin.' }), back));
+      body.appendChild(h('div.ws-footer', null, h('span.grow'), back));
+      T.App.task({ target: this.builder.regionsEl, text: 'Modelini düzelt ve yeniden test et',
+        hint: 'Taneciklere dokunarak çıkar, havuzdan ekle. <b>Atom sayacı</b> yardımcı olur; türlerin tepkimeye uygunluğunu sen düşün. Bitince <b>▶ Düzenlenmiş modeli test et</b>.' });
     },
     cleanup() {
       if (this.rearr) { this.rearr.dispose(); this.rearr = null; }

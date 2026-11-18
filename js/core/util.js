@@ -53,7 +53,7 @@ window.TUY = window.TUY || {};
 
   /** Türkçe metni karşılaştırma için normalleştir */
   U.normTR = function (s) {
-    return (s || '')
+    return U.plainChem(s || '')
       .replace(/İ/g, 'i').replace(/I/g, 'ı')
       .toLocaleLowerCase('tr-TR')
       .replace(/[’'`´]/g, '')
@@ -95,6 +95,97 @@ window.TUY = window.TUY || {};
 
   /** Element rengini CSS hex olarak döndür */
   U.hex = (n) => '#' + n.toString(16).padStart(6, '0');
+
+  /* ---------------- Kimya yazımı: alt / üst simge ---------------- */
+  const SUB = '₀₁₂₃₄₅₆₇₈₉', SUP = '⁰¹²³⁴⁵⁶⁷⁸⁹';
+  const ELS = new Set(('H He Li Be B C N O F Ne Na Mg Al Si P S Cl Ar K Ca Sc Ti V Cr Mn Fe Co Ni Cu Zn Ga Ge As Se Br Kr ' +
+    'Rb Sr Y Zr Nb Mo Tc Ru Rh Pd Ag Cd In Sn Sb Te I Xe Cs Ba La Ce Pt Au Hg Tl Pb Bi Po At Rn Fr Ra U').split(' '));
+  const toSub = (d) => d.replace(/\d/g, (c) => SUB[+c]);
+  const toSup = (d) => d.replace(/\d/g, (c) => SUP[+c]).replace(/\+/g, '⁺').replace(/-/g, '⁻');
+
+  /** Alt/üst simgeleri düz yazıya çevir (karşılaştırma için): CO₂ → CO2, Ca²⁺ → Ca2+ */
+  U.plainChem = (s) => String(s)
+    .replace(/[₀-₉]/g, (c) => String(c.charCodeAt(0) - 0x2080))
+    .replace(/[⁰¹²³⁴-⁹]/g, (c) => String(SUP.indexOf(c)))
+    .replace(/⁺/g, '+').replace(/⁻/g, '-');
+
+  /**
+   * Tek bir sözcüğü kimyasal formül gibi biçimlendir; formül değilse null döner.
+   * "CO2" → CO₂, "Ca2+" → Ca²⁺, "SO42-" → SO₄²⁻, "2H2O" → 2H₂O, "Cu(OH)2" → Cu(OH)₂, "CO2'yi" → CO₂'yi
+   * Sıradan sözcüklere ("5", "pH", "Su") dokunmaz: tüm parçalar gerçek element sembolü olmalı
+   * ve en az bir rakam ya da yük işareti bulunmalı.
+   */
+  U.chemToken = function (tok) {
+    const ap = tok.search(/['’]/);
+    const suffix = ap >= 0 ? tok.slice(ap) : '';
+    const core = ap >= 0 ? tok.slice(0, ap) : tok;
+    const m = core.match(/^(\d*)([A-Z][A-Za-z0-9()]*?)(\d?[+-]|[+-]\d)?(\((?:k|s|g|suda|aq)\))?$/);
+    if (!m) return null;
+    let [, coef, body, charge, state] = m;
+    // "NO3-", "NH4+": çok atomlu iyonda tek rakam alt simgedir (NO₃⁻). Tek elementte (Ca2+) veya
+    // iki rakam varsa (SO42-) son rakam yüktür.
+    if (charge && /^\d/.test(charge) && /[a-zA-Z)]$/.test(body) && (body.match(/[A-Z]/g) || []).length > 1) {
+      body += charge[0]; charge = charge.slice(1);
+    }
+    const parts = body.match(/[A-Z][a-z]?|\(|\)|\d+/g);
+    if (!parts || parts.join('') !== body) return null;
+    let depth = 0, prev = '';
+    for (const p of parts) {
+      if (/^[A-Z]/.test(p) && !ELS.has(p)) return null;
+      if (p === '(') depth++;
+      if (p === ')' && --depth < 0) return null;
+      if (/^\d/.test(p) && !(/^[A-Z]/.test(prev) || prev === ')')) return null;
+      prev = p;
+    }
+    if (depth !== 0 || (!/\d/.test(body) && !charge)) return null;
+    let ch = '';
+    if (charge) { const d = charge.replace(/[+-]/, ''), s = charge.replace(/\d/, ''); ch = toSup((d === '1' ? '' : d) + s); }
+    const out = coef + body.replace(/(\)|[a-zA-Z])(\d+)/g, (x, a, d) => a + toSub(d)) + ch + (state || '') + suffix;
+    return out === tok ? null : out;
+  };
+  U.chemText = (s) => s.replace(/[^\s.,;:!?]+/g, (t) => U.chemToken(t) || t);
+
+  /**
+   * Bir metin kutusuna kimya yazım desteği ekle: sözcük bitince (boşluk/noktalama) formülü dönüştürür,
+   * Ctrl+Z ile geri alınabilir; altına ₂ ²⁺ (k) gibi simgeler için düğme şeridi döndürür.
+   */
+  U.chemInput = function (ta) {
+    let busy = false;
+    const insert = (start, end, text) => {
+      ta.focus();
+      ta.setSelectionRange(start, end);
+      let ok = false;
+      try { ok = document.execCommand('insertText', false, text); } catch (e) { ok = false; }
+      if (!ok) { ta.setRangeText(text, start, end, 'end'); ta.dispatchEvent(new Event('input', { bubbles: true })); }
+    };
+    ta.addEventListener('input', (e) => {
+      if (busy || e.inputType !== 'insertText' || !e.data || !/[\s.,;:!?]/.test(e.data.slice(-1))) return;
+      const caret = ta.selectionStart, before = ta.value.slice(0, caret - 1);
+      const tok = (before.match(/[^\s.,;:!?]+$/) || [''])[0];
+      const conv = tok && U.chemToken(tok);
+      if (!conv) return;
+      busy = true;
+      const s = caret - 1 - tok.length;
+      insert(s, caret - 1, conv);
+      const pos = s + conv.length + 1;
+      ta.setSelectionRange(pos, pos);
+      busy = false;
+    });
+    const SYM = [['₂', 'alt simge 2'], ['₃', 'alt simge 3'], ['₄', 'alt simge 4'], ['⁺', 'artı yük'], ['⁻', 'eksi yük'],
+      ['²⁺', '2+ yük'], ['³⁺', '3+ yük'], ['²⁻', '2− yük'], ['→', 'ok'], ['(k)', 'katı'], ['(s)', 'sıvı'], ['(g)', 'gaz'], ['(suda)', 'suda çözünmüş']];
+    const bar = U.h('div.chem-bar', { role: 'toolbar', 'aria-label': 'Kimya simgeleri' },
+      SYM.map(([t, title]) => U.h('button', { type: 'button', 'data-ins': t, html: (/[₀-₉⁰-⁹⁺⁻²³¹]/.test(t) ? '<i>x</i>' : '') + t, title: title + ' ekle', 'aria-label': title + ' ekle' })),
+      U.h('span.chem-tip', { html: 'İpucu: <b>CO2</b>, <b>Ca2+</b> yazıp boşluk bırakınca <b>CO₂</b>, <b>Ca²⁺</b> olur.' }));
+    bar.addEventListener('mousedown', (e) => { if (e.target.closest('button')) e.preventDefault(); });
+    bar.addEventListener('click', (e) => {
+      const b = e.target.closest('button');
+      if (!b) return;
+      busy = true;
+      insert(ta.selectionStart, ta.selectionEnd, b.dataset.ins);
+      busy = false;
+    });
+    return bar;
+  };
 
   T.U = U;
 })(window.TUY);

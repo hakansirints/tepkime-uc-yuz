@@ -49,7 +49,6 @@
       if (!S.data.s7.model) S.data.s7.model = { before: Object.assign({}, B.before), after: Object.assign({}, B.after) };
       const model = S.data.s7.model;
       this.runs = 0;
-      body.appendChild(h('div.feedback.info', { style: { margin: '0' }, html: B.story + ' Model doğru mu? <b>Önce çalıştır ve izle</b>, sonra gerekiyorsa düzelt.' }));
       const holder = h('div', { style: { flex: '1', minHeight: '0', display: 'flex', flexDirection: 'column' } });
       body.appendChild(holder);
       this.builder = new T.Builder(holder, {
@@ -57,19 +56,19 @@
         onChange: () => { S.save(); }
       });
       const slot = this.builder.rightSlot;
-      slot.appendChild(h('h3', { style: { marginTop: '10px' }, html: '🛠 Görevin' }));
-      slot.appendChild(h('ol.track-steps', null,
-        h('li', { text: 'Modeli çalıştır, atomları izle.' }),
-        h('li', { text: 'Modelde yanlış olanları bul ve düzelt.' }),
-        h('li', { text: 'Neden değiştirdiğini açıkla.' })));
-      const run = h('button.btn.primary.block', { text: '▶ Modeli çalıştır ve test et' });
+      const run = h('button.btn.primary.block', { text: '▶ Modeli çalıştır ve test et', style: { marginTop: '10px' } });
       const fb = h('div');
       slot.appendChild(run);
       slot.appendChild(fb);
+      const runTarget = h('div.here-slot');
+      slot.insertBefore(runTarget, run); runTarget.appendChild(run);
+      T.App.task({ step: [1, 3], target: runTarget, text: 'Arkadaşının modelini çalıştır ve izle',
+        hint: B.story + ' Model doğru mu? Sağdaki <b>▶ Modeli çalıştır</b> düğmesine bas.' });
       run.addEventListener('click', () => {
         run.disabled = true;
         fb.innerHTML = '';
         fb.appendChild(h('div.feedback.info', { html: '<b>Model çalışıyor…</b>Ortadaki bölümü izle. Kırmızı halkayla işaretlenen atomlar yok olan ya da yoktan ortaya çıkan atomlardır.' }));
+        T.App.task({ step: [1, 3], target: this.builder.regEl.mid, text: 'Atomları izle: neler yanlış görünüyor?', hint: 'Kırmızı halkalı atomlar yok olan ya da yoktan ortaya çıkan atomlardır.' });
         this.builder.playMid(() => {
           run.disabled = false;
           run.textContent = '▶ Yeniden çalıştır';
@@ -83,8 +82,11 @@
             const nb = h('button.btn.success.block.pulse', { text: 'Düzeltmeni gerekçelendir →', style: { marginTop: '6px' } });
             nb.addEventListener('click', () => this.showJustify());
             fb.appendChild(nb);
+            T.App.task({ step: [2, 3], target: fb, text: 'Model onarıldı!', hint: '<b>Düzeltmeni gerekçelendir</b> düğmesiyle son adıma geç.' });
           } else {
             T.Audio.error();
+            T.App.task({ step: [2, 3], target: this.builder.regionsEl, text: 'Modeldeki yanlışları bul ve düzelt',
+              hint: 'Yanlış taneciklere dokunup çıkar, havuzdan doğrularını ekle. Sonra sağdaki <b>▶ Yeniden çalıştır</b> ile dene.' });
             const first = this.runs === 1 && Object.keys(B.before).every((k) => model.before[k] === B.before[k]) && Object.keys(B.after).every((k) => model.after[k] === B.after[k]);
             const lead = first ? '<b>Bu modelde sorun var.</b>Canlandırmada ne fark ettin? Aşağıdaki ölçütlere bak.' : '<b>' + res.fb.title + '</b>';
             fb.appendChild(h('div.feedback.' + (first ? 'warn' : res.fb.kind), { html: lead + res.fb.text }));
@@ -127,6 +129,9 @@
       };
       ta.addEventListener('input', () => { S.data.justification = ta.value; S.save(); upd(); });
       card.appendChild(ta);
+      card.appendChild(U.chemInput(ta));
+      T.App.task({ step: [3, 3], target: ta, text: 'Modelde neyi neden değiştirdiğini açıkla',
+        hint: 'Arkadaşına bir not yaz; atomlar, iyonlar ve katılar gibi bilimsel fikirler kullan. Bitince <b>Gerekçemi değerlendir</b>.' });
       card.appendChild(cnt);
       card.appendChild(h('div.small.muted', { style: { marginTop: '6px' }, text: 'Gerekçende yer alan düşünceler:' }));
       card.appendChild(ideas);
@@ -157,6 +162,7 @@
         const nb = h('button.btn.success.pulse', { text: 'Öğrenme özetini gör →', style: { marginTop: '6px' } });
         nb.addEventListener('click', () => this.showSummary());
         fb.appendChild(nb);
+        T.App.task({ step: [3, 3], target: fb, text: 'Güçlü bir gerekçe!', hint: '<b>Öğrenme özetini gör</b> düğmesiyle tepkimeyi tamamla.' });
         void r;
       });
     },
@@ -164,6 +170,7 @@
     showSummary() {
       this.cleanup();
       const body = this.body, d = S.data, r = S.reaction;
+      T.App.task(null);
       T.App.complete(7);
       const rec = d.completedReactions[r.id] = Object.assign({}, d.completedReactions[r.id], { at: new Date().toISOString().slice(0, 10) });
       S.save();
@@ -258,7 +265,7 @@
       side.appendChild(h('div.fin-reflect', null,
         h('b', { text: '🤔 Kendine sor' }),
         h('p', { html: 'Ürünlerdeki <b>' + atomName + '</b> atomu karışımdan önce neredeydi? Bir arkadaşına <b>tek cümleyle</b> anlatır gibi yaz.' }),
-        ta));
+        ta, U.chemInput(ta)));
 
       const doneIds = Object.keys(d.completedReactions).filter((id) => T.REACTIONS[id]);
       const got = new Set();

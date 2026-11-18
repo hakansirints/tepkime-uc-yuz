@@ -94,6 +94,15 @@
       const els = new Set(); this.bIds.concat(this.aIds).forEach((sid) => T.SPECIES[sid].atoms.forEach((a) => els.add(a.el)));
       T.EL_ORDER.filter((e) => els.has(e)).forEach((e) => leg.appendChild(h('span', null, h('i', { style: { background: U.hex(T.ELEMENTS[e].color) } }), e + ' ' + T.ELEMENTS[e].name)));
       this.side.appendChild(leg);
+      // görev şeridi: o anki adım ve çalışılacak panel
+      const st = [this.ti + 1, this.tasks.length];
+      const T4 = [
+        { target: this.pBefore, text: `${cap(t.name)} atomunu içeren taneciğe dokun`, hint: '<b>① Önce</b> panelinde. Atom renklerini sağdaki renk anahtarından bulabilirsin.' },
+        { target: this.pMid, text: 'İşaretli atomu gözünle takip et', hint: '<b>▶ Oynat</b> düğmesine bas ve sarı halkalı atomun nereye gittiğini izle.' },
+        { target: this.pAfter, text: 'Atom şimdi hangi tanecikte? Ona dokun', hint: 'Gerekirse ortadaki kaydırıcıyla animasyonu ileri geri sar.' },
+        { target: this.side, text: 'Doğru! Devam et', hint: 'Sağdaki düğmeyle ' + (this.ti + 1 < this.tasks.length ? 'sıradaki atoma geç.' : 'aşamayı tamamla.') }
+      ][Math.min(3, this.step - 1)];
+      T.App.task(Object.assign({ step: st }, T4));
     },
     fb(kind, title, text, extra) {
       this.fbEl.innerHTML = '';
@@ -179,6 +188,7 @@
       const nb = h('button.btn.success.block.pulse', { text: 'Modelimi test et →' });
       nb.addEventListener('click', () => T.App.go(4));
       this.side.appendChild(nb);
+      T.App.task({ target: this.side, text: 'Atom takibi tamamlandı', hint: 'Sağdaki <b>Modelimi test et</b> düğmesiyle 4. aşamaya geç.' });
     },
     leave() { if (this.rearr) { this.rearr.dispose(); this.rearr = null; } }
   };

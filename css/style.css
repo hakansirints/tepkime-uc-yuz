@@ -432,6 +432,39 @@ textarea:disabled { opacity: .55; }
 #ws-head h2 { margin: 3px 0 2px; font-size: 24px; font-weight: 700; letter-spacing: -.02em; }
 #ws-sub { margin: 0; font-size: 13.5px; max-width: 780px; }
 .ws-head-right { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; justify-content: flex-end; }
+/* Görev şeridi: her aşamada aynı yerde, tek görev cümlesi */
+#ws-task { display: flex; align-items: center; gap: 12px; margin: 0 16px 4px; padding: 9px 14px; border-radius: 16px; flex: none;
+  background: var(--accent-soft); border: 1px solid color-mix(in srgb, var(--accent) 45%, transparent); }
+#ws-task.hidden { display: none; }
+#ws-task .wt-ic { flex: none; width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center; font-size: 16px; background: var(--accent); }
+#ws-task .wt-main { flex: 1; min-width: 0; }
+#ws-task .wt-kicker { font-size: 10.5px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--accent-text); }
+#ws-task .wt-text { font-size: 14.5px; font-weight: 650; line-height: 1.3; color: var(--text); }
+#ws-task .wt-hint { font-size: 12.5px; color: var(--muted); line-height: 1.35; }
+#ws-task .wt-hint:empty { display: none; }
+#ws-task .wt-bars { display: flex; gap: 4px; flex: none; }
+#ws-task .wt-bars i { width: 22px; height: 6px; border-radius: 3px; background: var(--fill-2); }
+#ws-task .wt-bars i.done { background: var(--ok); }
+#ws-task .wt-bars i.on { background: var(--accent); }
+#ws-task.flash { animation: wtFlash 1.1s var(--ease); }
+@keyframes wtFlash { 0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 55%, transparent); transform: scale(1.012); } 100% { box-shadow: 0 0 0 12px transparent; transform: none; } }
+/* çalışılacak alan */
+.work-here { outline: 2px solid var(--accent); outline-offset: -2px; box-shadow: 0 0 0 4px var(--accent-soft) !important; }
+.here-tag { flex: none; padding: 2px 9px; border-radius: 999px; font-size: 11px; font-weight: 750; white-space: nowrap; color: #fff; background: var(--accent);
+  animation: hereBob 1.6s ease-in-out infinite; pointer-events: none; }
+:not(.ptitle) > .here-tag { position: absolute; top: 8px; right: 8px; z-index: 4; animation: none; }
+.here-slot { position: relative; padding-top: 26px; }
+.here-slot > .here-tag { top: 2px; right: 0; }
+.mpanel .ptitle .here-tag { margin-left: auto; }
+.mpanel .ptitle .here-tag + .pctl { margin-left: 6px; }
+@keyframes hereBob { 50% { transform: translateY(-2px); } }
+@media (prefers-reduced-motion: reduce) { #ws-task.flash, .here-tag { animation: none; } }
+@media (orientation: landscape) and (max-height: 500px) {
+  #ws-task { margin: 0 8px 2px; padding: 4px 10px; gap: 8px; border-radius: 12px; }
+  #ws-task .wt-ic, #ws-task .wt-kicker, #ws-task .wt-hint { display: none; }
+  #ws-task .wt-text { font-size: 12px; }
+  #ws-task .wt-bars i { width: 14px; height: 4px; }
+}
 #ws-body { flex: 1; min-height: 0; padding: 6px 16px 16px; display: flex; flex-direction: column; gap: 10px; overflow: hidden; }
 
 /* İç yüzeyler: cam üstünde cam */
@@ -601,6 +634,17 @@ textarea:disabled { opacity: .55; }
 .eq-fill select.state { font-size: 13px; }
 
 /* Bozuk model / özet */
+/* kimya simge şeridi (metin kutusunun altında) */
+.chem-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; margin: 6px 0 2px; }
+.chem-bar button { min-width: 30px; height: 28px; padding: 0 8px; border-radius: 8px; border: 1px solid var(--line); background: var(--fill); color: var(--text);
+  font: 600 14px/1 var(--font); cursor: pointer; transition: background .15s, border-color .15s; }
+.chem-bar button i { font-style: normal; font-weight: 500; color: var(--muted); opacity: .7; }
+.chem-bar button { font-size: 15px; }
+.chem-bar button:hover { background: var(--fill-hover); border-color: var(--accent); }
+.chem-bar button:active { transform: scale(.95); }
+.chem-tip { flex-basis: 100%; font-size: 11.5px; color: var(--muted); margin-top: 2px; }
+.fin-reflect .chem-bar { margin: 0; gap: 3px; }
+.fin-reflect .chem-bar button { min-width: 26px; height: 24px; padding: 0 6px; font-size: 12.5px; }
 .justify-box { width: 100%; min-height: 110px; resize: vertical; background: var(--input-bg); color: var(--text); border: 1px solid var(--line-strong); border-radius: var(--radius-md); padding: 10px 13px; font: inherit; font-size: 14px; line-height: 1.45; }
 .idea-list { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0; }
 .idea { font-size: 12px; padding: 4px 10px; border-radius: var(--pill); background: var(--fill); color: var(--muted); }

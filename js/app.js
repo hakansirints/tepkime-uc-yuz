@@ -195,6 +195,7 @@
       const prev = this.stages[this.current];
       if (prev && prev.leave) prev.leave();
       if (T.Viewer && T.Viewer.ready) T.Viewer.clear();
+      this.task(null);
       this.current = n;
       d.stage = n; S.save();
       this.peekLab(false);
@@ -225,6 +226,45 @@
       this.renderStepper();
     },
     next() { this.go(Math.min(7, this.current + 1)); },
+    /**
+     * Görev şeridi: her aşamada sayfa başlığının altında aynı yerde duran tek görev cümlesi.
+     * o: {text, hint?, step?:[i,n], target?: Element}  —  null: şeridi gizle
+     * target verilirse o alan vurgulanır ve "Burada çalış" etiketi alır.
+     */
+    task(o) {
+      const box = U.$('#ws-task');
+      if (this._taskTarget) {
+        this._taskTarget.classList.remove('work-here');
+        this._taskTarget.querySelectorAll(':scope > .here-tag, :scope > .ptitle > .here-tag').forEach((e) => e.remove());
+        this._taskTarget = null;
+      }
+      if (!o) { box.classList.add('hidden'); this._taskKey = ''; return; }
+      U.$('#wt-text').innerHTML = o.text;
+      U.$('#wt-hint').innerHTML = o.hint || '';
+      U.$('#wt-step').textContent = o.step ? ' · ' + o.step[0] + ' / ' + o.step[1] : '';
+      const bars = U.$('#wt-bars');
+      bars.innerHTML = '';
+      if (o.step) for (let i = 1; i <= o.step[1]; i++) bars.appendChild(U.h('i' + (i < o.step[0] ? '.done' : i === o.step[0] ? '.on' : '')));
+      box.classList.remove('hidden');
+      // görev değişince şerit bir kez parlar
+      const key = (o.step ? o.step.join('/') : '') + '|' + o.text;
+      if (key !== this._taskKey) {
+        this._taskKey = key;
+        box.classList.remove('flash'); void box.offsetWidth; box.classList.add('flash');
+      }
+      const t = o.target;
+      // hedef henüz sayfaya eklenmediyse bir sonraki karede yeniden dene
+      if (t && !t.isConnected && !o._retry) { requestAnimationFrame(() => { if (this._taskKey === key) this.task(Object.assign({}, o, { _retry: true })); }); return; }
+      if (t && t.isConnected) {
+        t.classList.add('work-here');
+        const tag = U.h('span.here-tag', { text: o.tag || 'Burada çalış' });
+        const pt = t.querySelector(':scope > .ptitle');
+        if (o.tag === false || t.matches('textarea,input,select,button,.three-regions')) { /* form öğesine etiket eklenemez: yalnızca vurgu */ }
+        else if (pt) { const ctl = pt.querySelector('.pctl'); pt.insertBefore(tag, ctl); }
+        else { if (getComputedStyle(t).position === 'static') t.style.position = 'relative'; t.appendChild(tag); }
+        this._taskTarget = t;
+      }
+    },
     /** Çalışma kartından laboratuvara göz at */
     peekLab(on) {
       let btn = U.$('#peek-back');

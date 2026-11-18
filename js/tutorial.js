@@ -103,7 +103,7 @@
 
     /* ===== AŞAMA 3 — ATOM TAKİBİ ===== */
     { stage: 3, title: 'Aşama 3 · Atomun izini sür', target: () => $('.track-main'),
-      text: 'Burada tek bir atomu seçip tepkime boyunca nereye gittiğini izleyeceksin. Paneller: <b>1 Önce</b>, <b>2 Atom hareket ederken</b>, <b>3 Sonra</b>. Görevin sağdaki kartta yazar.' },
+      text: 'Burada tek bir atomu seçip tepkime boyunca nereye gittiğini izleyeceksin. Paneller: <b>1 Önce</b>, <b>2 Atom hareket ederken</b>, <b>3 Sonra</b>. Görevin her aşamada üstteki mavi <b>Görevin</b> şeridinde yazar; çalışacağın alan da vurgulanır.' },
     { stage: 3, title: 'Gümüş atomunu seç', target: () => S3().pBefore,
       text: '<b>Önce</b> panelinde gümüş (Ag) atomu içeren taneciğe, yani <b>Ag⁺</b> iyonuna dokun. Atom sarı halkayla işaretlenir. <span class="muted">Renk anahtarı sağdaki kartın altında.</span>',
       check: () => S3().ti > 0 || S3().step >= 2,
@@ -211,7 +211,7 @@
       auto: async () => { T.App.go(7); } },
 
     /* ===== AŞAMA 7 — BOZUK MODEL ===== */
-    { stage: 7, title: 'Aşama 7 · Bozuk modeli onar', target: () => $('#ws-body > .feedback.info'),
+    { stage: 7, title: 'Aşama 7 · Bozuk modeli onar', target: () => $('#ws-task'),
       text: 'Bir arkadaşının kurduğu <b>hatalı</b> model sana verilir. Hataların ne olduğu söylenmez; onları sen bulacaksın.' },
     { stage: 7, title: 'Önce modeli çalıştır', target: () => S7().builder && byText('button', /çalıştır/, S7().builder.rightSlot),
       text: '<b>▶ Modeli çalıştır ve test et</b> düğmesine bas, canlandırmayı izle ve hangi ölçütlerin ✗ olduğuna bak.',
