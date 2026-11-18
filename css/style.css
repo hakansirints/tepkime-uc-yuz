@@ -178,6 +178,27 @@ sub, sup { line-height: 0; }
 .icon-btn:hover { background: var(--fill-hover); transform: scale(1.05); }
 .icon-btn:active { transform: scale(.95); }
 
+/* ---------- ⚙ Ayarlar menüsü ---------- */
+.settings-wrap { position: relative; }
+#btn-settings svg { transition: transform .45s var(--ease); }
+#btn-settings.on { background: var(--fill-hover); border-color: var(--line-strong); }
+#btn-settings.on svg { transform: rotate(60deg); }
+/* üst bar zaten bulanık: iç içe backdrop-filter çalışmadığı için menü yarı opak */
+.settings-menu { position: absolute; top: calc(100% + 10px); right: -4px; z-index: 70; min-width: 232px; padding: 6px;
+  border-radius: var(--radius-md); background: var(--glass-solid); border: 1px solid var(--glass-border);
+  box-shadow: var(--shadow), inset 0 1px 0 var(--glass-hi); display: flex; flex-direction: column; gap: 2px;
+  transform-origin: top right; animation: smIn .18s var(--ease); }
+@keyframes smIn { from { opacity: 0; transform: translateY(-4px) scale(.97); } to { opacity: 1; transform: none; } }
+.sm-item { display: flex; align-items: center; gap: 10px; width: 100%; padding: 9px 10px; border: 0; border-radius: 11px;
+  background: transparent; text-align: left; font-size: 13.5px; font-weight: 550; cursor: pointer; transition: background .15s; }
+.sm-item:hover, .sm-item:focus-visible { background: var(--fill-2); outline: none; }
+.sm-ic { width: 26px; height: 26px; flex: none; display: grid; place-items: center; border-radius: 8px; background: var(--fill); font-size: 14px; font-weight: 700; }
+.sm-lbl { flex: 1; min-width: 0; }
+.sm-val { font-size: 12px; font-weight: 650; color: var(--muted); padding: 3px 9px; border-radius: var(--pill); background: var(--fill); }
+.sm-item.danger { color: var(--bad); }
+.sm-item.danger .sm-ic { background: var(--bad-bg); }
+.sm-sep { height: 1px; margin: 4px 8px; background: var(--line); }
+
 /* ---------- Ortak paneller ---------- */
 .glass-panel { border-radius: var(--radius); }
 .panel-kicker { font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); font-weight: 650; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
@@ -825,17 +846,6 @@ ol.track-steps li::before { content: counter(ts); }
   .wl-go small { display: none; }
   .wl-cta .btn.ghost { padding: 0 12px; font-size: 12.5px; }
 }
-/* ---------- Açılış kamerası ---------- */
-#lab-ui, #lab-tags { transition: opacity .7s ease; }
-body.intro #lab-ui, body.intro #lab-tags { opacity: 0; pointer-events: none; }
-body.intro::after {
-  content: 'Atlamak için tıkla'; position: fixed; left: 50%; bottom: 22px; transform: translateX(-50%);
-  z-index: 55; padding: 7px 14px; border-radius: 999px; font-size: 12.5px; letter-spacing: .02em;
-  color: rgba(255,255,255,.88); background: rgba(10,14,22,.42); border: 1px solid rgba(255,255,255,.14);
-  backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); pointer-events: none;
-  animation: introHint 1s ease .8s both;
-}
-@keyframes introHint { from { opacity: 0; transform: translate(-50%, 6px); } to { opacity: 1; transform: translate(-50%, 0); } }
 
 #rotate-hint { display: none; }
 @media (max-width: 700px) and (orientation: portrait) {
@@ -874,6 +884,9 @@ body.intro::after {
   .brand-kicker { display: none; }
   .step { font-size: 12px; }
   .icon-btn { width: 32px; height: 32px; font-size: 14px; }
+  .settings-menu { top: calc(100% + 8px); min-width: 210px; padding: 5px; }
+  .sm-item { padding: 7px 8px; font-size: 12.5px; }
+  .sm-ic { width: 22px; height: 22px; font-size: 12px; }
   #notebook { top: 60px; bottom: 6px; padding: 10px; border-radius: 20px; }
   #reaction-panel { --rp-top: 60px; --rp-gap: 6px; width: 228px; left: 6px; padding: 9px; gap: 7px; border-radius: 20px; }
   .rp-titles h2 { font-size: 15px; }

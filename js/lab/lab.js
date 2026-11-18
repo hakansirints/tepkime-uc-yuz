@@ -145,62 +145,7 @@
   };
 
   Lab.setView = function (name) {
-    if (Lab.intro) Lab._endIntro(false);
     if (VIEWS[name]) { Lab.controls.setView(VIEWS[name]); Lab.viewName = name; }
-  };
-
-  /* ---------- Açılış kamerası: tahta → oda → masa ----------
-     Kamera önce sınıf tahtasına bakar, sonra süzülerek odayı, ardından deney masasını gösterir.
-     Fareyle tıklama / tekerlek / dokunma tanıtımı atlar. */
-  const BOARD = { target: new THREE.Vector3(4.5, 1.72, 0.6), radius: 2.25, phi: Math.PI / 2 - 0.02, theta: -Math.PI / 2 };
-  Lab.playIntro = function () {
-    const c = Lab.controls;
-    Object.assign(c.limits, { thetaMin: -1.8, phiMax: 1.6, rMax: 9 });
-    // tahtanın tamamı ekrana sığsın (dar ekranlarda kamera geri çekilir)
-    const cam = Lab.camera, tv = Math.tan(cam.fov * Math.PI / 360);
-    BOARD.radius = U.clamp(Math.max(1.55 / (tv * cam.aspect), 0.95 / tv), 2.0, 5.5);
-    c.setView(BOARD, true);
-    const legs = [
-      { from: BOARD, to: BOARD, dur: 1.9 },              // tahtayı oku
-      { from: BOARD, to: VIEWS.room, dur: 3.2 },         // odaya süzül
-      { from: VIEWS.room, to: VIEWS.room, dur: 0.5 },
-      { from: VIEWS.room, to: VIEWS.bench, dur: 2.4 }    // masaya yaklaş
-    ];
-    return new Promise((resolve) => {
-      Lab.intro = { legs, i: 0, t: 0, resolve };
-      c.enabled = false;
-      const skip = () => { if (Lab.intro) Lab._endIntro(true); };
-      Lab.intro.skip = skip;
-      ['pointerdown', 'wheel', 'touchstart', 'keydown'].forEach((ev) => window.addEventListener(ev, skip, { once: true, passive: true }));
-    });
-  };
-  Lab._endIntro = function (toBench) {
-    const it = Lab.intro;
-    if (!it) return;
-    Lab.intro = null;
-    ['pointerdown', 'wheel', 'touchstart', 'keydown'].forEach((ev) => window.removeEventListener(ev, it.skip));
-    const c = Lab.controls;
-    Object.assign(c.limits, Lab.DEFAULT_LIMITS);
-    c.enabled = true;
-    if (toBench) { c.setView(VIEWS.bench); Lab.viewName = 'bench'; }
-    it.resolve();
-  };
-  Lab._updateIntro = function (dt) {
-    const it = Lab.intro;
-    if (!it) return;
-    const leg = it.legs[it.i];
-    it.t += dt;
-    const k = U.clamp(it.t / leg.dur, 0, 1);
-    const e = k < 0.5 ? 4 * k * k * k : 1 - Math.pow(-2 * k + 2, 3) / 2; // yumuşak başla, yumuşak dur
-    const c = Lab.controls, a = leg.from, b = leg.to;
-    c.theta = c.goal.theta = U.lerp(a.theta, b.theta, e);
-    c.phi = c.goal.phi = U.lerp(a.phi, b.phi, e);
-    c.radius = c.goal.radius = Math.exp(U.lerp(Math.log(a.radius), Math.log(b.radius), e));
-    c.target.lerpVectors(a.target, b.target, e); c.goal.target.copy(c.target);
-    if (k >= 1) {
-      it.i++; it.t = 0;
-      if (it.i >= it.legs.length) { Lab.viewName = 'bench'; Lab._endIntro(false); }
-    }
   };
 
   /* ---------------- Etiketler (HTML) ---------------- */
@@ -568,7 +513,7 @@
   Lab.invalidate = function () { Lab._needsRender = true; };
   /** Canlandırılan bir şey var mı? (efektler, döküm, sürükleme, tanıtım kamerası) */
   Lab._active = function () {
-    if (Lab.intro || Lab.pourAnim || Lab.dropAnim || Lab.dragging) return true;
+    if (Lab.pourAnim || Lab.dropAnim || Lab.dragging) return true;
     if (Lab.state === 'pouring' || Lab.state === 'reacting') return true;
     const b = Lab.bubbles, f = Lab.foam, p = Lab.precip, sm = Lab.smoke, st = Lab.stream, s = Lab.sim;
     if (b.items.length || b.rate > 0.3) return true;
@@ -616,7 +561,6 @@
         if (live && frame % 5 !== 0) return;
       }
       const ddt = Lab.paused ? dt * 5 : dt;
-      Lab._updateIntro(ddt);
       Lab.controls.update(ddt);
       if (Lab.dropAnim) {
         const a = Lab.dropAnim; a.t += ddt;

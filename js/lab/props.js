@@ -387,11 +387,72 @@
     return g;
   };
 
-  /** Kitap/defter */
+  /** Açık laboratuvar defteri: koyu ciltli kapak, çizgili kâğıt, el yazısı notlar */
+  function notebookPage(side) {
+    const c = document.createElement('canvas'); c.width = 512; c.height = 720;
+    const x = c.getContext('2d');
+    x.fillStyle = '#f7f4ea'; x.fillRect(0, 0, 512, 720);
+    // cilt tarafına doğru hafif gölge
+    const gx = side === 'L' ? x.createLinearGradient(512, 0, 430, 0) : x.createLinearGradient(0, 0, 82, 0);
+    gx.addColorStop(0, 'rgba(80,70,50,.22)'); gx.addColorStop(1, 'rgba(80,70,50,0)');
+    x.fillStyle = gx; x.fillRect(0, 0, 512, 720);
+    // başlık kutusu ve çizgiler
+    x.strokeStyle = 'rgba(90,120,160,.38)'; x.lineWidth = 1.4;
+    for (let y = 96; y < 700; y += 30) { x.beginPath(); x.moveTo(24, y); x.lineTo(488, y); x.stroke(); }
+    x.strokeStyle = 'rgba(200,70,70,.45)'; x.lineWidth = 1.6;
+    const mx = side === 'L' ? 70 : 54;
+    x.beginPath(); x.moveTo(mx, 20); x.lineTo(mx, 704); x.stroke();
+    x.strokeStyle = 'rgba(60,60,60,.45)'; x.lineWidth = 1.2; x.strokeRect(24, 22, 464, 50);
+    x.fillStyle = 'rgba(60,60,60,.6)'; x.font = '600 15px Arial, sans-serif';
+    x.fillText(side === 'L' ? 'DENEY NO:' : 'TARİH:', 34, 42); x.fillText('KONU:', side === 'L' ? 200 : 210, 42);
+    // el yazısı (mavi tükenmez)
+    x.fillStyle = '#20366e'; x.font = 'italic 25px "Segoe Print", "Bradley Hand", "Comic Sans MS", cursive';
+    const L = side === 'L'
+      ? [['3', 140, 64], ['Tepkime gözlemi', 270, 64], ['Amaç: iki çözelti karışınca', mx + 10, 122], ['ne değiştiğini gözlemek.', mx + 10, 152],
+         ['Malzeme: 2 beher, termometre,', mx + 10, 212], ['dereceli silindir', mx + 10, 242], ['Başlangıç sıcaklığı: 22,0 °C', mx + 10, 302],
+         ['Gözlem:', mx + 10, 362], ['– renk değişti mi?', mx + 18, 392], ['– gaz / çökelti?', mx + 18, 422]]
+      : [['12.11', 120, 64], ['Sonuçlar', 280, 64], ['Kap', mx + 14, 122], ['Önce', mx + 140, 122], ['Sonra', mx + 290, 122],
+         ['A', mx + 20, 152], ['renksiz', mx + 130, 152], ['?', mx + 300, 152], ['B', mx + 20, 182], ['açık mavi', mx + 130, 182],
+         ['Not: kabı karıştırma çubuğuyla', mx + 10, 272], ['yavaşça karıştır.', mx + 10, 302]];
+    L.forEach(([t, px, py]) => x.fillText(t, px, py < 90 ? py - 6 : py + 1));
+    if (side === 'R') { // tablo çizgileri (kurşun kalem)
+      x.strokeStyle = 'rgba(70,70,70,.5)'; x.lineWidth = 1.3;
+      [mx + 110, mx + 270].forEach((vx) => { x.beginPath(); x.moveTo(vx, 98); x.lineTo(vx, 186); x.stroke(); });
+      x.beginPath(); x.moveTo(mx + 6, 128); x.lineTo(470, 128); x.stroke();
+    }
+    const t = new THREE.CanvasTexture(c);
+    t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 8;
+    return t;
+  }
   P.notebook = function (hex) {
     const g = new THREE.Group();
-    g.add(P.box(0.21, 0.012, 0.29, new THREE.MeshStandardMaterial({ color: hex || 0x1d4ed8, roughness: 0.6 }), [0, 0.006, 0]));
-    g.add(P.box(0.2, 0.01, 0.285, new THREE.MeshStandardMaterial({ color: 0xf4f1e8, roughness: 0.9 }), [0.004, 0.006, 0]));
+    const cover = new THREE.MeshStandardMaterial({ color: hex || 0x26292e, roughness: 0.7 });
+    const edge = new THREE.MeshStandardMaterial({ color: 0xebe6d8, roughness: 0.95 });
+    const PW = 0.2, PD = 0.275, CT = 0.003;
+    // açık kapak (iki yarım, ortada sırt)
+    g.add(P.box(PW * 2 + 0.016, CT, PD + 0.012, cover, [0, CT / 2, 0]));
+    g.add(P.box(0.014, 0.0045, PD + 0.012, new THREE.MeshStandardMaterial({ color: 0x1c1e22, roughness: 0.6 }), [0, 0.0022, 0], { cast: false }));
+    // sayfa blokları: üst yüz yazılı kâğıt, kenarlar sayfa kesiti
+    [['L', -1, 0.007], ['R', 1, 0.005]].forEach(([s, k, th]) => {
+      const top = new THREE.MeshStandardMaterial({ map: notebookPage(s), roughness: 0.92 });
+      const geo = new THREE.BoxGeometry(PW, th, PD);
+      const m = new THREE.Mesh(geo, [edge, edge, top, edge, edge, edge]);
+      m.position.set(k * (PW / 2 + 0.002), CT + th / 2, 0);
+      m.castShadow = true; m.receiveShadow = true;
+      g.add(m);
+    });
+    return g;
+  };
+  /** Tükenmez kalem: siyah gövde, metal klips ve uç */
+  P.pen = function () {
+    const g = new THREE.Group();
+    const body = new THREE.MeshStandardMaterial({ color: 0x15171a, roughness: 0.35 });
+    const metal = new THREE.MeshStandardMaterial({ color: 0xcfd3d8, metalness: 1, roughness: 0.25 });
+    const b = P.cyl(0.0042, 0.0042, 0.112, body, [0, 0, 0], 16); b.rotation.z = Math.PI / 2; g.add(b);
+    const grip = P.cyl(0.0045, 0.0045, 0.026, new THREE.MeshStandardMaterial({ color: 0x2a2d31, roughness: 0.8 }), [-0.04, 0, 0], 16); grip.rotation.z = Math.PI / 2; g.add(grip);
+    const cone = P.cyl(0.0042, 0.0012, 0.014, metal, [-0.063, 0, 0], 16); cone.rotation.z = Math.PI / 2; g.add(cone);
+    const cap = P.cyl(0.0044, 0.0044, 0.006, metal, [0.059, 0, 0], 16); cap.rotation.z = Math.PI / 2; g.add(cap);
+    g.add(P.box(0.034, 0.0012, 0.0024, metal, [0.042, 0.0052, 0], { cast: false }));
     return g;
   };
 

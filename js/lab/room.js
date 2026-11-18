@@ -105,8 +105,9 @@
 
     /* ---------- Posterler, tahta, tabelalar ---------- */
     const pt = new THREE.Mesh(new THREE.PlaneGeometry(1.5, 0.94), new THREE.MeshStandardMaterial({ map: Tex.periodicTable(), roughness: 0.55 }));
-    pt.position.set(1.05, 2.0, ROOM.z0 + 0.012); g.add(pt);
-    g.add(P.box(1.54, 0.98, 0.012, new THREE.MeshStandardMaterial({ color: 0x2b2f33 }), [1.05, 2.0, ROOM.z0 + 0.004], { cast: false }));
+    // çerçeve fayansın (üst kenarı 1,54 m) üstünde kalsın: üst üste binen ince aralık uzaktan titriyordu
+    pt.position.set(1.05, 2.05, ROOM.z0 + 0.016); g.add(pt);
+    g.add(P.box(1.54, 0.98, 0.012, new THREE.MeshStandardMaterial({ color: 0x2b2f33 }), [1.05, 2.05, ROOM.z0 + 0.004], { cast: false }));
 
     const wb = new THREE.Group();
     const board = new THREE.Mesh(new THREE.PlaneGeometry(2.6, 1.15), new THREE.MeshStandardMaterial({ map: Tex.whiteboard(), roughness: 0.18, metalness: 0, envMapIntensity: 0.6 }));
@@ -117,7 +118,7 @@
     wb.add(P.box(0.03, 1.2, 0.03, M.brushed, [1.32, 0, 0]));
     wb.add(P.box(1.4, 0.025, 0.08, M.brushed, [0, -0.62, 0.04]));
     [0xc0392b, 0x1f4fa8, 0x111111].forEach((c, i) => {
-      const mk = P.cyl(0.008, 0.008, 0.12, new THREE.MeshStandardMaterial({ color: c, roughness: 0.4 }), [-0.2 + i * 0.05, -0.6, 0.05], 12);
+      const mk = P.cyl(0.008, 0.008, 0.12, new THREE.MeshStandardMaterial({ color: c, roughness: 0.4 }), [-0.2 + i * 0.05, -0.598, 0.05], 12);
       mk.rotation.z = Math.PI / 2; wb.add(mk);
     });
     wb.position.set(ROOM.x1 - 0.02, 1.75, 0.6); wb.rotation.y = -Math.PI / 2;
@@ -269,10 +270,9 @@
     const er1 = P.erlen({ fill: 0xf3f6f8, op: 0.25 }); er1.position.set(-0.55, BENCH_Y, -0.28); g.add(er1);
     const er2 = P.erlen({ s: 0.8 }); er2.position.set(-0.42, BENCH_Y, -0.32); g.add(er2);
     const gc = P.gradCylinder(); gc.position.set(0.82, BENCH_Y, -0.3); g.add(gc);
-    const nb = P.notebook(0x1d4ed8); nb.position.set(-0.78, BENCH_Y, 0.35); nb.rotation.y = 0.25; g.add(nb);
-    // kalem
-    const pen = P.cyl(0.004, 0.004, 0.14, new THREE.MeshStandardMaterial({ color: 0x1d4ed8, roughness: 0.3 }), [-0.7, BENCH_Y + 0.017, 0.38], 12);
-    pen.rotation.set(0, 0.6, Math.PI / 2); g.add(pen);
+    // açık laboratuvar defteri ve tükenmez kalem
+    const nb = P.notebook(); nb.position.set(-0.8, BENCH_Y, 0.33); nb.rotation.y = 0.22; g.add(nb);
+    const pen = P.pen(); pen.position.set(0.1, 0.0125, 0.02); pen.rotation.y = 0.5; nb.add(pen);
 
     return g;
   }
@@ -375,12 +375,12 @@
     const W = 1.5, D = 0.8, H = 2.45;
     const body = new THREE.MeshStandardMaterial({ color: 0xe9ecea, roughness: 0.45 });
     const dark = new THREE.MeshStandardMaterial({ color: 0x2f3a40, roughness: 0.6 });
-    g.add(P.box(W, 0.88, D, body, [0, 0.44, 0]));
+    g.add(P.box(W, 0.82, D, body, [0, 0.47, 0]));
     g.add(P.box(W - 0.02, 0.035, D - 0.04, new THREE.MeshStandardMaterial({ map: Tex.epoxy(), roughness: 0.4 }), [0, 0.9, 0.0]));
     g.add(P.box(0.06, H - 0.9, D, body, [-W / 2 + 0.03, 0.9 + (H - 0.9) / 2, 0]));
     g.add(P.box(0.06, H - 0.9, D, body, [W / 2 - 0.03, 0.9 + (H - 0.9) / 2, 0]));
-    g.add(P.box(W, 0.4, D, body, [0, H - 0.2, 0]));
-    g.add(P.box(W, H - 0.9, 0.02, new THREE.MeshStandardMaterial({ color: 0xd5dad8, roughness: 0.7 }), [0, 0.9 + (H - 0.9) / 2, -D / 2 + 0.01]));
+    g.add(P.box(W - 0.004, 0.4, D - 0.004, body, [0, H - 0.2, 0]));
+    g.add(P.box(W - 0.12, H - 0.9, 0.02, new THREE.MeshStandardMaterial({ color: 0xd5dad8, roughness: 0.7 }), [0, 0.9 + (H - 0.9) / 2, -D / 2 + 0.01]));
     // iç ışık
     const lamp = new THREE.Mesh(new THREE.PlaneGeometry(W - 0.2, 0.12), new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: 0xffffff, emissiveIntensity: 1.6 }));
     lamp.position.set(0, H - 0.41, 0); lamp.rotation.x = Math.PI / 2; g.add(lamp);
@@ -401,7 +401,8 @@
       g.add(P.box(0.7, 0.76, 0.02, body, [x, 0.47, D / 2 + 0.01], { cast: false }));
       g.add(P.box(0.012, 0.12, 0.02, M.brushed, [x + (x < 0 ? 0.3 : -0.3), 0.7, D / 2 + 0.025], { cast: false }));
     });
-    g.add(P.box(W, 0.06, D - 0.05, dark, [0, 0.03, 0]));
+    // baza: gövdenin altında, içeri çekik (yan yüzleri gövdeyle aynı düzlemde olunca titriyordu)
+    g.add(P.box(W - 0.04, 0.06, D - 0.06, dark, [0, 0.03, -0.01]));
     return g;
   }
 

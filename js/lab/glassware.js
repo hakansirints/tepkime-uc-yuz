@@ -355,14 +355,29 @@
       const sockX = 0, sockTop = mh + 0.006;
       tiltG.add(P.cyl(0.0042, 0.0042, 0.006, M.blackPlastic, [sockX, mh + 0.003, md / 2], 18));
       tiltG.add(P.cyl(0.0024, 0.0034, 0.008, handleMat, [sockX, mh + 0.009, md / 2], 18));
-      // arka destek ayağı (tezgâha uzanır)
-      const back = new THREE.Vector3(0, mh * 0.62 * Math.cos(tilt), -mh * 0.62 * Math.sin(tilt));
-      const foot = new THREE.Vector3(0, 0.0015, back.z - 0.034);
-      const legLen = back.distanceTo(foot);
-      const leg = P.box(mw * 0.6, legLen, 0.0025, M.blackPlastic, [0, 0, 0]);
-      leg.position.copy(back).add(foot).multiplyScalar(0.5);
-      leg.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), back.clone().sub(foot).normalize());
-      meter.add(leg);
+      // arka gövde: kasanın sırtına oturan, tezgâha inen kapalı destek kaması
+      // (eski ince ayak havada duruyordu; arkadan bakınca ölçer boş görünüyordu)
+      const tiltPt = (y, z) => [y * Math.cos(tilt) + z * Math.sin(tilt), -y * Math.sin(tilt) + z * Math.cos(tilt)];
+      const [ay, az] = tiltPt(0.003, 0.004);          // sırtın alt ucu (gövdenin içine hafifçe gömülü)
+      const [by2, bz] = tiltPt(mh * 0.72, 0.004);      // sırtın üst ucu
+      const fz2 = bz - 0.024;                          // tezgâhtaki ayak ucu
+      const prof = new THREE.Shape();
+      prof.moveTo(-az, 0); prof.lineTo(-az, ay); prof.lineTo(-bz, by2); prof.lineTo(-fz2, 0.004); prof.lineTo(-fz2, 0); prof.closePath();
+      const kw = mw - 0.016;
+      const kGeo = new THREE.ExtrudeGeometry(prof, { depth: kw, bevelEnabled: true, bevelThickness: 0.0015, bevelSize: 0.0012, bevelSegments: 2, curveSegments: 4 });
+      kGeo.rotateY(Math.PI / 2); kGeo.translate(-kw / 2, 0, 0);
+      const kick = new THREE.Mesh(kGeo, shellMat);
+      kick.castShadow = true; kick.receiveShadow = true;
+      meter.add(kick);
+      // eğik sırt yüzünde pil kapağı (siyah ayrıntı)
+      const bk = new THREE.Vector3(0, by2, bz), ft = new THREE.Vector3(0, 0.004, fz2);
+      const dir = bk.clone().sub(ft).normalize();
+      const nrm = new THREE.Vector3(0, -dir.z, dir.y); // eğik yüzün normali
+      if (nrm.z > 0) nrm.negate();                     // dışa (arkaya) baksın
+      const lid = P.box(kw * 0.62, bk.distanceTo(ft) * 0.4, 0.0012, M.blackPlastic, [0, 0, 0], { cast: false });
+      lid.position.copy(bk).lerp(ft, 0.45).addScaledVector(nrm, 0.0021);
+      lid.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir);
+      meter.add(lid);
       // kauçuk ayaklar
       [-0.018, 0.018].forEach((fx) => meter.add(P.box(0.008, 0.002, 0.005, M.blackPlastic, [fx, 0.001, md * 0.25])));
       this.group.add(meter);

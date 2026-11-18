@@ -41,17 +41,10 @@
       // #ogretici bağlantısıyla açılırsa öğretici doğrudan başlar
       const wantTut = () => /^#(ogretici|öğretici)$/i.test(decodeURIComponent(location.hash));
       window.addEventListener('hashchange', () => { if (wantTut() && !T.Tutorial.active) T.Tutorial.start(); });
-      // Açılış: kamera tahtadan odaya, sonra masaya süzülür (laboratuvar aşamasındaysak)
-      let intro = Promise.resolve();
-      if (this.current === 1 && !wantTut()) {
-        document.body.classList.add('intro');
-        intro = T.Lab.playIntro().then(() => {
-          document.body.classList.remove('intro');
-          if (S.data.reaction && T.Lab.viewName === 'bench') T.Lab.setView('close');
-        });
-      }
+      // Açılış doğrudan masa görünümünde (tepkime seçiliyse yakın görünümde)
+      if (this.current === 1 && S.data.reaction && T.Lab.viewName === 'bench') T.Lab.setView('close');
       if (wantTut()) setTimeout(() => T.Tutorial.start(), 600);
-      else if (!d.reaction && !this._welcomed) { this._welcomed = true; intro.then(() => setTimeout(() => this.help(true), 250)); }
+      else if (!d.reaction && !this._welcomed) { this._welcomed = true; setTimeout(() => this.help(true), 350); }
     },
     bindTop() {
       // açık / koyu tema
@@ -59,7 +52,8 @@
       const themeBtn = U.$('#btn-theme');
       const paintTheme = () => {
         const dark = root.getAttribute('data-theme') !== 'light';
-        themeBtn.textContent = dark ? '☀️' : '🌙';
+        themeBtn.querySelector('.sm-ic').textContent = dark ? '🌙' : '☀️';
+        themeBtn.querySelector('.sm-val').textContent = dark ? 'Koyu' : 'Açık';
         themeBtn.title = dark ? 'Açık temaya geç' : 'Koyu temaya geç';
         const mc = document.querySelector('meta[name="theme-color"]');
         if (mc) mc.setAttribute('content', dark ? '#05070c' : '#eef1f6');
@@ -81,8 +75,23 @@
       paintTheme();
       U.$('#btn-sound').addEventListener('click', () => {
         const on = T.Audio.toggle();
-        U.$('#btn-sound').textContent = on ? '🔊' : '🔇';
+        U.$('#btn-sound .sm-ic').textContent = on ? '🔊' : '🔇';
+        U.$('#btn-sound .sm-val').textContent = on ? 'Açık' : 'Kapalı';
       });
+      // ⚙ ayarlar menüsü: tema / ses yerinde değişir, menü açık kalır; diğerleri menüyü kapatır
+      const setBtn = U.$('#btn-settings'), menu = U.$('#settings-menu');
+      const openMenu = (open) => {
+        menu.classList.toggle('hidden', !open);
+        setBtn.classList.toggle('on', open);
+        setBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
+      };
+      setBtn.addEventListener('click', (e) => { e.stopPropagation(); openMenu(menu.classList.contains('hidden')); });
+      menu.addEventListener('click', (e) => {
+        const it = e.target.closest('.sm-item');
+        if (it && (it.id === 'btn-help' || it.id === 'btn-restart')) openMenu(false);
+      });
+      document.addEventListener('pointerdown', (e) => { if (!menu.classList.contains('hidden') && !e.target.closest('.settings-wrap')) openMenu(false); });
+      document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !menu.classList.contains('hidden')) { openMenu(false); setBtn.focus(); } });
       U.$('#btn-help').addEventListener('click', () => this.help());
       U.$('#btn-tutorial').addEventListener('click', (e) => {
         e.preventDefault();

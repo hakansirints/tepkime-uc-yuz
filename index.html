@@ -45,10 +45,18 @@
     <div class="top-actions">
       <a id="btn-tutorial" class="tut-link" href="#ogretici" title="Siteyi örnek bir tepkimeyle adım adım öğren">🎓 <span>Öğretici</span></a>
       <span id="stage-counter" class="stage-counter">Aşama 1/7</span>
-      <button class="icon-btn" id="btn-theme" title="Açık / koyu tema" aria-label="Temayı değiştir"></button>
-      <button class="icon-btn" id="btn-sound" title="Ses aç/kapat" aria-label="Ses">🔊</button>
-      <button class="icon-btn" id="btn-help" title="Yardım" aria-label="Yardım">?</button>
-      <button class="icon-btn" id="btn-restart" title="Baştan başla" aria-label="Baştan başla">↺</button>
+      <div class="settings-wrap">
+        <button class="icon-btn" id="btn-settings" title="Ayarlar" aria-label="Ayarlar" aria-haspopup="menu" aria-expanded="false" aria-controls="settings-menu">
+          <svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true"><path fill="currentColor" d="M19.4 13a7.6 7.6 0 0 0 0-2l2.1-1.6a.5.5 0 0 0 .1-.6l-2-3.5a.5.5 0 0 0-.6-.2l-2.5 1a7.4 7.4 0 0 0-1.7-1l-.4-2.6a.5.5 0 0 0-.5-.5h-4a.5.5 0 0 0-.5.4l-.4 2.7a7.4 7.4 0 0 0-1.7 1l-2.5-1a.5.5 0 0 0-.6.2l-2 3.5a.5.5 0 0 0 .1.6L4.6 11a7.6 7.6 0 0 0 0 2l-2.1 1.6a.5.5 0 0 0-.1.6l2 3.5c.1.2.4.3.6.2l2.5-1c.5.4 1.1.7 1.7 1l.4 2.6c0 .3.2.5.5.5h4c.3 0 .5-.2.5-.4l.4-2.7c.6-.3 1.2-.6 1.7-1l2.5 1c.2.1.5 0 .6-.2l2-3.5a.5.5 0 0 0-.1-.6L19.4 13ZM12 15.5a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7Z"/></svg>
+        </button>
+        <div class="settings-menu hidden" id="settings-menu" role="menu" aria-label="Ayarlar">
+          <button class="sm-item" id="btn-theme" role="menuitem"><span class="sm-ic" aria-hidden="true"></span><span class="sm-lbl">Tema</span><span class="sm-val"></span></button>
+          <button class="sm-item" id="btn-sound" role="menuitem"><span class="sm-ic" aria-hidden="true">🔊</span><span class="sm-lbl">Ses</span><span class="sm-val">Açık</span></button>
+          <div class="sm-sep" role="separator"></div>
+          <button class="sm-item" id="btn-help" role="menuitem"><span class="sm-ic" aria-hidden="true">?</span><span class="sm-lbl">Yardım ve aşama haritası</span></button>
+          <button class="sm-item danger" id="btn-restart" role="menuitem"><span class="sm-ic" aria-hidden="true">↺</span><span class="sm-lbl">Baştan başla</span></button>
+        </div>
+      </div>
     </div>
   </header>
 
