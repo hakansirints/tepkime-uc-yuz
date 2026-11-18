@@ -52,6 +52,7 @@
         const r = ents[0].contentRect;
         if (Math.abs(r.width - lastW) < 2 && Math.abs(r.height - lastH) < 2) return;
         lastW = r.width; lastH = r.height;
+        if (p.opts.onResize && r.width > 60 && p.opts.onResize(r.width, r.height)) return; // yeniden dizildi (fit içeride yapıldı)
         if (p._fitArgs && r.width > 60) Viewer.fit(p, false, p._fitArgs.box);
       });
       p._ro.observe(el);
@@ -78,13 +79,31 @@
     let any = false;
     p.root.updateMatrixWorld(true);
     if (boxOverride) { box.copy(boxOverride); any = true; }
-    else p.root.traverse((o) => {
-      if (o.isMesh && !o.userData.ghost && !o.userData.noFit && o.visible) {
-        o.geometry.computeBoundingBox();
-        const b = o.geometry.boundingBox.clone().applyMatrix4(o.matrixWorld);
-        box.union(b); any = true;
-      }
-    });
+    else {
+      // her üst düzey tanecik için ayrı kutu: tanecikler kendi ekseninde döner/salınır, kamera da
+      // sağa-sola çevrilebilir. Bu yüzden yatayda (xz) dönmeden bağımsız bir daire payı ayrılır.
+      const spin = p.opts.fitSpin != null ? p.opts.fitSpin : p.opts.labelRoom !== 0;
+      p.root.children.forEach((top) => {
+        const gb = new THREE.Box3();
+        let has = false;
+        top.traverse((o) => {
+          // soluk (ghost) kristal komşuları da görünür: kadraja dahil edilir
+          if (o.isMesh && !o.userData.noFit && o.visible) {
+            o.geometry.computeBoundingBox();
+            gb.union(o.geometry.boundingBox.clone().applyMatrix4(o.matrixWorld)); has = true;
+          }
+        });
+        if (!has) return;
+        any = true;
+        if (spin) {
+          const c = gb.getCenter(new THREE.Vector3()), s = gb.getSize(new THREE.Vector3());
+          const r = Math.hypot(s.x, s.z) / 2 + 0.12; // +salınım payı
+          gb.min.x = c.x - r; gb.max.x = c.x + r; gb.min.z = c.z - r; gb.max.z = c.z + r;
+          gb.min.y -= 0.1; gb.max.y += 0.1;
+        }
+        box.union(gb);
+      });
+    }
     if (!any) { p.gCenter.set(0, 0, 0); p.gDist = 12; return; }
     const size = box.getSize(new THREE.Vector3());
     box.getCenter(p.gCenter);
@@ -130,8 +149,9 @@
 
   Viewer._bindPanel = function (p) {
     const el = p.el;
-    let down = null;
+    let down = null, pinch = null;
     const onDown = (e) => {
+      if (pinch) return;
       if (e.target !== el && !e.target.classList.contains('pempty') && e.target.closest('button,select,input,textarea')) return;
       down = { x: e.clientX, y: e.clientY, yaw: p.gYaw, pitch: p.gPitch, moved: false, id: e.pointerId };
       try { el.setPointerCapture(e.pointerId); } catch (er) { /* */ }
@@ -155,28 +175,96 @@
       if (!down || down.id !== e.pointerId) return;
       const moved = down.moved;
       down = null;
+      if (moved) Viewer._syncZoom(p);
       if (!moved && p.opts.onPick) {
         const h = pick(p, e);
         p.opts.onPick(h, e);
       }
     };
+    const zoomOn = p.opts.zoom !== false;
     const onWheel = (e) => {
-      if (!p.opts.zoom) return;
+      if (!zoomOn || e.target.closest('.zoomctl')) return;
       e.preventDefault();
-      p.zoomMul = U.clamp((p.zoomMul || 1) * Math.exp(e.deltaY * 0.001), 0.5, 1.8);
+      Viewer.zoom(p, Math.exp(e.deltaY * 0.0012));
     };
+    // iki parmakla sıkıştırma (pinch) ile yakınlaştırma
+    const touches = new Map();
+    const tDown = (e) => {
+      if (e.pointerType !== 'touch' || !zoomOn) return;
+      touches.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      if (touches.size === 2) {
+        const [a, b] = [...touches.values()];
+        pinch = { d: Math.hypot(a.x - b.x, a.y - b.y) || 1, z: p.zoomMul || 1 };
+        down = null; // döndürmeyi bırak
+      }
+    };
+    const tMove = (e) => {
+      if (!touches.has(e.pointerId)) return;
+      touches.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      if (pinch && touches.size === 2) {
+        const [a, b] = [...touches.values()];
+        const d = Math.hypot(a.x - b.x, a.y - b.y) || 1;
+        p.zoomMul = U.clamp(pinch.z * pinch.d / d, Viewer.ZMIN, Viewer.ZMAX);
+        Viewer._syncZoom(p);
+      }
+    };
+    const tUp = (e) => { touches.delete(e.pointerId); if (touches.size < 2) pinch = null; };
+    el.addEventListener('pointerdown', tDown, true);
+    el.addEventListener('pointermove', tMove, true);
+    el.addEventListener('pointerup', tUp, true);
+    el.addEventListener('pointercancel', tUp, true);
     el.addEventListener('pointerdown', onDown);
     el.addEventListener('pointermove', onMove);
     el.addEventListener('pointerup', onUp);
     el.addEventListener('pointercancel', onUp);
     el.addEventListener('wheel', onWheel, { passive: false });
+    if (zoomOn) Viewer._zoomCtl(p);
     p._unbind = () => {
+      el.removeEventListener('pointerdown', tDown, true);
+      el.removeEventListener('pointermove', tMove, true);
+      el.removeEventListener('pointerup', tUp, true);
+      el.removeEventListener('pointercancel', tUp, true);
       el.removeEventListener('pointerdown', onDown);
       el.removeEventListener('pointermove', onMove);
       el.removeEventListener('pointerup', onUp);
       el.removeEventListener('pointercancel', onUp);
       el.removeEventListener('wheel', onWheel);
+      if (p._zc) { p._zc.remove(); p._zc = null; }
     };
+  };
+
+  /* ---------------- Yakınlaştırma ---------------- */
+  Viewer.ZMIN = 0.4;  // en yakın (uzaklık × 0.4)
+  Viewer.ZMAX = 2.2;  // en uzak
+  Viewer.zoom = function (p, mul) {
+    p.zoomMul = U.clamp((p.zoomMul || 1) * mul, Viewer.ZMIN, Viewer.ZMAX);
+    Viewer._syncZoom(p);
+  };
+  Viewer._syncZoom = function (p) {
+    if (!p._zc) return;
+    const z = p.zoomMul || 1;
+    p._zc.querySelector('[data-z=in]').disabled = z <= Viewer.ZMIN + 1e-3;
+    p._zc.querySelector('[data-z=out]').disabled = z >= Viewer.ZMAX - 1e-3;
+    p._zc.querySelector('[data-z=reset]').disabled = Math.abs(z - 1) < 0.02 && Math.abs(p.gYaw - (p.opts.yaw || 0)) < 0.02 && Math.abs(p.gPitch - (p.opts.pitch != null ? p.opts.pitch : 0.12)) < 0.02;
+  };
+  Viewer._zoomCtl = function (p) {
+    const el = p.el;
+    if (getComputedStyle(el).position === 'static') el.style.position = 'relative';
+    const mk = (z, txt, title) => U.h('button.zbtn', { type: 'button', 'data-z': z, title, 'aria-label': title, text: txt });
+    const zc = U.h('div.zoomctl', null,
+      mk('in', '+', 'Yakınlaştır'), mk('out', '−', 'Uzaklaştır'), mk('reset', '⟲', 'Görünümü sıfırla'));
+    zc.addEventListener('pointerdown', (e) => e.stopPropagation());
+    zc.addEventListener('click', (e) => {
+      const b = e.target.closest('button');
+      if (!b) return;
+      e.stopPropagation();
+      if (b.dataset.z === 'in') Viewer.zoom(p, 1 / 1.25);
+      else if (b.dataset.z === 'out') Viewer.zoom(p, 1.25);
+      else { p.zoomMul = 1; p.gYaw = p.opts.yaw || 0; p.gPitch = p.opts.pitch != null ? p.opts.pitch : 0.12; Viewer._syncZoom(p); }
+    });
+    el.appendChild(zc);
+    p._zc = zc;
+    Viewer._syncZoom(p);
   };
 
   Viewer._loop = function () {

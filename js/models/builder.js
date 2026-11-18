@@ -102,6 +102,14 @@
       ['before', 'after'].forEach((k) => {
         this.panels[k] = V().addPanel(this.regEl[k], {
           fitPad: 1.18,
+          // panel en-boy oranı belirgin değişince tanecikleri yeniden diz
+          onResize: (w, hh) => {
+            const a = U.clamp(w / hh, 0.45, 2.2), old = this._asp && this._asp[k];
+            if (old && Math.abs(Math.log(a / old)) < 0.25) return false;
+            if (!this.groups[k].length) { if (this._asp) this._asp[k] = a; return false; }
+            this._renderRegion(k);
+            return true;
+          },
           onPick: (hit) => {
             if (!hit || !hit.group) return;
             if (k === 'before' && this.o.lockBefore) { U.toast('Bu bölüm bu görevde hazır verildi.'); return; }
@@ -187,7 +195,12 @@
       const ids = [];
       Object.keys(this.model[k]).forEach((sid) => { for (let i = 0; i < this.model[k][sid]; i++) ids.push(sid); });
       const gs = ids.map((sid) => { const g = Mol.build(sid, { labelH: 0.55 }); g.userData.pickable = true; return g; });
-      const pos = Mol.layout(gs, { gap: 0.7, aspect: 1.0, jitter: true });
+      // dizilim panelin en-boy oranına uysun: dar-uzun panelde tanecikler alt alta gelir, küçülmez
+      const rr = this.regEl[k].getBoundingClientRect();
+      const asp = rr.width > 60 && rr.height > 60 ? U.clamp(rr.width / rr.height, 0.45, 2.2) : 1;
+      this._asp = this._asp || {};
+      this._asp[k] = asp;
+      const pos = Mol.layout(gs, { gap: 0.7, aspect: asp, jitter: true });
       gs.forEach((g, i) => { g.position.copy(pos[i]); g.userData.home = pos[i].clone(); g.userData.ph = Math.random() * 6.28; p.root.add(g); });
       this.groups[k] = gs;
       p.fit();
