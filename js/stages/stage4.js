@@ -14,7 +14,7 @@
       body.innerHTML = '';
       const r = S.reaction;
       this.panelEl = h('div.mpanel', null,
-        h('div.ptitle', null, h('span.n', { text: '▶' }), 'Modelinin çalıştırılması', h('span.tag', { text: 'Kırmızı atomlar: yok olan ya da yoktan ortaya çıkan atomlar' })),
+        h('div.ptitle', null, h('span.n', { text: '▶' }), 'Modelinin çalıştırılması', h('span.tag', { text: 'Kırmızı halkalı atomlar: yok olan ya da yoktan ortaya çıkan atomlar' })),
         h('div.pempty', { text: '“Modeli çalıştır” düğmesine bas.' }));
       this.side = h('div.side-card');
       body.appendChild(h('div.grid-track', null, this.panelEl, this.side));

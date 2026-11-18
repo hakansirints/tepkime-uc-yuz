@@ -142,7 +142,8 @@
     ring.userData.ring = true;
     mesh.add(ring);
     const glow = mesh.material.clone();
-    glow.emissive = new THREE.Color(color || 0xffc400); glow.emissiveIntensity = 0.7;
+    // hafif parlama: atom kendi element rengini korusun (izlenen H sarıya dönmesin)
+    glow.emissive = new THREE.Color(color || 0xffc400); glow.emissiveIntensity = 0.28;
     mesh.userData.prevMat = mesh.material;
     mesh.material = glow;
     return ring;

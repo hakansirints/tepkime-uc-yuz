@@ -69,7 +69,7 @@
       run.addEventListener('click', () => {
         run.disabled = true;
         fb.innerHTML = '';
-        fb.appendChild(h('div.feedback.info', { html: '<b>Model çalışıyor…</b>Ortadaki bölümü izle. Kırmızı atomlar yok olan ya da yoktan ortaya çıkan atomlardır.' }));
+        fb.appendChild(h('div.feedback.info', { html: '<b>Model çalışıyor…</b>Ortadaki bölümü izle. Kırmızı halkayla işaretlenen atomlar yok olan ya da yoktan ortaya çıkan atomlardır.' }));
         this.builder.playMid(() => {
           run.disabled = false;
           run.textContent = '▶ Yeniden çalıştır';

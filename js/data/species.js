@@ -55,8 +55,9 @@
       atoms: [at('C'), at('O', ...o[0]), at('O', ...o[1]), at('O', ...o[2])] });
     def('NO3-', { f: 'NO₃⁻', name: 'Nitrat iyonu', kind: 'ion', charge: -1,
       atoms: [at('N'), at('O', ...o[0]), at('O', ...o[1]), at('O', ...o[2])] });
-    // HCO3-: bir oksijene H bağlı
-    const hx = o[1][0] * 1.55, hy = o[1][1] * 1.55 - 0.32;
+    // HCO3-: bir oksijene H bağlı (C–O–H açısı ≈ 109°)
+    const ha = (30 - 109.5) * d2r; // O[1]'den C'ye yön 30°; O–H bağı bundan 109,5° döner
+    const hx = o[1][0] + Math.cos(ha) * 0.68, hy = o[1][1] + Math.sin(ha) * 0.68;
     def('HCO3-', { f: 'HCO₃⁻', name: 'Hidrojen karbonat iyonu', kind: 'ion', charge: -1,
       atoms: [at('C'), at('O', ...o[0]), at('O', ...o[1]), at('O', ...o[2]), at('H', hx, hy, 0.05)] });
   }
@@ -65,7 +66,8 @@
 
   // Moleküller
   def('H2O', { f: 'H₂O', name: 'Su molekülü', kind: 'molecule',
-    atoms: [at('O', 0, 0.1, 0), at('H', -0.58, -0.32, 0), at('H', 0.58, -0.32, 0)] });
+    // H–O–H ≈ 104,5°
+    atoms: [at('O', 0, 0.1, 0), at('H', -0.57, -0.34, 0), at('H', 0.57, -0.34, 0)] });
   def('CO2', { f: 'CO₂', name: 'Karbon dioksit molekülü', kind: 'molecule', gas: true,
     atoms: [at('C'), at('O', -0.86, 0, 0), at('O', 0.86, 0, 0)] });
   def('O2', { f: 'O₂', name: 'Oksijen molekülü', kind: 'molecule', gas: true,
@@ -73,9 +75,11 @@
   def('H2', { f: 'H₂', name: 'Hidrojen molekülü', kind: 'molecule', gas: true,
     atoms: [at('H', -0.27, 0, 0), at('H', 0.27, 0, 0)] });
   def('H2O2', { f: 'H₂O₂', name: 'Hidrojen peroksit molekülü', kind: 'molecule',
-    atoms: [at('O', -0.42, 0, 0), at('O', 0.42, 0, 0), at('H', -0.72, 0.45, 0.22), at('H', 0.72, -0.1, 0.5)] });
+    // O–O–H ≈ 100°, dihedral ≈ 115° (açık kitap biçimi)
+    atoms: [at('O', -0.42, 0, 0), at('O', 0.42, 0, 0), at('H', -0.524, 0.498, 0.318), at('H', 0.524, -0.498, 0.318)] });
+  // üçgen piramit, H–N–H ≈ 107°
   def('NH3', { f: 'NH₃', name: 'Amonyak molekülü', kind: 'molecule',
-    atoms: [at('N', 0, 0.14, 0), at('H', 0, -0.2, 0.55), at('H', 0.48, -0.2, -0.28), at('H', -0.48, -0.2, -0.28)] });
+    atoms: [at('N', 0, 0.1, 0), at('H', 0, -0.14, 0.6), at('H', 0.52, -0.14, -0.3), at('H', -0.52, -0.14, -0.3)] });
   def('HCl', { f: 'HCl', name: 'Hidrojen klorür molekülü', kind: 'molecule',
     atoms: [at('Cl', 0.18, 0, 0), at('H', -0.58, 0, 0)] });
   def('Cl2', { f: 'Cl₂', name: 'Klor molekülü', kind: 'molecule', gas: true,

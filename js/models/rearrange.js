@@ -52,16 +52,28 @@
         };
         this.actors.push(actor);
       });
-      this.lostMat = new THREE.MeshPhysicalMaterial({ color: 0xff4d4d, emissive: 0xff0000, emissiveIntensity: 0.6, transparent: true, opacity: 1, roughness: 0.3 });
+      /* Yok olan / yoktan ortaya çıkan atomlar kendi element rengini korur (ör. H beyaz kalır);
+         hata, atomu saran kırmızı uyarı halkasıyla gösterilir. Atomu kırmızıya boyamak oksijenle karışır. */
+      const ringGeo = new THREE.TorusGeometry(1.42, 0.13, 12, 48);
+      const flag = (m) => {
+        m.material = Mol.atomMaterial(m.userData.el).clone();
+        m.material.transparent = true;
+        const ring = new THREE.Mesh(ringGeo, new THREE.MeshBasicMaterial({ color: 0xff2a3d, transparent: true, opacity: 0.95, depthTest: false }));
+        ring.renderOrder = 42;
+        ring.visible = false;
+        ring.scale.setScalar(T.ELEMENTS[m.userData.el].r);
+        g.add(ring); // atomun değil grubun çocuğu: atom küçülürken halka boyutunu korur
+        return ring;
+      };
       this.map.lostB.forEach(([i, j]) => {
         const bi = this.bInst[i];
         const m = mk(bi.atoms[j].el);
-        this.actors.push({ mesh: m, kind: 'lost', b: [i, j], p0: bi.pos.clone().add(bi.atoms[j].p), c0: bi.pos.clone(), seed: Math.random() * 6.28 });
+        this.actors.push({ mesh: m, kind: 'lost', warn: flag(m), b: [i, j], p0: bi.pos.clone().add(bi.atoms[j].p), c0: bi.pos.clone(), seed: Math.random() * 6.28 });
       });
       this.map.newA.forEach(([i, j]) => {
         const ai = this.aInst[i];
         const m = mk(ai.atoms[j].el);
-        this.actors.push({ mesh: m, kind: 'new', a: [i, j], p1: ai.pos.clone().add(ai.atoms[j].p), c1: ai.pos.clone(), seed: Math.random() * 6.28 });
+        this.actors.push({ mesh: m, kind: 'new', warn: flag(m), a: [i, j], p1: ai.pos.clone().add(ai.atoms[j].p), c1: ai.pos.clone(), seed: Math.random() * 6.28 });
       });
       // etiketler
       this.bLabels = this.bInst.map((bi) => { const l = Mol.label(T.speciesLabel(bi.sid), { h: 0.5 }); l.position.copy(bi.pos).add(new THREE.Vector3(0, -bi.radius - 0.35, 0.6)); g.add(l); return l; });
@@ -148,19 +160,25 @@
           const e0 = ac.p0.clone().sub(ac.c0).multiplyScalar(0.6 * brk).add(ac.p0);
           m.position.copy(e0);
           m.position.z += trv * 1.2;
-          if (t > 0.32) {
-            m.material = this.lostMat;
-            const k = ph(0.32, 0.95);
-            m.scale.setScalar(T.ELEMENTS[m.userData.el].r * (1 - k * 0.9));
-            m.visible = k < 0.99;
-          } else { m.material = Mol.atomMaterial(m.userData.el); m.scale.setScalar(T.ELEMENTS[m.userData.el].r); m.visible = true; }
+          const k = ph(0.32, 0.95);
+          m.scale.setScalar(T.ELEMENTS[m.userData.el].r * (1 - k * 0.9));
+          m.material.opacity = 1 - k;
+          m.visible = k < 0.99;
+          // halka atom kaybolurken belirir ve yok olduğu yerde kalır
+          ac.warn.visible = t > 0.2;
+          ac.warn.position.copy(m.position);
+          ac.warn.material.opacity = U.clamp((t - 0.2) / 0.12, 0, 1) * (0.75 + 0.25 * Math.sin(t * 30));
         } else if (ac.kind === 'new') {
           const k = ph(0.55, 0.92);
           m.position.copy(ac.p1);
           m.visible = k > 0.01;
-          m.material = this.lostMat;
+          m.material.opacity = k;
           m.scale.setScalar(T.ELEMENTS[m.userData.el].r * Math.max(0.01, k));
+          ac.warn.visible = k > 0.01;
+          ac.warn.position.copy(m.position);
+          ac.warn.material.opacity = Math.min(1, k * 2) * (0.75 + 0.25 * Math.sin(t * 30));
         }
+        if (ac.warn && ac.warn.visible) ac.warn.lookAt(this.panel.camera.position);
       });
       const fadeB = 1 - ph(0.08, 0.26), fadeA = ph(0.8, 0.98);
       this.bLabels.forEach((l) => { l.material.opacity = fadeB; l.visible = fadeB > 0.01; });

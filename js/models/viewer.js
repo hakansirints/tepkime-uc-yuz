@@ -94,10 +94,23 @@
     const vfov = (p.camera.fov * Math.PI) / 180;
     const hNeed = (size.y + (p.opts.labelRoom != null ? p.opts.labelRoom : 0.9)) * pad;
     const wNeed = size.x * pad;
-    const dH = hNeed / 2 / Math.tan(vfov / 2);
+    // panel başlığı (üstte) ve not/düğme şeridi (altta) modeli örtmesin: serbest dikey alana sığdır
+    let hTop = 0, hBot = 0;
+    if (rect.height > 0) {
+      const tEl = p.el.querySelector(':scope > .ptitle');
+      if (tEl && tEl.offsetParent) hTop = Math.max(0, tEl.getBoundingClientRect().bottom - rect.top - 8);
+      p.el.querySelectorAll(':scope > .pnote, :scope > .pbtns').forEach((b) => {
+        if (b.offsetParent && b.textContent.trim()) hBot = Math.max(hBot, rect.bottom - b.getBoundingClientRect().top - 8);
+      });
+      const maxCut = rect.height * 0.4;
+      hTop = Math.min(hTop, maxCut); hBot = Math.min(hBot, maxCut);
+    }
+    const freeK = rect.height > 0 ? rect.height / Math.max(1, rect.height - hTop - hBot) : 1;
+    const dH = hNeed / 2 / Math.tan(vfov / 2) * freeK;
     const dW = wNeed / 2 / Math.tan(vfov / 2) / aspect;
     p.gDist = Math.max(p.minDist, dH, dW) + size.z * 0.5;
     p.gCenter.y -= p.opts.labelRoom != null ? 0 : 0.15;
+    if (hTop || hBot) p.gCenter.y += (hTop - hBot) / 2 / rect.height * 2 * p.gDist * Math.tan(vfov / 2);
     if (instant) { p.dist = p.gDist; p.center.copy(p.gCenter); }
   };
 

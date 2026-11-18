@@ -16,6 +16,29 @@
     })();
   </script>
   <link rel="stylesheet" href="css/style.css">
+  <script>
+    /* Güvenli alan payları (çentik / dinamik ada). Paylar düşüldükten sonra kalan genişlik
+       dar yatay telefon düzenine iniyorsa html'e .narrow-l sınıfı eklenir. TUY_SA = {l,r,t,b} piksel. */
+    (function () {
+      var d = document.documentElement, p = null;
+      function upd() {
+        if (!p) {
+          p = document.createElement('div');
+          p.setAttribute('aria-hidden', 'true');
+          p.style.cssText = 'position:fixed;left:0;top:0;width:0;height:0;visibility:hidden;pointer-events:none;' +
+            'padding:var(--st) var(--sr) var(--sb) var(--sl)';
+          d.appendChild(p);
+        }
+        var s = getComputedStyle(p), n = function (v) { return parseFloat(v) || 0; };
+        var sa = window.TUY_SA = { l: n(s.paddingLeft), r: n(s.paddingRight), t: n(s.paddingTop), b: n(s.paddingBottom) };
+        d.classList.toggle('narrow-l', innerWidth > innerHeight && innerWidth - sa.l - sa.r <= 760);
+      }
+      window.TUY_SA_UPDATE = upd;
+      upd();
+      addEventListener('resize', upd);
+      addEventListener('orientationchange', function () { setTimeout(upd, 250); });
+    })();
+  </script>
 </head>
 <body>
   <!-- 3B laboratuvar -->

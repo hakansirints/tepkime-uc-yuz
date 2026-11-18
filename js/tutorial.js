@@ -139,7 +139,7 @@
     { stage: 4, title: 'Aşama 4 · Test ölçütleri', target: () => S4().critEl,
       text: 'Modelin bu <b>dört ölçüte</b> göre test edilir. Sistem doğru cevabı söylemez; hatanın hangi atomda ya da tanecikte olduğunu görünür kılar.' },
     { stage: 4, title: 'Modeli çalıştır', target: () => S4().runBtn,
-      text: '<b>▶ Modeli çalıştır ve test et</b> düğmesine bas ve canlandırmayı izle. Yok olan ya da yoktan ortaya çıkan bir atom olsaydı <b>kırmızı</b> görünürdü.',
+      text: '<b>▶ Modeli çalıştır ve test et</b> düğmesine bas ve canlandırmayı izle. Yok olan ya da yoktan ortaya çıkan bir atom olsaydı <b>kırmızı bir halkayla</b> işaretlenirdi.',
       check: () => !!S.data.done[4],
       auto: async () => { S4().run(); await until(() => !!S.data.done[4], 15000); } },
     { stage: 4, title: 'Sonucu oku', target: () => S4().countEl,
@@ -433,7 +433,10 @@
       if (st.target && cur() === st.stage) el = (() => { try { return st.target(); } catch (e) { return null; } })();
       let r = el && el.isConnected ? el.getBoundingClientRect() : null;
       if (r && (r.width < 2 || r.height < 2)) r = null;
-      const W = innerWidth, H = innerHeight, m = 12, top0 = 80;
+      // çentik / dinamik ada payları: kart ekranın güvenli bölgesinde kalsın
+      const sa = window.TUY_SA || { l: 0, r: 0, t: 0, b: 0 };
+      const m = 12, mL = m + sa.l, mR = m + sa.r, mB = m + sa.b, top0 = 80 + sa.t;
+      const W = innerWidth, H = innerHeight;
       const cw = card.offsetWidth, ch = card.offsetHeight;
       if (r) {
         const p = 6;
@@ -446,23 +449,23 @@
       if (!r) {
         x = (W - cw) / 2;
         // 'left': kabı kapatmamak için soldaki tepkime panelinin üzerine yerleş
-        if (st.at === 'left') { x = m + 8; y = top0 + 8; } else y = clamp((H - ch) / 2, top0, H - ch - m);
+        if (st.at === 'left') { x = mL + 8; y = top0 + 8; } else y = clamp((H - ch) / 2, top0, H - ch - mB);
       } else {
         const g = 18;
         const cands = [
-          [r.right + g, clamp(r.top, top0, H - ch - m)],
-          [r.left - g - cw, clamp(r.top, top0, H - ch - m)],
-          [clamp(r.left + r.width / 2 - cw / 2, m, W - cw - m), r.bottom + g],
-          [clamp(r.left + r.width / 2 - cw / 2, m, W - cw - m), r.top - g - ch]
+          [r.right + g, clamp(r.top, top0, H - ch - mB)],
+          [r.left - g - cw, clamp(r.top, top0, H - ch - mB)],
+          [clamp(r.left + r.width / 2 - cw / 2, mL, W - cw - mR), r.bottom + g],
+          [clamp(r.left + r.width / 2 - cw / 2, mL, W - cw - mR), r.top - g - ch]
         ];
-        const fits = ([cx, cy]) => cx >= m && cx + cw <= W - m && cy >= m && cy + ch <= H - m;
+        const fits = ([cx, cy]) => cx >= mL && cx + cw <= W - mR && cy >= m + sa.t && cy + ch <= H - mB;
         const sides = ['left', 'right', 'top', 'bottom']; // okun kartın hangi kenarında olacağı
         const bi = cands.findIndex(fits);
         let best = bi >= 0 ? cands[bi] : null;
         if (best) side = sides[bi];
         if (!best) {
           // hedef çok büyük: köşelerden hedefle en az örtüşeni seç
-          const corners = [[W - cw - m, H - ch - m], [m, H - ch - m], [W - cw - m, top0], [m, top0]];
+          const corners = [[W - cw - mR, H - ch - mB], [mL, H - ch - mB], [W - cw - mR, top0], [mL, top0]];
           const ov = ([cx, cy]) => Math.max(0, Math.min(cx + cw, r.right) - Math.max(cx, r.left)) * Math.max(0, Math.min(cy + ch, r.bottom) - Math.max(cy, r.top));
           best = corners.reduce((a, b) => (ov(b) < ov(a) ? b : a));
         }
