@@ -366,13 +366,15 @@
   };
 
   /* Beher derece çizgileri (beyaz emaye baskı) — alfa dokusu */
-  Tex.graduations = function (maxMl, stepMl, labelEvery, heightPerMl, totalH, title) {
+  /* maxMl: en üst çizgi, minMl: en alt çizgi, capMl: etiketteki tam hacim (başlık bunun üstüne yazılır) */
+  Tex.graduations = function (maxMl, stepMl, labelEvery, heightPerMl, totalH, title, minMl, capMl) {
     const W = 512, H = 1024, c = canvas(W, H), x = c.getContext('2d');
     x.clearRect(0, 0, W, H);
     x.fillStyle = '#fff'; x.strokeStyle = '#fff';
     const px = (y) => H - (y / totalH) * H;
     const cx = W * 0.5;
-    for (let ml = stepMl; ml <= maxMl; ml += stepMl) {
+    const titleMl = Math.min(capMl || maxMl, maxMl + labelEvery);
+    for (let ml = minMl || stepMl; ml <= maxMl; ml += stepMl) {
       const y = px(ml * heightPerMl);
       const major = ml % labelEvery === 0;
       x.lineWidth = major ? 7 : 5;
@@ -383,9 +385,11 @@
       }
     }
     x.font = 'bold 50px Segoe UI, Arial'; x.textAlign = 'center';
-    x.fillText(title, cx - 10, px(maxMl * heightPerMl) - 70);
+    // etiket: en üst çizginin üstünde, ağızdan taşmadan
+    const ty = Math.max(130, px(titleMl * heightPerMl) - 10);
+    x.fillText(title, cx - 10, ty - 50);
     x.font = '34px Segoe UI, Arial';
-    x.fillText('≈5%', cx - 10, px(maxMl * heightPerMl) - 24);
+    x.fillText('≈5%', cx - 10, ty - 6);
     // logo dairesi
     x.lineWidth = 5; x.beginPath(); x.arc(cx + 150, H - 120, 34, 0, 7); x.stroke();
     x.font = 'bold 26px Segoe UI'; x.fillText('LAB', cx + 150, H - 118);

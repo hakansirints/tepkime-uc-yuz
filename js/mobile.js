@@ -283,6 +283,15 @@
     setTimeout(() => { if (!document.querySelector('.m-typing-el')) html.classList.remove('m-typing'); }, 80);
   });
 
+  /* iOS Safari, 16 px'ten küçük yazı alanına dokununca sayfayı yakınlaştırır.
+     maximum-scale=1 bunu önler; iOS 10'dan beri iki parmakla yakınlaştırma yine çalışır.
+     Android'de iki parmak yakınlaştırmayı kapattığı için yalnızca iOS'ta eklenir. */
+  const isIOS = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  if (isIOS) {
+    const vp = document.querySelector('meta[name=viewport]');
+    if (vp && !/maximum-scale/.test(vp.content)) vp.content += ', maximum-scale=1';
+  }
+
   /* ---------- Aç / kapat ---------- */
   let mo = null;
   function apply() {

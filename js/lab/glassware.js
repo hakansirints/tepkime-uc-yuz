@@ -77,7 +77,11 @@
       this.hPerMl = 1e-6 / (Math.PI * this.Ri * this.Ri); // gerçek: m / mL
       const cap = this.capacity;
       const step = cap >= 500 ? 50 : cap >= 250 ? 25 : 10, label = cap >= 500 ? 100 : cap >= 250 ? 50 : 20;
-      const gt = Tex.graduations(this.capacity, step, label, this.hPerMl, this.H, this.capacity + ' mL');
+      // Gerçek Griffin beherlerinde çizgiler ağza kadar çıkmaz: tabanın hemen üstünden başlar,
+      // tam hacmin altında biter (600 mL → 100–500 mL, 250 mL → 50–200 mL). Tam hacim yalnızca etikette yazar.
+      const first = cap >= 500 ? 100 : cap >= 250 ? 50 : 20;
+      const top = Math.floor((cap * 0.85) / label) * label;
+      const gt = Tex.graduations(top, step, label, this.hPerMl, this.H, this.capacity + ' mL', first, cap);
       const grad = new THREE.Mesh(new THREE.CylinderGeometry(R + 0.0003, R + 0.0003, H, 40, 1, true, -0.55, 1.1),
         new THREE.MeshStandardMaterial({ color: 0xffffff, alphaMap: gt, transparent: true, depthWrite: false, roughness: 0.55 }));
       grad.position.y = H / 2; grad.renderOrder = 12;
