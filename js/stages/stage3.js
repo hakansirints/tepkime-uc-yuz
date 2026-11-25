@@ -13,8 +13,9 @@
       this.tasks = r.track;
       this.ti = 0;
       this.results = [];
+      const REGC = { 1: 'before', 2: 'mid', 3: 'after' }; // numara rengi 2. aşamayla aynı
       const mk = (title, n, note, aq) => h('div.mpanel' + (aq ? '.aq' : ''), null,
-        h('div.ptitle', null, h('span.n', { text: n }), title), h('div.pempty'));
+        h('div.ptitle', null, h('span.n.r-' + REGC[n], { text: n }), title), h('div.pempty'));
       this.pBefore = mk('Önce', '1', 'İzlenecek atomu içeren taneciğe dokun.', true);
       this.pMid = mk('Atom hareket ederken', '2', 'Sarı halkalı atomu izle.', false);
       this.pAfter = mk('Sonra', '3', 'Aynı atom şimdi hangi tanecikte? Dokun.', true);
@@ -97,7 +98,7 @@
       // görev şeridi: o anki adım ve çalışılacak panel
       const st = [this.ti + 1, this.tasks.length];
       const T4 = [
-        { target: this.pBefore, text: `${cap(t.name)} atomunu içeren taneciğe dokun`, hint: '<b>① Önce</b> panelinde. Atom renklerini sağdaki renk anahtarından bulabilirsin.' },
+        { target: this.pBefore, text: `${cap(t.name)} atomunu içeren taneciğe dokun`, hint: '<b><span class="sn r-before">1</span>Önce</b> panelinde. Atom renklerini sağdaki renk anahtarından bulabilirsin.' },
         { target: this.pMid, text: 'İşaretli atomu gözünle takip et', hint: '<b>▶ Oynat</b> düğmesine bas ve sarı halkalı atomun nereye gittiğini izle.' },
         { target: this.pAfter, text: 'Atom şimdi hangi tanecikte? Ona dokun', hint: 'Gerekirse ortadaki kaydırıcıyla animasyonu ileri geri sar.' },
         { target: this.side, text: 'Doğru! Devam et', hint: 'Sağdaki düğmeyle ' + (this.ti + 1 < this.tasks.length ? 'sıradaki atoma geç.' : 'aşamayı tamamla.') }
@@ -149,7 +150,7 @@
               h('div', { style: { display: 'flex', gap: '6px', marginTop: '6px', flexWrap: 'wrap' } },
                 h('button.btn.sm', { text: '← Modelini düzelt', onclick: () => T.App.go(2) }),
                 h('button.btn.sm.primary', { text: 'Devam et', onclick: () => this.finishTask(false) })));
-          } else this.fb('info', 'Şimdi sen bul', 'Animasyonu istediğin kadar tekrar izleyebilir ya da kaydırıcıyla ileri geri sarabilirsin. Sonra <b>Sonra</b> panelinde atomun bulunduğu taneciğe dokun.');
+          } else this.fb('info', 'Şimdi sen bul', 'Animasyonu istediğin kadar tekrar izleyebilir ya da kaydırıcıyla ileri geri sarabilirsin. Sonra <b><span class="sn r-after">3</span>Sonra</b> panelinde atomun bulunduğu taneciğe dokun.');
         }
       });
     },

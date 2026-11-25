@@ -68,9 +68,9 @@
 
     /* ===== AŞAMA 2 — MODELLE ===== */
     { stage: 2, title: 'Aşama 2 · Modelini kur', target: () => $('.grid-build'),
-      text: 'Bu aşamada tepkimenin <b>tanecik modelini</b> sen kuruyorsun:<br>• <b>Solda</b> tanecik havuzu,<br>• <b>Ortada</b> üç bölüm: ① tepkime öncesi, ② etkileşirken, ③ tepkime sonrası,<br>• <b>Sağda</b> korunma kontrolü ve atom sayacı.' },
+      text: 'Bu aşamada tepkimenin <b>tanecik modelini</b> sen kuruyorsun:<br>• <b>Solda</b> tanecik havuzu,<br>• <b>Ortada</b> üç bölüm: <span class="sn r-before">1</span>tepkime öncesi, <span class="sn r-mid">2</span>etkileşirken, <span class="sn r-after">3</span>tepkime sonrası,<br>• <b>Sağda</b> korunma kontrolü ve atom sayacı.' },
     { stage: 2, title: 'Hangi bölüme ekleyeceksin?', target: () => S2().builder && S2().builder.switchEl,
-      text: '<b>① Öncesine</b> seçiliyken tıkladığın kartlar “Tepkime öncesi” bölümüne eklenir. <b>③ Sonrasına</b> seçiliyse “Tepkime sonrası” bölümüne.' },
+      text: '<b><span class="sn r-before">1</span>Öncesine</b> seçiliyken tıkladığın kartlar “Tepkime öncesi” bölümüne eklenir. <b><span class="sn r-after">3</span>Sonrasına</b> seçiliyse “Tepkime sonrası” bölümüne.' },
     { stage: 2, title: 'Tepkime öncesini kur', target: () => S2().builder && S2().builder.gridEl,
       text: `Kaplarda gümüş nitrat ve sodyum klorür <b>çözeltileri</b> vardı. Suda çözünen tuzlar suda <b>iyonlarına ayrılır</b>.
         <br><br>Havuzda şu kartlara <b>birer kez</b> tıkla: <b>Ag⁺</b>, <b>NO₃⁻</b>, <b>Na⁺</b>, <b>Cl⁻</b>.
@@ -80,7 +80,7 @@
     { stage: 2, title: 'Takılırsan: destek düğmeleri', target: () => S2().builder && S2().builder.hintEl,
       text: 'Ne koyacağından emin değilsen <b>💡 Destek</b> düğmelerini sırayla kullan. Her düğme biraz daha fazla ipucu verir. Önce kendin düşünmeyi dene!' },
     { stage: 2, title: 'Şimdi tepkime sonrası', target: () => S2().builder && S2().builder.switchEl,
-      text: '<b>③ Sonrasına</b> düğmesine bas.',
+      text: '<b><span class="sn r-after">3</span>Sonrasına</b> düğmesine bas.',
       check: () => S2().builder && S2().builder.target === 'after',
       auto: async () => { S2().builder.setTarget('after'); } },
     { stage: 2, title: 'Tepkime sonrasını kur', target: () => S2().builder && S2().builder.gridEl,
@@ -113,7 +113,7 @@
       check: () => S3().ti > 0 || S3().step >= 3,
       auto: async () => { S3().play(); await until(() => S3().step >= 3, 15000); } },
     { stage: 3, title: 'Atom şimdi nerede?', target: () => S3().pAfter,
-      text: '<b>Sonra</b> panelinde gümüş atomunun bulunduğu taneciğe dokun. İpucu: beyaz katının içinde.',
+      text: '<b><span class="sn r-after">3</span>Sonra</b> panelinde gümüş atomunun bulunduğu taneciğe dokun. İpucu: beyaz katının içinde.',
       check: () => S3().ti > 0 || S3().step >= 4,
       auto: async () => { const st = S3(); const i = st.mapInfo.afterIndex; const g = st.aGroups.find((x) => x.userData.index === i) || st.aGroups[i]; st.pickAfter({ group: g }); } },
     { stage: 3, title: 'İkinci görev: sodyum iyonu', target: () => S3().side,
@@ -121,7 +121,7 @@
       check: () => S3().ti > 0 || !!S.data.done[3],
       auto: async () => { S3().finishTask(true); } },
     { stage: 3, title: 'Sodyumu sen izle', target: () => S3().side,
-      text: 'Aynı üç adımı <b>sodyum (Na)</b> için yap: Önce panelinde <b>Na⁺</b>’ya dokun → <b>▶ Oynat</b> → Sonra panelinde sodyumu bul.<br><br>Sodyum iyonu tepkimede <b>hiç değişmez</b>; çözeltide serbest kalır.',
+      text: 'Aynı üç adımı <b>sodyum (Na)</b> için yap: <span class="sn r-before">1</span>Önce panelinde <b>Na⁺</b>’ya dokun → <b>▶ Oynat</b> → <span class="sn r-after">3</span>Sonra panelinde sodyumu bul.<br><br>Sodyum iyonu tepkimede <b>hiç değişmez</b>; çözeltide serbest kalır.',
       check: () => !!S.data.done[3],
       auto: async () => {
         const st = S3();
@@ -172,7 +172,7 @@
       text: 'Burada <b>üç görev</b> var. Her görevde iki gösterim verilir, <b>eksik olan üçüncüsünü</b> sen üretirsin. Görevler farklı tepkimelerle gelir.<br><span class="muted">Öğreticideki görevler gerçek etkinliktekilerden farklıdır.</span>' },
     { stage: 6, title: 'Görev 1 · Tanecik modelini kur', target: () => S6().area,
       text: `Kalsiyum klorür + gümüş nitrat: deneyin sonucu ve denklem verildi; <b>öncesi</b> hazır. Denklemde <b>2 AgCl(k)</b> var, demek ki iki tane AgCl kristali oluşur.
-        <br><br><b>③ Tepkime sonrası</b> bölümüne <b>2 × AgCl(k)</b>, <b>1 × Ca²⁺</b>, <b>2 × NO₃⁻</b> ekle ve <b>✓ Modelimi kontrol et</b>’e bas.`,
+        <br><br><b><span class="sn r-after">3</span>Tepkime sonrası</b> bölümüne <b>2 × AgCl(k)</b>, <b>1 × Ca²⁺</b>, <b>2 × NO₃⁻</b> ekle ve <b>✓ Modelimi kontrol et</b>’e bas.`,
       check: () => S.data.tasks6.micro && S.data.tasks6.micro.ok,
       auto: async () => {
         if (S6().idx !== 0) { S6().show(0); await wait(300); }
@@ -220,7 +220,7 @@
     { stage: 7, title: 'Hataları bul ve düzelt', target: () => S7().builder && S7().builder.regionsEl,
       text: `“Sulu iyonlar ayrı” ölçütü ✗. Arkadaşın <b>NaCl(k)</b> ve <b>NaNO₃(k)</b>’yı katı kristal olarak koymuş. Ama bu tuzlar <b>suda çözünür</b>, iyonlarına ayrılır.
         <br><br>• Öncesinde: NaCl(k)’ye tıklayıp çıkar, havuzdan <b>Na⁺</b> ve <b>Cl⁻</b> ekle.<br>• Sonrasında: NaNO₃(k)’yi çıkar, <b>Na⁺</b> ve <b>NO₃⁻</b> ekle.
-        <br><span class="muted">Hangi bölüme ekleyeceğini havuzdaki ① / ③ düğmeleriyle seç.</span>`,
+        <br><span class="muted">Hangi bölüme ekleyeceğini havuzdaki <span class="sn r-before">1</span>/ <span class="sn r-after">3</span>düğmeleriyle seç.</span>`,
       check: () => S7().builder && T.Eval.checkModel(S7().builder.model, { before: R().before, after: R().after }).pass,
       auto: async () => { const b = S7().builder; setMS(b.model.before, R().before); setMS(b.model.after, R().after); b.refresh(); b.o.onChange(b.model); } },
     { stage: 7, title: 'Düzelttiğin modeli test et', target: () => S7().builder && byText('button', /çalıştır/, S7().builder.rightSlot),

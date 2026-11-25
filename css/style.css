@@ -499,11 +499,13 @@ html.lab-busy #lab-dock .dock-hint { display: none; }
   font-size: 12px; font-weight: 800; line-height: 1; color: #fff; font-variant-numeric: tabular-nums;
   background: linear-gradient(160deg, color-mix(in srgb, var(--rc) 78%, #fff), var(--rc));
   box-shadow: 0 2px 6px color-mix(in srgb, var(--rc) 40%, transparent), inset 0 1px 0 rgba(255,255,255,.35); }
-.mpanel[data-region="before"] .n, .sn.r-before { --rc: var(--r-before); }
-.mpanel[data-region="mid"] .n { --rc: var(--r-mid); }
-.mpanel[data-region="after"] .n, .sn.r-after { --rc: var(--r-after); }
-.sn { width: 18px; height: 18px; font-size: 10.5px; margin-right: 5px; vertical-align: -3px; }
-#ws-task .wt-hint .sn { width: 16px; height: 16px; font-size: 9.5px; margin: 0 3px 0 1px; }
+.mpanel[data-region="before"] .n, .r-before { --rc: var(--r-before); }
+.mpanel[data-region="mid"] .n, .r-mid { --rc: var(--r-mid); }
+.mpanel[data-region="after"] .n, .r-after { --rc: var(--r-after); }
+/* metin içindeki küçük rozet: yazının orta çizgisine hizalı */
+.sn { width: 1.35em; height: 1.35em; font-size: .78em; margin: 0 .35em 0 .1em; vertical-align: middle; position: relative; top: -.08em; }
+/* hedef düğmeleri: rozet yazının ortasına hizalı (düğme dar ekranda "…" ile kısalabilsin diye blok kalır) */
+.target-switch button .sn { width: 18px; height: 18px; font-size: 10.5px; margin: 0 6px 0 0; top: -1px; }
 .target-switch button:not(.on) .sn { opacity: .75; }
 .mpanel .ptitle .tag { margin-left: auto; font-size: 11px; font-weight: 600; color: var(--muted); }
 .mpanel .pnote { position: absolute; left: 12px; right: 12px; bottom: 9px; font-size: 12px; color: var(--muted); z-index: 1; pointer-events: none; line-height: 1.35; }
