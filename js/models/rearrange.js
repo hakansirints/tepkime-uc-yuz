@@ -99,6 +99,8 @@
       const pts = this.actors.map((a) => a.p0 || a.p1).concat(this.actors.map((a) => a.p1 || a.p0));
       const box = new THREE.Box3().setFromPoints(pts);
       box.expandByScalar(0.9);
+      // kristallerin soluk kafes iyonları da kadraja girsin (yoksa kenardan kesik görünür)
+      box.union(new THREE.Box3().setFromObject(this.group));
       return box;
     }
     track(spec) {

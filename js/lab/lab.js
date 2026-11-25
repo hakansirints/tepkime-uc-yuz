@@ -23,9 +23,8 @@
   Lab.init = async function (canvas, progress) {
     const say = (p) => progress && progress(p);
     const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
-    // dokunmatik telefonda üst sınır 1,5 (antialias açıkken 2 ile farkı görünmez); döngü yük altında oranı uyarlar
-    const coarse = window.matchMedia && matchMedia('(pointer: coarse)').matches;
-    Lab.prMax = Math.min(window.devicePixelRatio || 1, coarse ? 1.5 : 2);
+    // üst sınır 2 (telefonda 1,5 uzaktaki ince çizgileri bulanıklaştırıyordu); döngü yük altında oranı uyarlar
+    Lab.prMax = Math.min(window.devicePixelRatio || 1, 2);
     Lab.prMin = Lab.prMax > 1 ? 1 : Math.max(0.8, Lab.prMax * 0.85);
     Lab.pr = Lab.prMax;
     renderer.setPixelRatio(Lab.pr);
@@ -142,6 +141,10 @@
     Lab._makeTags();
     if (window.ResizeObserver) new ResizeObserver(Lab.resize).observe(canvas);
     else window.addEventListener('resize', Lab.resize);
+    // iOS/WebKit döndürmede ve adres çubuğu kayınca ölçüyü geç günceller: biraz bekleyip yeniden ölç
+    const later = () => { Lab.resize(); setTimeout(Lab.resize, 250); setTimeout(Lab.resize, 700); };
+    window.addEventListener('orientationchange', later);
+    if (window.visualViewport) window.visualViewport.addEventListener('resize', later);
     Lab.resize();
 
     // İlk derleme
@@ -157,6 +160,7 @@
     // Dönüş sırasında da kamera ve çizim alanı tuvalin ekrandaki ölçülerini kullanır.
     const { clientWidth: w, clientHeight: h } = Lab.renderer.domElement;
     if (!w || !h) return;
+    Lab._cw = w; Lab._ch = h;
     Lab.renderer.setSize(w, h, false);
     Lab.camera.aspect = w / h;
     Lab.camera.updateProjectionMatrix();
@@ -641,6 +645,11 @@
       requestAnimationFrame(loop);
       const dt = Math.min(0.05, clock.getDelta());
       frame++;
+      // güvenlik ağı: tarayıcı boyut değişimini haber vermese de tuval ölçüsü değiştiyse yeniden ayarla
+      if (frame % 10 === 0) {
+        const el = Lab.renderer.domElement;
+        if (el.clientWidth && (el.clientWidth !== Lab._cw || el.clientHeight !== Lab._ch)) Lab.resize();
+      }
       // başka aşamadayken laboratuvar çalışma kartının arkasında kalır: canlı bir şey yoksa hiç çizme
       if (Lab.paused) {
         const live = Lab._active();

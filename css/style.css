@@ -133,7 +133,8 @@ sub, sup { line-height: 0; }
 ::selection { background: var(--accent-soft); }
 * { scrollbar-width: thin; scrollbar-color: var(--line-strong) transparent; }
 
-#lab-canvas { position: fixed; inset: 0; width: 100vw; height: 100vh; display: block; touch-action: none; }
+/* 100vw/100vh yerine %100: iOS'ta döndürünce vh eski değerde kalıp sahneyi geriyordu */
+#lab-canvas { position: fixed; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; }
 /* Odak modu: alan derinliği taklidi. Ortası şeffaf bir maske, yalnızca kenarlardaki odayı bulanıklaştırıp
    hafifçe soldurur. Kapalıyken görünmez (visibility) — boşta bulanıklık maliyeti yok. */
 #focus-veil { position: fixed; inset: 0; z-index: 2; pointer-events: none; opacity: 0; visibility: hidden;
@@ -144,7 +145,7 @@ sub, sup { line-height: 0; }
   transition: opacity .8s var(--ease), visibility 0s linear .8s; }
 body.lab-focus #focus-veil { opacity: 1; visibility: visible; transition: opacity .8s var(--ease), visibility 0s; }
 @media (prefers-reduced-motion: reduce) { #focus-veil { transition: none; } }
-#model-canvas { position: fixed; inset: 0; width: 100vw; height: 100vh; pointer-events: none; z-index: 45; }
+#model-canvas { position: fixed; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 45; }
 
 /* ---------- Cam yüzey (ortak) ---------- */
 .glass-panel, #topbar, #ws-card, .modal-card, #toast {

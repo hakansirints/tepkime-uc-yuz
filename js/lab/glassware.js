@@ -50,7 +50,7 @@
       const shell = P.glassShell(geo, { env: 1.6 });
       this.group.add(shell);
       // ağız kenarı (kalınlık hissi)
-      const tg = new THREE.TorusGeometry(R + 0.0004, 0.00165, 10, 72);
+      const tg = new THREE.TorusGeometry(R + 0.0004, 0.0021, 10, 72); // biraz kalın: uzaktan tırtıklı görünmesin
       tg.rotateX(Math.PI / 2);
       tg.translate(0, H, 0);
       deformSpout(tg, H + 0.004, this.spoutAngle, R * 0.17);

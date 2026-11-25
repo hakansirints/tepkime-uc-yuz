@@ -21,8 +21,12 @@
     window.addEventListener('resize', () => Viewer.resize());
     Viewer._loop();
   };
+  // Tuvalin ekrandaki ölçüsü kullanılır (iOS döndürmede innerWidth/innerHeight geç güncellenir)
   Viewer.resize = function () {
-    Viewer.renderer.setSize(window.innerWidth, window.innerHeight, false);
+    const el = Viewer.renderer.domElement;
+    const w = el.clientWidth || window.innerWidth, h = el.clientHeight || window.innerHeight;
+    Viewer._cw = w; Viewer._ch = h;
+    Viewer.renderer.setSize(w, h, false);
   };
 
   /** Panel oluştur. opts: {onPick(obj, hit), onHover, rotate:true, fitPad, autoRotate} */
@@ -282,7 +286,9 @@
       }
       if (r.domElement.style.display === 'none') return;
       Viewer._drawn = true;
-      const H = window.innerHeight;
+      const cv = r.domElement;
+      if (cv.clientWidth && (cv.clientWidth !== Viewer._cw || cv.clientHeight !== Viewer._ch)) Viewer.resize();
+      const H = Viewer._ch;
       r.setScissorTest(false);
       r.clear();
       r.setScissorTest(true);

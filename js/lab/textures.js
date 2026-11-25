@@ -368,23 +368,25 @@
   /* Beher derece çizgileri (beyaz emaye baskı) — alfa dokusu */
   /* maxMl: en üst çizgi, minMl: en alt çizgi, capMl: etiketteki tam hacim (başlık bunun üstüne yazılır) */
   Tex.graduations = function (maxMl, stepMl, labelEvery, heightPerMl, totalH, title, minMl, capMl) {
-    const W = 512, H = 1024, c = canvas(W, H), x = c.getContext('2d');
+    // 2 kat çözünürlük: uzaktan bakınca ince çizgi ve yazılar daha net kalır (çizim mantığı 512 × 1024 birimde)
+    const W = 512, H = 1024, c = canvas(W * 2, H * 2), x = c.getContext('2d');
+    x.scale(2, 2);
     x.clearRect(0, 0, W, H);
-    x.fillStyle = '#fff'; x.strokeStyle = '#fff';
+    x.fillStyle = '#fff'; x.strokeStyle = '#fff'; x.lineCap = 'round';
     const px = (y) => H - (y / totalH) * H;
     const cx = W * 0.5;
     const titleMl = Math.min(capMl || maxMl, maxMl + labelEvery);
     for (let ml = minMl || stepMl; ml <= maxMl; ml += stepMl) {
       const y = px(ml * heightPerMl);
       const major = ml % labelEvery === 0;
-      x.lineWidth = major ? 7 : 5;
+      x.lineWidth = major ? 9 : 6;
       x.beginPath(); x.moveTo(cx - (major ? 70 : 40), y); x.lineTo(cx + (major ? 0 : -10), y); x.stroke();
       if (major) {
-        x.font = 'bold 46px Segoe UI, Arial'; x.textAlign = 'left'; x.textBaseline = 'middle';
+        x.font = 'bold 52px Segoe UI, Arial'; x.textAlign = 'left'; x.textBaseline = 'middle';
         x.fillText(String(ml), cx + 14, y);
       }
     }
-    x.font = 'bold 50px Segoe UI, Arial'; x.textAlign = 'center';
+    x.font = 'bold 54px Segoe UI, Arial'; x.textAlign = 'center';
     // etiket: en üst çizginin üstünde, ağızdan taşmadan
     const ty = Math.max(130, px(titleMl * heightPerMl) - 10);
     x.fillText(title, cx - 10, ty - 50);

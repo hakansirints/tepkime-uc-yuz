@@ -32,12 +32,22 @@
       this.side.appendChild(this.fbEl);
       this.side.appendChild(this.countEl);
       this.renderCriteria(null);
+      this.showStart();
       T.App.task({ target: this.side, text: 'Modelini çalıştır ve test et', hint: 'Sağdaki <b>▶ Modeli çalıştır</b> düğmesine bas; sonra hangi ölçütlerin geçtiğine bak.' });
       if (S.data.done[4]) {
         this.fbEl.appendChild(h('div.feedback.ok', { html: '<b>Bu aşamayı tamamladın</b>Modelin daha önce doğrulandı. İstersen yeniden çalıştırabilirsin.' }));
         this.fbEl.appendChild(this.nextButton());
       }
       void r;
+    },
+    /* Açılışta modelin başlangıç hâlini (tepkime öncesi) göster; canlandırma düğmeyle başlar */
+    showStart() {
+      const m = S.data.model;
+      if (!m || !Object.keys(m.before || {}).length) return;
+      if (this.rearr) this.rearr.dispose();
+      this.rearr = new T.Rearranger(this.panel, m.before, m.after || {}, { duration: 6 });
+      this.panel.fit(true, this.rearr.fitBoth());
+      this.panelEl.querySelector('.pempty').textContent = '';
     },
     renderCriteria(res) {
       const labels = ['Atom türleri korunuyor.', 'Atom sayıları korunuyor.', 'Sulu iyonlar ayrı, katı çökeltiler kristal olarak gösteriliyor.', 'Kimyasal türler ve tanecik sayıları tepkimeye uygun.'];
