@@ -13,6 +13,15 @@
       try { t = localStorage.getItem('tuy-tema'); } catch (e) { /* yok */ }
       if (t !== 'light' && t !== 'dark') t = window.matchMedia && matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
       document.documentElement.setAttribute('data-theme', t);
+      /* iPhone/iPad: 16 px'ten küçük yazı alanına dokununca sayfa kendiliğinden yakınlaşır ve geri dönmez.
+         maximum-scale=1 bunu önler; iOS'ta iki parmakla yakınlaştırma yine çalışır. İlk çizimden önce uygulanmalı.
+         Android'de iki parmak yakınlaştırmayı kapattığı için yalnızca iOS'ta eklenir. */
+      var ios = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+      if (ios) {
+        document.documentElement.classList.add('ios');
+        var vp = document.querySelector('meta[name=viewport]');
+        if (vp) vp.setAttribute('content', 'width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover');
+      }
     })();
   </script>
   <link rel="stylesheet" href="css/style.css">

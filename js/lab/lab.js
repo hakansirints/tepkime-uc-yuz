@@ -17,7 +17,7 @@
   const VIEWS = {
     bench: { target: new THREE.Vector3(0.02, 1.0, 0.14), radius: 1.05, phi: 1.17, theta: 0.0 },
     close: { target: new THREE.Vector3(-0.08, 1.005, 0.18), radius: 0.75, phi: 1.19, theta: 0.04 },
-    room: { target: new THREE.Vector3(0.0, 1.25, 0.0), radius: 3.7, phi: 1.28, theta: 0.32 }
+    room: { target: new THREE.Vector3(0.0, 0.98, 0.12), radius: 1.6, phi: 1.0, theta: 0.3 } // bütün masa
   };
 
   Lab.init = async function (canvas, progress) {
@@ -41,7 +41,7 @@
     say(15);
 
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0xd8dedd);
+    scene.background = makeBackdrop();
     // Odak modu sisi: baştan sahnede (yoğunluk 0) — sonradan eklemek tüm gölgelendiricileri yeniden derletir
     scene.fog = new THREE.FogExp2(0xa9b1ba, 0);
     Lab.scene = scene;
@@ -54,16 +54,18 @@
 
     // Işıklar
     // ortam ışığı biraz kısık: masadaki gölgeler yıkanıp kaybolmasın
-    const hemi = new THREE.HemisphereLight(0xf2f6ff, 0x8b8577, 0.5);
+    // oda tavan lambaları kalktı: ortam ışığı onların payını alır
+    const hemi = new THREE.HemisphereLight(0xf2f6ff, 0x8b8577, 0.72);
     scene.add(hemi);
     // pencere ışığı nötr ve biraz kısık: masadaki belirgin gölgeyi tavan lambası verir
     const sun = new THREE.DirectionalLight(0xfff6ec, 1.75);
     sun.position.set(-4.2, 3.6, 1.2);
     sun.target.position.set(0, BY(), 0);
     sun.castShadow = true;
-    sun.shadow.mapSize.set(2048, 2048);
+    // gölge yalnızca masayı kapsar: küçük harita aynı (hatta daha yüksek) netlik verir
+    sun.shadow.mapSize.set(1024, 1024);
     const sc = sun.shadow.camera;
-    sc.left = -2.2; sc.right = 2.2; sc.top = 2.0; sc.bottom = -2.0; sc.near = 1; sc.far = 12;
+    sc.left = -1.1; sc.right = 1.1; sc.top = 1.0; sc.bottom = -1.0; sc.near = 1; sc.far = 9;
     sun.shadow.bias = -0.0004; sun.shadow.normalBias = 0.02; sun.shadow.radius = 4;
     scene.add(sun, sun.target);
     // deney masasının üstünde tavan lambası: gün ışığına yakın nötr beyaz (≈5500 K, çözelti renklerini
@@ -79,9 +81,6 @@
     const fill = new THREE.PointLight(0xffffff, 3, 8, 2);
     fill.position.set(1.5, 2.6, 2.4);
     scene.add(fill);
-    [[-2.4, -2.2], [2.4, -2.2], [-2.4, 2.8], [2.4, 2.8]].forEach(([x, z]) => {
-      const p = new THREE.PointLight(0xf4f7ff, 3.2, 7, 2); p.position.set(x, 2.85, z); scene.add(p);
-    });
     say(40);
     await tick();
 
@@ -131,7 +130,9 @@
 
     // Kamera
     Lab.controls = new T.OrbitLite(camera, canvas);
-    Lab.controls.limits = { thetaMin: -1.31, thetaMax: 1.31, phiMin: 0.5, phiMax: 1.47, rMin: 0.28, rMax: 4.0 };
+    // yalnızca masa: önden ±40° dönme, 15–55° arası eğik bakış, masanın içinde kaydırma
+    Lab.controls.limits = { thetaMin: -0.7, thetaMax: 0.7, phiMin: 0.61, phiMax: 1.31, rMin: 0.3, rMax: 1.7,
+      xMin: -0.55, xMax: 0.55, zMin: -0.12, zMax: 0.42 };
     Lab.DEFAULT_LIMITS = Object.assign({}, Lab.controls.limits);
     Lab.controls.setView(VIEWS.bench, true);
     Lab.viewName = 'bench';
@@ -155,6 +156,22 @@
     return Lab;
   };
   function tick() { return new Promise((r) => setTimeout(r, 16)); }
+
+  /* Masanın arkasında yumuşak, odaksız bir laboratuvar havası: tek küçük doku (oda modeli yerine) */
+  function makeBackdrop() {
+    const c = document.createElement('canvas');
+    c.width = 64; c.height = 256;
+    const x = c.getContext('2d');
+    const g = x.createLinearGradient(0, 0, 0, 256);
+    g.addColorStop(0, '#eef2f1');
+    g.addColorStop(0.45, '#d9e0df');
+    g.addColorStop(0.62, '#bcc6c6');
+    g.addColorStop(1, '#8e9a9d');
+    x.fillStyle = g; x.fillRect(0, 0, 64, 256);
+    const t = new THREE.CanvasTexture(c);
+    t.colorSpace = THREE.SRGBColorSpace;
+    return t;
+  }
 
   Lab.resize = function () {
     // Dönüş sırasında da kamera ve çizim alanı tuvalin ekrandaki ölçülerini kullanır.

@@ -274,22 +274,52 @@
       if (t.id === 'rp-search' || t.closest('#reaction-panel')) return;
       html.classList.add('m-typing');
       t.classList.add('m-typing-el');
-      setTimeout(() => { try { t.scrollIntoView({ block: 'center' }); } catch (_) { /* */ } }, 250);
+      fitVisual();
+      setTimeout(() => { fitVisual(); keepCaret(t); }, 300);
     }
   });
   document.addEventListener('focusout', (e) => {
     const t = e.target;
     if (t && t.classList) t.classList.remove('m-typing-el');
-    setTimeout(() => { if (!document.querySelector('.m-typing-el')) html.classList.remove('m-typing'); }, 80);
+    setTimeout(() => {
+      if (document.querySelector('.m-typing-el')) return;
+      html.classList.remove('m-typing');
+      resetZoom();
+    }, 80);
   });
 
-  /* iOS Safari, 16 px'ten küçük yazı alanına dokununca sayfayı yakınlaştırır.
-     maximum-scale=1 bunu önler; iOS 10'dan beri iki parmakla yakınlaştırma yine çalışır.
-     Android'de iki parmak yakınlaştırmayı kapattığı için yalnızca iOS'ta eklenir. */
-  const isIOS = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-  if (isIOS) {
+  /* Klavye açılınca telefonun gördüğü alan (visual viewport) küçülür ve kayar; sabit konumlu
+     yazma alanı bu alana oturtulur. Yoksa imleç ekranın üstünde, görünmeyen yerde kalıyordu. */
+  const VV = window.visualViewport;
+  function fitVisual() {
+    if (!VV || !html.classList.contains('m-typing')) return;
+    html.style.setProperty('--vvt', Math.round(VV.offsetTop) + 'px');
+    html.style.setProperty('--vvh', Math.round(VV.height) + 'px');
+  }
+  function keepCaret(t) {
+    // yazı alanının içinde imlecin olduğu satır görünür kalsın
+    try {
+      t.scrollIntoView({ block: 'nearest' });
+      if (t.selectionStart === t.value.length) t.scrollTop = t.scrollHeight;
+    } catch (_) { /* */ }
+  }
+  if (VV) {
+    const onVV = () => { fitVisual(); const t = document.querySelector('.m-typing-el'); if (t) keepCaret(t); };
+    VV.addEventListener('resize', onVV);
+    VV.addEventListener('scroll', onVV);
+  }
+  document.addEventListener('input', (e) => { if (e.target && e.target.classList && e.target.classList.contains('m-typing-el')) keepCaret(e.target); });
+
+  /* iOS yine de yakınlaştırdıysa: görünüm ayarını yeniden yazmak yakınlığı sıfırlar */
+  function resetZoom() {
+    html.style.removeProperty('--vvt');
+    html.style.removeProperty('--vvh');
+    if (!html.classList.contains('ios')) return;
     const vp = document.querySelector('meta[name=viewport]');
-    if (vp && !/maximum-scale/.test(vp.content)) vp.content += ', maximum-scale=1';
+    if (!vp) return;
+    const c = vp.getAttribute('content');
+    vp.setAttribute('content', c + ', ');
+    setTimeout(() => vp.setAttribute('content', c), 30);
   }
 
   /* ---------- Aç / kapat ---------- */

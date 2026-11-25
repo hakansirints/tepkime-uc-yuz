@@ -1240,3 +1240,6 @@ html.phone-l.m-typing #topbar, html.phone-l.m-typing #m-rail, html.phone-l.m-typ
 html.phone-l.m-typing #workspace { padding: calc(4px + var(--st)) calc(4px + var(--sr)) 4px calc(4px + var(--sl)); }
 html.phone-l.m-typing #notebook { top: calc(4px + var(--st)); bottom: 4px; left: calc(4px + var(--sl)); right: calc(4px + var(--sr)); width: auto; z-index: 70; }
 html.phone-l.m-typing textarea.m-typing-el { min-height: 120px; }
+/* klavye açıkken defter, telefonun gerçekten gösterdiği alana (visual viewport) oturur */
+html.phone-l.m-typing[style*="--vvh"] #notebook { top: calc(var(--vvt) + 4px); bottom: auto; height: calc(var(--vvh) - 8px); max-height: none; }
+html.phone-l.m-typing[style*="--vvh"] textarea.m-typing-el { min-height: 64px; max-height: calc(var(--vvh) * .45); }
