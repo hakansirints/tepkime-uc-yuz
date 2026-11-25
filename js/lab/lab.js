@@ -137,6 +137,13 @@
     Lab.controls.setView(VIEWS.bench, true);
     Lab.viewName = 'bench';
     Lab.controls.blockers.push((e) => Lab._pointerDown(e));
+    // aşama değişince kamera kaplara yeniden odaklanır; aradaki sürede kullanıcının kamerasına dokunulmaz
+    Lab.on('state', (s) => {
+      document.documentElement.classList.toggle('lab-busy', s === 'pouring' || s === 'reacting');
+      if (s !== 'idle' && Lab.ready) Lab.autoView(s);
+    });
+    const camBtn = document.getElementById('btn-cam-reset');
+    if (camBtn) camBtn.addEventListener('click', () => { if (Lab.reaction) Lab.autoView(); else Lab.setView('bench'); });
 
     Lab._bindPointer(canvas);
     Lab._makeTags();
@@ -179,15 +186,107 @@
     if (!w || !h) return;
     Lab._cw = w; Lab._ch = h;
     Lab.renderer.setSize(w, h, false);
-    Lab.camera.aspect = w / h;
-    Lab.camera.updateProjectionMatrix();
+    Lab._fr = Lab.freeRect();
+    Lab._updateOffset(0, true);
     Lab.invalidate();
     // setSize tuvali temizler: boş kare görünmesin diye hemen yeniden çiz
     if (Lab.ready) Lab.renderer.render(Lab.scene, Lab.camera);
   };
 
   Lab.setView = function (name) {
-    if (VIEWS[name]) { Lab.controls.setView(VIEWS[name]); Lab.viewName = name; }
+    // 'close': deneyin aşamasına göre kapları ekrana sığdıran görünüm
+    if (name === 'close' && Lab.reaction) { Lab.autoView(); Lab.viewName = 'close'; return; }
+    if (VIEWS[name]) {
+      Lab.controls.focus = null;
+      Lab.controls.setView(Object.assign({ limits: Lab.DEFAULT_LIMITS }, VIEWS[name]));
+      Lab.viewName = name;
+    }
+  };
+
+  /* ---------------- Kamera çerçeveleme ----------------
+     1) Boş alan: paneller, üst bar ve alttaki düğme şeridinin kapatmadığı dikdörtgen.
+        Kameranın görüş merkezi bu alanın ortasına kaydırılır (setViewOffset); kaplar panellerin altında kalmaz.
+     2) Aşamaya göre görünüm: kapların kapladığı kutu, boş alanın belli bir oranını dolduracak uzaklıktan gösterilir. */
+  const FOV = 40;
+  const FRAME = { h: 0.55, w: 0.9 }; // kutu, boş alanın yüksekliğinin %55'ini, genişliğinin %90'ını geçmez
+  const COVER = ['#topbar', '#obs-timer', '#reaction-panel', '#m-rail', '#notebook', '#temp-graph', '#lab-dock', '#safety-card'];
+  Lab.freeRect = function () {
+    const W = Lab._cw || window.innerWidth, H = Lab._ch || window.innerHeight;
+    const f = { l: 0, t: 0, r: W, b: H };
+    COVER.forEach((sel) => {
+      const el = document.querySelector(sel);
+      if (!el) return;
+      const cs = getComputedStyle(el);
+      if (cs.display === 'none' || cs.visibility === 'hidden' || parseFloat(cs.opacity) < 0.3 || el.classList.contains('hidden')) return;
+      const r = el.getBoundingClientRect();
+      if (r.width < 4 || r.height < 4 || r.right < 0 || r.left > W || r.bottom < 0 || r.top > H) return;
+      const cx = (r.left + r.right) / 2, cy = (r.top + r.bottom) / 2;
+      const side = cx < W * 0.4 ? -1 : cx > W * 0.6 ? 1 : 0;
+      if (side) {
+        // köşede kalan kısa panel (ör. üst soldaki seçilen maddeler) kapları örtmez: yok say
+        if (r.bottom < H * 0.45 || r.top > H * 0.8) return;
+        if (side < 0) f.l = Math.max(f.l, r.right); else f.r = Math.min(f.r, r.left);
+      } else if (cy < H / 2) f.t = Math.max(f.t, r.bottom);
+      else f.b = Math.min(f.b, r.top);
+    });
+    // çok daralırsa (ör. iki panel birden açık) panelleri yok say
+    if (f.r - f.l < W * 0.3) { f.l = 0; f.r = W; }
+    if (f.b - f.t < H * 0.35) { f.t = 0; f.b = H; }
+    return { x: (f.l + f.r) / 2, y: (f.t + f.b) / 2, w: f.r - f.l, h: f.b - f.t, W, H };
+  };
+  Lab._vo = null; // şu anki görüş merkezi (yumuşak geçiş için)
+  Lab._updateOffset = function (dt, force) {
+    const fr = Lab._fr || (Lab._fr = Lab.freeRect());
+    const W = fr.W, H = fr.H;
+    if (!Lab._vo || force) Lab._vo = { x: fr.x, y: fr.y };
+    else {
+      const k = 1 - Math.exp(-dt * 7);
+      const nx = Lab._vo.x + (fr.x - Lab._vo.x) * k, ny = Lab._vo.y + (fr.y - Lab._vo.y) * k;
+      if (Math.abs(nx - Lab._vo.x) < 0.05 && Math.abs(ny - Lab._vo.y) < 0.05 && Lab._voW === W && Lab._voH === H) return false;
+      Lab._vo.x = nx; Lab._vo.y = ny;
+    }
+    Lab._voW = W; Lab._voH = H;
+    const cx = Lab._vo.x, cy = Lab._vo.y;
+    const fw = 2 * Math.max(cx, W - cx), fh = 2 * Math.max(cy, H - cy);
+    const cam = Lab.camera;
+    // ölçek değişmesin: büyütülmüş sanal kadrajın görüş açısı orantılı genişletilir
+    cam.fov = 2 * Math.atan(Math.tan(FOV * Math.PI / 360) * fh / H) * 180 / Math.PI;
+    cam.aspect = fw / fh;
+    cam.setViewOffset(fw, fh, fw / 2 - cx, fh / 2 - cy, W, H);
+    cam.updateProjectionMatrix();
+    return true;
+  };
+
+  /** Deneyin durumuna göre ilgilenilen kutu: [xmin, xmax, ymin, ymax, z] */
+  Lab._interest = function (state) {
+    const F = Lab.fixedHome, A = Lab.addedHome, by = BY();
+    const fx = Lab.fixed, ad = Lab.added;
+    const thermoX = F.x - 0.14;
+    if (state === 'reacting') return [thermoX, F.x + fx.R + 0.01, by, by + fx.H + 0.02, F.z];
+    if (state === 'pouring') return [F.x - fx.R - 0.02, A.x + ad.R + 0.01, by, by + fx.H + 0.09, (F.z + A.z) / 2];
+    return [thermoX, A.x + ad.R + 0.01, by, by + fx.H + 0.02, (F.z + A.z) / 2];
+  };
+  Lab.autoView = function (state, instant) {
+    if (!Lab.ready) return;
+    state = state || Lab.state;
+    if (state === 'idle') { Lab.setView('bench'); return; }
+    const [x0, x1, y0, y1, z] = Lab._interest(state);
+    const fr = Lab._fr = Lab._fitFr = Lab.freeRect();
+    const t = Math.tan(FOV * Math.PI / 360);
+    // ekranda 1 m = H / (2·d·tan) piksel; kutu boş alanın FRAME oranını doldursun
+    const dh = (y1 - y0) * fr.H / (2 * t * FRAME.h * fr.h);
+    const dw = (x1 - x0) * fr.H / (2 * t * FRAME.w * fr.w);
+    const L = Lab.DEFAULT_LIMITS;
+    const radius = U.clamp(Math.max(dh, dw) * 1.08, L.rMin, 1.2);
+    const target = new THREE.Vector3((x0 + x1) / 2, (y0 + y1) / 2, z);
+    const c = Lab.controls;
+    c.focus = target.clone();
+    // kaydırma kapların çevresinde kalır: kaplar boş alanın dışına itilemez
+    const limits = Object.assign({}, L, { xMin: target.x - 0.28, xMax: target.x + 0.28, zMin: target.z - 0.22, zMax: target.z + 0.22 });
+    c.setView({ target, radius, phi: state === 'reacting' ? 1.08 : 1.12, theta: 0.04, limits }, instant);
+    c.userMoved = false;
+    Lab.viewName = 'close';
+    Lab.wake(1.5);
   };
 
   /* ---------------- Etiketler (HTML) ---------------- */
@@ -666,6 +765,17 @@
       if (frame % 10 === 0) {
         const el = Lab.renderer.domElement;
         if (el.clientWidth && (el.clientWidth !== Lab._cw || el.clientHeight !== Lab._ch)) Lab.resize();
+      }
+      // panel açılıp kapanınca boş alan değişir: görüş merkezi yumuşakça yeni alana kayar
+      if (!Lab.paused) {
+        if (frame % 15 === 0) {
+          Lab._fr = Lab.freeRect();
+          // panel açılıp kapandı ve kullanıcı kamerayı oynatmadıysa kaplar yeni alana yeniden sığdırılır
+          const a = Lab._fitFr, f = Lab._fr;
+          if (a && Lab.viewName === 'close' && !Lab.controls.userMoved && Lab.state !== 'idle' &&
+              (Math.abs(f.w - a.w) > a.w * 0.12 || Math.abs(f.h - a.h) > a.h * 0.12)) Lab.autoView();
+        }
+        Lab._updateOffset(dt);
       }
       // başka aşamadayken laboratuvar çalışma kartının arkasında kalır: canlı bir şey yoksa hiç çizme
       if (Lab.paused) {

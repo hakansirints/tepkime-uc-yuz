@@ -363,6 +363,11 @@ textarea:disabled { opacity: .55; }
 .dock-hint { font-size: 13px; color: var(--muted); margin: 0 6px 8px; }
 .dock-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .lbl-short { display: none; }
+.cam-reset { width: 40px; padding: 0 !important; font-size: 18px; justify-content: center; }
+/* döküm ve tepkime sırasında basılacak düğme yok: şerit küçülür, saydamlaşır; dokununca / üstüne gelince geri gelir */
+#lab-dock { transition: opacity .35s var(--ease), scale .35s var(--ease); }
+html.lab-busy #lab-dock:not(:hover):not(:focus-within) { opacity: .4; scale: .88; }
+html.lab-busy #lab-dock .dock-hint { display: none; }
 
 /* Gözlem süresi: iki panelin arasında, üstte ince bar */
 .obs-timer { position: fixed; top: calc(82px + var(--st)); left: calc(336px + var(--el)); right: calc(376px + var(--er)); z-index: 29; display: flex; flex-direction: column; gap: 4px;
@@ -1182,6 +1187,13 @@ html.phone-l.m-lab.m-p-nb #lab-dock { left: calc((72px + var(--sl) + 100vw - 312
 html.phone-l.m-lab.m-p-mat #lab-dock { left: calc((342px + var(--sl) + 100vw - var(--sr)) / 2); max-width: calc(100vw - 350px - var(--sl) - var(--sr)); }
 html.phone-l.m-lab.m-p-mat.m-p-nb #lab-dock { left: calc((342px + var(--sl) + 100vw - 312px - var(--sr)) / 2); max-width: calc(100vw - 660px - var(--sl) - var(--sr)); }
 html.phone-l.m-lab #lab-dock .btn { height: 40px; font-size: 13px; }
+/* yatay telefonda yükseklik az: defter kapalıyken şerit sağ kenarda dikey durur, kaplara alttan yer açılır */
+html.phone-l.m-lab:not(.m-p-nb) #lab-dock { left: auto; right: calc(6px + var(--sr)); top: calc(51px + var(--st)); bottom: auto; transform: none; max-width: none; width: auto; padding: 5px; border-radius: 18px; }
+html.phone-l.m-lab:not(.m-p-nb) #lab-dock .dock-row { flex-direction: column; align-items: stretch; }
+html.phone-l.m-lab:not(.m-p-nb) #lab-dock .btn { justify-content: center; }
+html.phone-l.m-lab:not(.m-p-nb) #lab-dock .cam-reset { width: auto; }
+html.phone-l.m-lab:not(.m-p-nb) .safety-badge { justify-content: center; }
+html.phone-l.m-lab.m-p-nb #lab-dock .cam-reset { display: none; } /* defter açıkken şeritte yer dar */
 html.phone-l.m-lab .safety-badge { height: 40px; }
 html.phone-l.m-lab .safety-card { left: 50%; transform: translateX(-50%); bottom: calc(58px + var(--sb)); max-width: calc(100vw - 140px - var(--sl) - var(--sr)); }
 html.phone-l.m-lab .lbl-long { display: none; }

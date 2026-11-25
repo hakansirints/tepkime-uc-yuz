@@ -16,6 +16,7 @@
       this.goal = { theta: 0, phi: 1.1, radius: 1, target: new THREE.Vector3(0, 1, 0) };
       this.limits = { thetaMin: -1.3, thetaMax: 1.3, phiMin: 0.45, phiMax: 1.45, rMin: 0.25, rMax: 4.2 };
       this.enabled = true;
+      this.focus = null;   // yakınlaşmanın çekildiği nokta (kapların ortası)
       this.pointers = new Map();
       this.blockers = []; // (event) => true ise kamera sürüklenmez (ör. beher sürükleme)
       this._bind();
@@ -33,6 +34,7 @@
       d.addEventListener('pointermove', (e) => {
         const p = this.pointers.get(e.pointerId);
         if (!p || !this.enabled) return;
+        this.userMoved = true;
         if (this.pointers.size === 1) {
           const dx = e.clientX - p.x, dy = e.clientY - p.y;
           if (this._panBtn) this._pan(dx, dy);
@@ -46,10 +48,7 @@
           const pts = [...this.pointers.values()];
           const dist = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
           const mid = { x: (pts[0].x + pts[1].x) / 2, y: (pts[0].y + pts[1].y) / 2 };
-          if (this._pinch) {
-            this.goal.radius *= this._pinch / Math.max(1, dist);
-            this._clamp();
-          }
+          if (this._pinch) this._zoom(this._pinch / Math.max(1, dist));
           if (this._mid) this._pan(mid.x - this._mid.x, mid.y - this._mid.y);
           this._pinch = dist; this._mid = mid;
           return;
@@ -62,10 +61,18 @@
       d.addEventListener('wheel', (e) => {
         if (!this.enabled) return;
         e.preventDefault();
-        this.goal.radius *= Math.exp(e.deltaY * 0.0011);
-        this._clamp();
+        this._zoom(Math.exp(e.deltaY * 0.0011));
       }, { passive: false });
       d.addEventListener('contextmenu', (e) => e.preventDefault());
+    }
+    /** Yakınlaşırken hedef kaplara (focus) doğru çekilir: kaplar kenara ya da düğme şeridinin altına kaymaz */
+    _zoom(f) {
+      this.userMoved = true;
+      const g = this.goal, before = g.radius;
+      g.radius *= f;
+      this._clamp();
+      if (this.focus && g.radius < before) g.target.lerp(this.focus, Math.min(1, (1 - g.radius / before) * 2.5));
+      this._clamp();
     }
     /** Ekranda sürükleme kadar hedefi masa düzleminde kaydır (tutup çekme hissi) */
     _pan(dx, dy) {
