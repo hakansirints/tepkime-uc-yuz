@@ -26,18 +26,14 @@
 
   class Beaker {
     /**
-     * o: {capacity, R, H, scale, spoutAngle, label, scene}
+     * o: {capacity, R, H, spoutAngle, label, scene}
      */
     constructor(o) {
       this.o = o;
       this.capacity = o.capacity;
-      const scale = o.scale ?? 1;
-      const innerRadius = o.R - 0.0013;
-      this.R = o.R * scale; this.H = o.H * scale;
-      this.Ri = innerRadius * scale;
-      this.y0 = 0.0032 * scale;
-      // Görsel ölçekte dereceleri ve sıvı seviyesini birlikte büyüt.
-      this.hPerMl = scale * 1e-6 / (Math.PI * innerRadius * innerRadius);
+      this.R = o.R; this.H = o.H;
+      this.Ri = o.R - 0.0013;
+      this.y0 = 0.0032;        // iç taban yüksekliği
       this.volume = 0;          // mL
       this.spoutAngle = o.spoutAngle || 0;
       this.group = new THREE.Group();
@@ -78,6 +74,7 @@
       this.contactShadow = sh;
       this.group.add(sh);
       // dereceler
+      this.hPerMl = 1e-6 / (Math.PI * this.Ri * this.Ri); // gerçek: m / mL
       const cap = this.capacity;
       const step = cap >= 500 ? 50 : cap >= 250 ? 25 : 10, label = cap >= 500 ? 100 : cap >= 250 ? 50 : 20;
       const gt = Tex.graduations(this.capacity, step, label, this.hPerMl, this.H, this.capacity + ' mL');
