@@ -1172,7 +1172,52 @@ html.phone-l #ws-body.m-tabbed .pbtn { display: none; } /* büyüt/gizle: sekmel
 html.phone-l #ws-body.m-tabbed .rep-col > .rep-h { display: none; }
 html.phone-l #ws-body.m-tabbed .here-tag { display: none; }
 
-/* -- tanecik havuzu çekmecesi -- */
+/* -- model kurucu: sahne solda, havuz sağda hep açık (taslak 6) -- */
+.mpanel .ptitle .m-q { display: none; }
+html.phone-l #ws-body.m-tabbed .grid-build.m-build { flex-direction: row !important; gap: 6px; }
+html.phone-l .grid-build.m-build > .build-center { order: 1; }
+html.phone-l .grid-build.m-build > .pool.m-side { order: 2; flex: 0 0 236px; width: 236px; padding: 6px 7px; gap: 5px; position: relative; }
+html.phone-l .grid-build.m-build > .side-card { order: 3; }
+html.phone-l .pool.m-side > h3 { display: flex; align-items: center; gap: 6px; margin: 0; font-size: 13px; white-space: nowrap; flex: none; }
+html.phone-l .pool.m-side .m-pool-to { font-weight: 500; font-size: 11.5px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; }
+html.phone-l .pool.m-side .pool-hint { display: none; }
+html.phone-l .pool.m-side > .target-switch { display: none !important; } /* hedef sekmeden seçilir */
+html.phone-l .pool.m-side .pool-grid { grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 0 !important; padding: 5px 5px 2px 0; overflow-y: auto; scrollbar-width: none; }
+html.phone-l .pool.m-side .pool-grid::-webkit-scrollbar { display: none; }
+html.phone-l .pool.m-side .pcard { position: relative; padding: 4px 3px 5px; }
+html.phone-l .pool.m-side .pcard img { width: 34px; height: 34px; }
+html.phone-l .pool.m-side .pcard .f { font-size: 14px; }
+html.phone-l .pool.m-side .pcard .nm { display: none; }
+html.phone-l .pcard[data-cnt] { border-color: var(--accent); box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 25%, transparent); }
+html.phone-l .pcard[data-cnt]::after { content: "×" attr(data-cnt); position: absolute; top: -5px; right: -5px; min-width: 20px; height: 20px; padding: 0 5px; box-sizing: border-box; border-radius: 10px;
+  background: var(--accent); color: #fff; font: 800 11px/20px var(--font); text-align: center; box-shadow: 0 2px 6px color-mix(in srgb, var(--accent) 40%, transparent); }
+/* Etkileşim ve Kontrol sekmesinde havuz yerine korunma kartı */
+html.phone-l .grid-build.m-t-mid > .pool, html.phone-l .grid-build.m-t-check > .pool, html.phone-l .grid-build.m-t-lock > .pool { display: none !important; }
+html.phone-l #ws-body.m-tabbed .grid-build.m-t-mid > .side-card { display: block !important; flex: 0 0 236px; width: 236px; }
+html.phone-l #ws-body.m-tabbed .grid-build.m-t-check > .side-card.m-on { flex: 0 0 290px; width: 290px; display: flex !important; flex-direction: column; }
+/* Kontrolde önce atom sayacı görünsün, kurallar altta */
+html.phone-l .grid-build.m-t-check > .side-card > * { flex: none; }
+html.phone-l .grid-build.m-t-check > .side-card > .rules { order: 3; }
+html.phone-l .grid-build.m-t-check > .side-card > .hint-box { order: 2; }
+html.phone-l .grid-build.m-t-check > .side-card > div:last-child { order: 4; }
+html.phone-l .grid-build.m-t-mid > .side-card .rules, html.phone-l .grid-build.m-t-mid > .side-card .hint-box,
+html.phone-l .grid-build.m-t-mid > .side-card > div:last-child { display: none; } /* Etkileşimde yalnızca atom sayacı */
+/* Kontrol sekmesi: öncesi ve sonrası yan yana */
+html.phone-l #ws-body.m-tabbed .grid-build.m-t-check > .build-center,
+html.phone-l #ws-body.m-tabbed .grid-build.m-t-check .three-regions { display: flex !important; }
+html.phone-l #ws-body.m-tabbed .grid-build.m-t-check .three-regions { flex-direction: row !important; }
+html.phone-l #ws-body.m-tabbed .grid-build.m-t-check .three-regions > .mpanel[data-region=before],
+html.phone-l #ws-body.m-tabbed .grid-build.m-t-check .three-regions > .mpanel[data-region=after] { display: block !important; flex: 1 1 0; min-width: 0; }
+html.phone-l #ws-body.m-tabbed .grid-build.m-t-check .zoomctl { display: none; }
+/* sahne başlığının altında kısa soru */
+html.phone-l .grid-build.m-build:not(.m-t-check) .mpanel .ptitle:has(> .m-q) { flex-wrap: wrap; row-gap: 2px; right: 116px; }
+html.phone-l .grid-build.m-build:not(.m-t-check) .mpanel .ptitle > .m-q { display: block; flex: 0 0 100%; padding-left: 32px; font-size: 12.5px; font-weight: 600; line-height: 1.25; color: var(--muted); white-space: normal; }
+html.phone-l .grid-build.m-build .mpanel:has(.m-q) > .zoomctl { top: 8px; }
+/* alt şerit: Sonraki → */
+html.phone-l .ws-footer .m-hide { display: none !important; }
+html.phone-l .m-tabs button .sn { width: 19px; height: 19px; font-size: 10.5px; margin: 0 6px 0 0; top: -1px; }
+
+/* -- tanecik havuzu çekmecesi (eski; şu an kullanılmıyor) -- */
 html.phone-l .pool.m-drawer { order: 9; flex: none; padding: 4px 6px 4px 10px; gap: 4px; max-height: 44px; overflow: hidden; transition: max-height .3s var(--ease); }
 html.phone-l .pool.m-drawer.m-open { max-height: 140px; }
 html.phone-l .pool.m-drawer > h3 { display: flex; align-items: center; gap: 8px; margin: 0; min-height: 34px; font-size: 13px; cursor: pointer; flex: none; }

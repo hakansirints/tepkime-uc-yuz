@@ -58,8 +58,12 @@
         hideBtn.addEventListener('click', (e) => { e.stopPropagation(); this.toggleRegion(key, false); });
         const strip = h('button.pstrip', { title: r.title + ' — göster' }, h('span.n', { text: String(r.n) }), h('span.vt', { text: r.title }));
         strip.addEventListener('click', (e) => { e.stopPropagation(); this.toggleRegion(key, true); });
+        // kısa yönlendirme sorusu (yalnızca yatay telefonda görünür)
+        const q = key === 'before' ? (o.lockBefore ? null : 'Karıştırmadan önce kaplarda hangi tanecikler vardı?')
+          : key === 'mid' ? 'Bağlar kırılır, atomlar yeniden düzenlenir. ▶ Canlandır ile izle.'
+            : 'Tepkime bitince kapta hangi tanecikler var?';
         const el = h('div.mpanel' + (aq ? '.aq' : ''), { 'data-region': key },
-          h('div.ptitle', null, h('span.n', { text: String(r.n) }), r.title, h('span.pctl', null, focusBtn, hideBtn)),
+          h('div.ptitle', null, h('span.n', { text: String(r.n) }), r.title, h('span.pctl', null, focusBtn, hideBtn), q ? h('div.m-q', { text: q }) : null),
           h('div.pempty', { text: '' }),
           strip);
         return el;
@@ -155,6 +159,15 @@
       ['before', 'after'].forEach((k) => this.regEl[k].classList.toggle('target', k === t));
       if (this.switchEl) this.switchEl.querySelectorAll('button').forEach((b) => b.classList.toggle('on', b.dataset.t === t));
       if (this.o.hints !== false) this._renderHints();
+      this._renderCounts();
+    }
+    /** Havuz kartlarında seçili bölümdeki adet (×1, ×2…; rozet yatay telefonda görünür) */
+    _renderCounts() {
+      const ms = this.model[this.target] || {};
+      this.gridEl.querySelectorAll('.pcard').forEach((c) => {
+        const n = ms[c.dataset.sid];
+        if (n) c.dataset.cnt = n; else delete c.dataset.cnt;
+      });
     }
     add(region, sid) {
       if (region === 'before' && this.o.lockBefore) return;
@@ -178,6 +191,7 @@
       this._renderRegion(region);
       this._renderChips();
       this._renderCounter();
+      this._renderCounts();
       this._resetMid();
       if (this.o.onChange) this.o.onChange(this.model);
     }
@@ -186,6 +200,7 @@
       this._renderRegion('after');
       this._renderChips();
       this._renderCounter();
+      this._renderCounts();
       this._resetMid();
     }
     _renderRegion(k) {

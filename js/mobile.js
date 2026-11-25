@@ -2,7 +2,7 @@
    Masaüstü ve tablette hiçbir şey değişmez: tüm kurallar html.phone-l altındadır.
    1) Görev şeridi ve "Laboratuvara dön" düğmesi üst bara taşınır (tek ince satır).
    2) Aşama gövdesindeki bölümler sekmelere ayrılır; her seferinde biri tam boy görünür.
-      Tanecik havuzu alttan açılan çekmeceye dönüşür.
+      Model kurucuda tanecik havuzu sağda hep açık durur; altta "Sonraki →" sekmeleri sırayla ilerletir.
    3) Laboratuvarda paneller sol simge rafına iner; dokununca yandan açılır.
    4) Yazı alanına odaklanınca yazma alanı büyür. */
 (function () {
@@ -52,7 +52,7 @@
     if (pt) {
       const n = $('.n', pt);
       let t = '';
-      pt.childNodes.forEach((c) => { if (c.nodeType === 3) t += c.textContent; else if (c.classList && !c.classList.contains('n') && !c.classList.contains('here-tag') && !c.classList.contains('pctl') && !c.classList.contains('tag')) t += c.textContent; });
+      pt.childNodes.forEach((c) => { if (c.nodeType === 3) t += c.textContent; else if (c.classList && !c.classList.contains('n') && !c.classList.contains('here-tag') && !c.classList.contains('pctl') && !c.classList.contains('tag') && !c.classList.contains('m-q')) t += c.textContent; });
       t = t.trim().replace(/^Tepkime /, '').replace(/^Tanecikler /, '');
       t = cap(t);
       if (/^Etkileşirken/.test(t)) t = 'Etkileşim';
@@ -72,12 +72,66 @@
     return 'Bölüm';
   }
 
+  // sekme etiketi: "1 · Öncesi" → renkli numara rozeti + ad
+  function tabHtml(b, lb) {
+    const m = lb.match(/^([123]) · (.*)$/);
+    if (!m) { b.textContent = lb; return; }
+    b.textContent = '';
+    const sn = document.createElement('span');
+    sn.className = 'sn ' + ['r-before', 'r-mid', 'r-after'][+m[1] - 1];
+    sn.textContent = m[1];
+    b.append(sn, m[2]);
+  }
+  const plain = (lb) => lb.replace(/^[^\p{L}]+/u, '');
+
+  /* Model kurucu (havuzlu aşamalar): havuz sağda hep açık; Etkileşim ve Kontrol sekmesinde
+     sağ sütunda korunma kartı durur. Altta "Sonraki →" sekmeleri sırayla ilerletir. */
+  const TKEY = ['before', 'mid', 'after'];
+  function buildOf(s) { const gb = s && s.closest('.grid-build'); return gb && gb.classList.contains('m-build') ? gb : null; }
+  function syncBuild(i) {
+    const s = secs[i], gb = buildOf(s);
+    $$('.grid-build.m-build').forEach((g) => { if (g !== gb) ['m-t-before', 'm-t-mid', 'm-t-after', 'm-t-check', 'm-t-lock'].forEach((c) => setCls(g, c, false)); });
+    if (gb) {
+      const reg = s.dataset.region, k = s.classList.contains('side-card') ? 'check' : (TKEY.includes(reg) ? reg : 'before');
+      ['before', 'mid', 'after', 'check'].forEach((x) => setCls(gb, 'm-t-' + x, x === k));
+      const pool = $(':scope > .pool', gb);
+      setCls(gb, 'm-t-lock', k === 'before' && !!pool && !$('.target-switch', pool));
+      // havuzun ekleme hedefi her zaman açık sekmeyle aynı olsun (sayfa Sonrası sekmesinde açılınca da)
+      const sw = pool ? $$('.target-switch button', pool) : [];
+      if (sw.length >= 2 && (k === 'before' || k === 'after')) {
+        const b = sw[k === 'before' ? 0 : 1];
+        if (!b.classList.contains('on')) b.click();
+      }
+      const to = pool && $('.m-pool-to', pool);
+      if (to) to.textContent = '· dokun: ' + (k === 'after' ? 'Sonrasına' : 'Öncesine');
+    }
+    // alt şerit: son sekmeye kadar "Sonraki →", son sekmede aşamanın kendi düğmesi
+    const foot = $('#ws-body .ws-footer');
+    if (!foot) return;
+    let nx = $('.m-next', foot);
+    if (!gb) { if (nx) nx.remove(); $$('.m-hide', foot).forEach((b) => b.classList.remove('m-hide')); return; }
+    const last = i >= secs.length - 1;
+    if (!nx) {
+      nx = document.createElement('button');
+      nx.type = 'button';
+      nx.className = 'btn primary m-next';
+      nx.addEventListener('click', () => show(cur + 1, true));
+      foot.appendChild(nx);
+    }
+    if (!last) nx.textContent = 'Sonraki: ' + plain(labelOf(secs[i + 1])) + ' →';
+    setCls(nx, 'm-hide', last);
+    $$('.btn.primary:not(.m-next)', foot).forEach((b) => setCls(b, 'm-hide', !last));
+  }
+
   function clearTabs() {
     const body = $('#ws-body');
     if (tabsEl) { tabsEl.remove(); tabsEl = null; }
     $$('.m-sec, .m-wrap, .m-on, .m-path').forEach((e) => e.classList.remove('m-sec', 'm-wrap', 'm-on', 'm-path'));
     $$('.pool.m-drawer').forEach((p) => p.classList.remove('m-drawer', 'm-open'));
-    $$('.m-pool-btn').forEach((b) => b.remove());
+    $$('.pool.m-side').forEach((p) => p.classList.remove('m-side'));
+    $$('.grid-build.m-build').forEach((g) => g.classList.remove('m-build', 'm-t-before', 'm-t-mid', 'm-t-after', 'm-t-check', 'm-t-lock'));
+    $$('.m-pool-btn, .m-pool-to, .m-next').forEach((b) => b.remove());
+    $$('.ws-footer .m-hide').forEach((b) => b.classList.remove('m-hide'));
     if (body) body.classList.remove('m-tabbed');
     secs = []; cur = -1;
   }
@@ -92,6 +146,7 @@
     let p = secs[i].parentElement;
     while (p && p.id !== 'ws-body') { setCls(p, 'm-path', true); p = p.parentElement; }
     if (tabsEl) $$('button', tabsEl).forEach((b, k) => { setCls(b, 'on', k === i); b.setAttribute('aria-selected', k === i ? 'true' : 'false'); });
+    syncBuild(i);
     // havuz hedefi: öncesi / sonrası sekmesi seçilince havuz da oraya ekler
     if (fromUser) {
       const s = secs[i], tr = s.closest('.three-regions');
@@ -129,29 +184,21 @@
         const b = document.createElement('button');
         b.type = 'button';
         b.setAttribute('role', 'tab');
-        b.textContent = labelOf(s);
+        tabHtml(b, labelOf(s));
         b.addEventListener('click', () => show(k, true));
         tabsEl.appendChild(b);
       });
       const tt = $(':scope > .task-tabs', body);
       body.insertBefore(tabsEl, tt ? tt.nextSibling : body.firstChild);
-      // tanecik havuzu → alt çekmece
+      // tanecik havuzu → sağda hep açık sütun
       $$('.grid-build > .pool', body).forEach((pool) => {
-        pool.classList.add('m-drawer');
+        pool.classList.add('m-side');
+        pool.parentElement.classList.add('m-build');
         const h = $(':scope > h3', pool);
-        if (h && !$('.m-pool-btn', pool)) {
-          const b = document.createElement('button');
-          b.type = 'button';
-          b.className = 'm-pool-btn';
-          b.setAttribute('aria-label', 'Tanecik havuzunu aç / kapat');
-          b.textContent = '▴';
-          h.appendChild(b);
-          h.addEventListener('click', (e) => {
-            if (e.target.closest('button') && e.target !== b) return;
-            pool.classList.toggle('m-open');
-            b.textContent = pool.classList.contains('m-open') ? '▾' : '▴';
-            window.dispatchEvent(new Event('resize'));
-          });
+        if (h && !$('.m-pool-to', h)) {
+          const to = document.createElement('small');
+          to.className = 'm-pool-to';
+          h.appendChild(to);
         }
         // havuz hedefi değişince ilgili sekmeye geç
         $$('.target-switch button', pool).forEach((tb, k) => tb.addEventListener('click', () => {
@@ -170,6 +217,9 @@
     // "Burada çalış" işaretinin olduğu bölümü aç
     const here = $('.work-here', body);
     const hs = here ? secs.find((s) => s === here || s.contains(here) || here.contains(s)) : null;
+    // model kurucuda yalnızca açılışta: sonra öğrenci "Sonraki →" ya da sekmelerle kendisi geçer
+    // (yoksa Sonrasına ilk tanecik eklenir eklenmez Etkileşim sekmesine atlıyordu)
+    if (hs && here !== lastHere && lastHere && buildOf(hs)) lastHere = here;
     if (hs && here !== lastHere) {
       lastHere = here;
       const i = secs.indexOf(hs);
