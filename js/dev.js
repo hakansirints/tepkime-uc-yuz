@@ -1,8 +1,6 @@
 /* ============================================================
-   TEST MODU — yalnızca geliştirme ve deneme için.
-   Açmak:  adresin sonuna ?test ekle   (…/index.html?test)
-   Kapatmak: ?test=0  ya da sekmeyi kapat.
-   Üst barda turuncu "🧪 Test" düğmesi çıkar. Basınca bulunduğun aşamanın
+   TEST MODU — yalnızca geliştirme ve deneme için. Bu dosya yüklü olduğu sürece hep açıktır.
+   Üst barda turuncu 🧪 düğmesi çıkar. Basınca bulunduğun aşamanın
    işlemlerini seçtiğin tepkimeye göre DOĞRU yapar ve sonucu gösterir.
    Sonraki aşamaya kendin geçersin; aşama atlama yoktur.
 
@@ -11,16 +9,6 @@
    ============================================================ */
 (function () {
   'use strict';
-  const KEY = 'tuy-test';
-  const q = new URLSearchParams(location.search);
-  try {
-    if (q.has('test')) {
-      if (q.get('test') === '0') sessionStorage.removeItem(KEY);
-      else sessionStorage.setItem(KEY, '1');
-    }
-    if (sessionStorage.getItem(KEY) !== '1') return;
-  } catch (e) { if (!q.has('test') || q.get('test') === '0') return; }
-
   const T = window.TUY;
   const wait = (ms) => new Promise((r) => setTimeout(r, ms));
   async function until(fn, timeout) {
@@ -174,12 +162,11 @@
   /* ---------- düğme ve görünüm ---------- */
   const css = document.createElement('style');
   css.textContent = `
-    #dev-test { height: 34px; padding: 0 12px; border-radius: 999px; border: 0; cursor: pointer; white-space: nowrap;
-      background: #f97316; color: #fff; font: 700 13px/1 var(--font, system-ui); box-shadow: 0 0 0 2px rgba(249,115,22,.35); }
-    #dev-test:disabled { opacity: .6; cursor: progress; }
-    #dev-test.busy::after { content: " …"; }
-    html.phone-l #dev-test { height: 32px; padding: 0 10px; font-size: 12.5px; }
-    html.phone-l.narrow-l #dev-test .t { display: none; }
+    #dev-test { width: 38px; height: 38px; padding: 0; border-radius: 50%; border: 0; cursor: pointer; display: grid; place-items: center;
+      background: #f97316; color: #fff; font-size: 17px; line-height: 1; box-shadow: 0 0 0 2px rgba(249,115,22,.35); }
+    #dev-test:disabled { opacity: .6; cursor: progress; animation: devPulse 1s ease-in-out infinite; }
+    @keyframes devPulse { 50% { transform: scale(.9); } }
+    @media (max-height: 560px), (max-width: 900px) { #dev-test { width: 32px; height: 32px; font-size: 15px; } }
   `;
   document.head.appendChild(css);
 
@@ -189,21 +176,22 @@
     const b = document.createElement('button');
     b.id = 'dev-test';
     b.type = 'button';
-    b.title = 'TEST MODU: bu aşamanın işlemlerini doğru cevaplarla yapar';
-    b.innerHTML = '🧪<span class="t"> Test</span>';
+    b.title = 'Test: bu aşamanın işlemlerini doğru cevaplarla yapar';
+    b.setAttribute('aria-label', b.title);
+    b.textContent = '🧪';
     b.addEventListener('click', async () => {
       if (b.disabled) return;
       const n = T.App.current || 1;
       if (T.Tutorial && T.Tutorial.active) { toast('🧪 Test: öğretici açıkken çalışmaz.'); return; }
       if (n > 1 && !S().data.reaction) { toast('🧪 Test: önce tepkime seç.'); return; }
-      b.disabled = true; b.classList.add('busy');
+      b.disabled = true;
       try { await SOLVE[n](); }
       catch (e) { console.error('[test]', e); toast('🧪 Test hata verdi: ' + e.message); }
-      finally { b.disabled = false; b.classList.remove('busy'); }
+      finally { b.disabled = false; }
     });
     const set = $('.settings-wrap', acts);
     acts.insertBefore(b, set || null);
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', mount); else mount();
-  T.Dev = { solve: (n) => SOLVE[n || T.App.current](), off: () => { try { sessionStorage.removeItem(KEY); } catch (e) { /* */ } location.reload(); } };
+  T.Dev = { solve: (n) => SOLVE[n || T.App.current]() };
 })();
