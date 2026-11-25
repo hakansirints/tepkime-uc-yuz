@@ -16,7 +16,7 @@
 
   const VIEWS = {
     bench: { target: new THREE.Vector3(0.02, 1.0, 0.14), radius: 1.05, phi: 1.17, theta: 0.0 },
-    close: { target: new THREE.Vector3(-0.035, 1.005, 0.17), radius: 0.68, phi: 1.3, theta: 0.04 },
+    close: { target: new THREE.Vector3(-0.08, 1.005, 0.18), radius: 0.75, phi: 1.19, theta: 0.04 },
     room: { target: new THREE.Vector3(0.0, 1.25, 0.0), radius: 3.7, phi: 1.28, theta: 0.32 }
   };
 
@@ -91,10 +91,10 @@
     say(70);
     await tick();
 
-    // güvenlik ekipmanı: gözlük ve eldiven kutusu masada, termometrenin solunda
+    // güvenlik ekipmanı: gözlük ve eldivenler masada, termometrenin solunda
     {
       const P = T.Props;
-      Lab.SAFETY_HOME = new THREE.Vector3(-0.38, T.Room.BENCH_Y, 0.1);
+      Lab.SAFETY_HOME = new THREE.Vector3(-0.30, BY(), 0.115);
       if (P.safetyGear) { // önbellekte eski props.js kalmışsa laboratuvar yine açılsın
         Lab.safetyGear = P.safetyGear();
         Lab.safetyGear.position.copy(Lab.SAFETY_HOME);
@@ -106,12 +106,12 @@
     const by = BY();
     Lab.fixedHome = new THREE.Vector3(-0.11, by, 0.16);
     Lab.addedHome = new THREE.Vector3(0.03, by, 0.19);
-    // Griffin beherleri gerçek ölçülerde: 600 mL (Ø90 × 125 mm) sabit kap, 250 mL (Ø70 × 95 mm) eklenen kap.
-    // Ada tezgâhı 2,8 m olduğundan küçük beherler masada kayboluyordu; hacimler de VOL_K ile orantılı büyütülür.
-    Lab.fixed = new T.Beaker({ capacity: 600, R: 0.045, H: 0.125, spoutAngle: Math.PI * 0.75, scene, name: 'fixed' });
+    // Griffin beherlerinin görsel ölçeği, tezgâhtaki ekipmana göre ayarlanır.
+    const beakerScale = 1.1;
+    Lab.fixed = new T.Beaker({ capacity: 600, R: 0.045, H: 0.125, scale: beakerScale, spoutAngle: Math.PI * 0.75, scene, name: 'fixed' });
     Lab.fixed.group.position.copy(Lab.fixedHome);
     scene.add(Lab.fixed.group);
-    Lab.added = new T.Beaker({ capacity: 250, R: 0.035, H: 0.095, spoutAngle: Math.PI, scene, name: 'added' });
+    Lab.added = new T.Beaker({ capacity: 250, R: 0.035, H: 0.095, scale: beakerScale, spoutAngle: Math.PI, scene, name: 'added' });
     Lab.added.group.position.copy(Lab.addedHome);
     Lab.added.group.rotation.y = 0;
     scene.add(Lab.added.group);
@@ -535,6 +535,7 @@
   Lab._bindPointer = function (dom) {
     const plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), -(BY() + 0.05));
     const hit = new THREE.Vector3();
+    const clearance = Lab.fixed.R + Lab.added.R + 0.01;
     dom.addEventListener('pointermove', (e) => {
       if (Lab.dragging && Lab.dragging.id === e.pointerId) {
         setNdc(e);
@@ -544,8 +545,13 @@
           const g = Lab.added.group;
           g.position.set(x, BY() + 0.05, z);
           const dx = x - Lab.fixedHome.x, dz = z - Lab.fixedHome.z;
-          Lab.dragging.near = Math.hypot(dx, dz) < 0.15;
-          if (Math.hypot(dx, dz) < 0.09) { const k = 0.09 / Math.max(0.001, Math.hypot(dx, dz)); g.position.x = Lab.fixedHome.x + dx * k; g.position.z = Lab.fixedHome.z + dz * k; }
+          const distance = Math.hypot(dx, dz);
+          Lab.dragging.near = distance < 0.15;
+          if (distance < clearance) {
+            const angle = Math.atan2(dz, dx);
+            g.position.x = Lab.fixedHome.x + Math.cos(angle) * clearance;
+            g.position.z = Lab.fixedHome.z + Math.sin(angle) * clearance;
+          }
         }
         return;
       }

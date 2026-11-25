@@ -16,6 +16,16 @@ Ardından tarayıcıda `http://localhost:8765` adresini açın. `index.html` dos
 
 Arayüz Apple'ın "Liquid Glass" tasarım dilinden esinlenir: yarı saydam, bulanık cam yüzeyler ve hap biçimli denetimler. Açık ve koyu tema vardır. İlk açılışta sistem tercihi uygulanır, sağ üstteki ☀️ / 🌙 düğmesiyle değiştirilebilir.
 
+## Güvenlik ekipmanının Blender kaynak dosyası
+
+Sıçrama gözlüğü ve iki nitril eldiven [safety-gear.blend](assets/blender/safety-gear.blend) dosyasında ayrı parçalar olarak düzenlenebilir. Modelleri değiştirdikten sonra web sürümünü proje kökünden yeniden dışa aktarın.
+
+```bash
+blender --background assets/blender/safety-gear.blend --python assets/blender/safety-gear.py -- --export-only
+```
+
+Komut `js/lab/safety-gear-data.js` dosyasını günceller. Site yalnızca web için paketlenmiş geometriyi yükler.
+
 ## 7 aşama
 
 | # | Aşama | Öğrenci ne yapar? |
