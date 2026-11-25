@@ -167,8 +167,9 @@
       <div id="ws-head">
         <div>
           <div class="ws-kicker" id="ws-kicker">Aşama 2/7</div>
-          <h2 id="ws-title">Modelini kur</h2>
-          <p id="ws-sub" class="muted"></p>
+          <!-- başlık ve açıklama görev şeridiyle aynı şeyi söylüyor: ekranda gizli, ekran okuyucular için duruyor -->
+          <h2 id="ws-title" class="sr-only">Modelini kur</h2>
+          <p id="ws-sub" class="muted sr-only"></p>
         </div>
         <div class="ws-head-right">
           <span id="ws-reaction" class="chip lg"></span>
@@ -178,8 +179,10 @@
       <div id="ws-task" class="hidden" role="status" aria-live="polite">
         <span class="wt-ic" aria-hidden="true">🎯</span>
         <div class="wt-main">
-          <div class="wt-kicker">Görevin<span id="wt-step"></span></div>
-          <div class="wt-text" id="wt-text"></div>
+          <div class="wt-line">
+            <span class="wt-kicker">Görevin<span id="wt-step"></span></span>
+            <span class="wt-text" id="wt-text"></span>
+          </div>
           <div class="wt-hint" id="wt-hint"></div>
         </div>
         <div class="wt-bars" id="wt-bars" aria-hidden="true"></div>

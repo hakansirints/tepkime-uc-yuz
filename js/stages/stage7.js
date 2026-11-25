@@ -177,6 +177,7 @@
       body.innerHTML = '';
       U.$('#ws-title').textContent = 'Tepkime tamamlandı';
       U.$('#ws-sub').textContent = 'Üç yüzü yan yana gör, kendini değerlendir ve sıradaki keşfini seç.';
+      U.$('#ws-head').classList.add('show-title');
       const SP = T.SPECIES, esc = T.escapeHtml;
       const t6 = d.tasks6 || {};
       const tries = (k) => (t6[k] ? t6[k].tries : 0);

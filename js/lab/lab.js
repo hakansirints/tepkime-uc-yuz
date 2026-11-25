@@ -43,7 +43,7 @@
     const scene = new THREE.Scene();
     scene.background = makeBackdrop();
     // Odak modu sisi: baştan sahnede (yoğunluk 0) — sonradan eklemek tüm gölgelendiricileri yeniden derletir
-    scene.fog = new THREE.FogExp2(0xa9b1ba, 0);
+    scene.fog = new THREE.FogExp2(0x2c3439, 0); // koyu stüdyo arka planıyla aynı ton
     Lab.scene = scene;
     const camera = new THREE.PerspectiveCamera(40, window.innerWidth / window.innerHeight, 0.02, 40);
     Lab.camera = camera;
@@ -164,17 +164,17 @@
   };
   function tick() { return new Promise((r) => setTimeout(r, 16)); }
 
-  /* Masanın arkasında yumuşak, odaksız bir laboratuvar havası: tek küçük doku (oda modeli yerine) */
+  /* Stüdyo arka planı: koyu, yumuşak kenar karartması; ışık masada toplanır, dikkat kaplarda kalır.
+     Tek küçük doku (oda modeli yerine), ek çizim yok. */
   function makeBackdrop() {
     const c = document.createElement('canvas');
-    c.width = 64; c.height = 256;
+    c.width = c.height = 512;
     const x = c.getContext('2d');
-    const g = x.createLinearGradient(0, 0, 0, 256);
-    g.addColorStop(0, '#eef2f1');
-    g.addColorStop(0.45, '#d9e0df');
-    g.addColorStop(0.62, '#bcc6c6');
-    g.addColorStop(1, '#8e9a9d');
-    x.fillStyle = g; x.fillRect(0, 0, 64, 256);
+    const g = x.createRadialGradient(256, 300, 30, 256, 300, 380);
+    g.addColorStop(0, '#5d6a72');
+    g.addColorStop(0.55, '#2c3439');
+    g.addColorStop(1, '#14181b');
+    x.fillStyle = g; x.fillRect(0, 0, 512, 512);
     const t = new THREE.CanvasTexture(c);
     t.colorSpace = THREE.SRGBColorSpace;
     return t;

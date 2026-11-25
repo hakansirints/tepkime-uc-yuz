@@ -213,6 +213,7 @@
         U.$('#ws-kicker').textContent = `Aşama ${n}/7 — ${S.STAGES[n - 1].short}`;
         U.$('#ws-title').textContent = m.title;
         U.$('#ws-sub').textContent = m.sub;
+        U.$('#ws-head').classList.remove('show-title');
         U.$('#ws-reaction').textContent = S.reaction ? S.reaction.name : '';
         const body = U.$('#ws-body');
         body.innerHTML = '';

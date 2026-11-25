@@ -32,8 +32,8 @@
         h('h3', { text: 'Tanecik havuzu' }),
         h('div.pool-hint', { html: 'Bir karta <b>tıkla</b>: seçili bölüme eklenir. Ya da kartı bölüme <b>sürükle</b>.' }),
         this.switchEl = o.lockBefore ? null : h('div.target-switch', null,
-          h('button.btn.sm.ghost', { 'data-t': 'before', text: '① Öncesine', title: 'Tıkladığın kartlar “Tepkime öncesi” bölümüne eklenir' }),
-          h('button.btn.sm.ghost', { 'data-t': 'after', text: '③ Sonrasına', title: 'Tıkladığın kartlar “Tepkime sonrası” bölümüne eklenir' })),
+          h('button.btn.sm.ghost', { 'data-t': 'before', title: 'Tıkladığın kartlar “Tepkime öncesi” bölümüne eklenir' }, h('span.sn.r-before', { text: '1' }), 'Öncesine'),
+          h('button.btn.sm.ghost', { 'data-t': 'after', title: 'Tıkladığın kartlar “Tepkime sonrası” bölümüne eklenir' }, h('span.sn.r-after', { text: '3' }), 'Sonrasına')),
         this.gridEl = h('div.pool-grid', { style: { marginTop: '8px' } }));
       if (this.switchEl) this.switchEl.querySelectorAll('button').forEach((b) => b.addEventListener('click', () => this.setTarget(b.dataset.t)));
 

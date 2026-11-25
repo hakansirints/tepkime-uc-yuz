@@ -40,9 +40,9 @@
       this.status.innerHTML = nb && na ? 'Modelin 4. aşamada test edilecek.' : '';
       const R = this.builder.regEl;
       if (!nb) T.App.task({ step: [1, 3], target: R.before, text: 'Tepkime öncesindeki tanecikleri yerleştir',
-        hint: 'Havuzdan kartları <b>① Tepkime öncesi</b> bölümüne ekle. Karıştırmadan önce kaplarda hangi tanecikler vardı?' });
+        hint: 'Havuzdan kartları <b><span class="sn r-before">1</span>Tepkime öncesi</b> bölümüne ekle. Karıştırmadan önce kaplarda hangi tanecikler vardı?' });
       else if (!na) T.App.task({ step: [2, 3], target: R.after, text: 'Tepkime sonrasındaki tanecikleri yerleştir',
-        hint: 'Havuzun üstünden <b>③ Sonrasına</b> seçeneğini seç, oluşan ve ortamda kalan tanecikleri ekle.' });
+        hint: 'Havuzun üstünden <b><span class="sn r-after">3</span>Sonrasına</b> seçeneğini seç, oluşan ve ortamda kalan tanecikleri ekle.' });
       else T.App.task({ step: [3, 3], target: R.mid, text: 'Modelini canlandır, sonra kaydet',
         hint: '<b>▶ Canlandır</b> ile atomların yeniden düzenlenmesini izle. Hazırsan sağ alttaki <b>Modeli kaydet</b> düğmesine bas.' });
     },
