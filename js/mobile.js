@@ -63,10 +63,10 @@
     }
     const rh = $(':scope > .rep-h b', s) || $(':scope > .rep-h', s);
     if (rh) return cap(rh.textContent.trim().toLocaleLowerCase('tr'));
-    const h = $(':scope > h3', s);
+    const h = $(':scope > h3', s) || $(':scope > div > h3', s);
     if (h) {
       const t = h.textContent.trim();
-      if (/Korunma/i.test(t)) return '⚖️ Kontrol';
+      if (/Korunma|Atom sayacı/i.test(t)) return '⚖️ Kontrol';
       return t.length > 18 ? t.split(/\s+/).slice(0, 2).join(' ') : t;
     }
     return 'Bölüm';

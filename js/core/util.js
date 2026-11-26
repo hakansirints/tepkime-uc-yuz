@@ -93,6 +93,21 @@ window.TUY = window.TUY || {};
     el.classList.remove('hidden');
   };
 
+  /** Önce → Sonra kartları arasındaki denklem oku (Aşama 2 ve 3): "TEPKİME" + ince ok.
+   *  Durum yalnızca renkle: bekliyor gri · hazır mavi · oynuyor sarı (çizgi akar) · tamam yeşil.
+   *  el.set(durum, metin): metin yalnızca ekran okuyucu için (görünmez). */
+  U.trkArrow = function () {
+    const sr = U.h('span.sr-only');
+    const el = U.h('div.trk-arrow', { role: 'status', 'aria-live': 'polite' },
+      U.h('span.ta-top', { text: 'tepkime' }), U.h('span.ta-line', { 'aria-hidden': 'true' }), sr);
+    el.set = (state, text) => {
+      el.className = 'trk-arrow' + (state && state !== 'wait' ? ' ' + state : '');
+      sr.textContent = text || '';
+    };
+    el.set('wait', '');
+    return el;
+  };
+
   /** Kaydırılabilir kapta `first`ten `last`a kadar olan alan görünmüyorsa yumuşakça kaydır.
    *  İkisi birden sığmazsa `first`in üstü görünür kalır (dönüt metni düğmeden önemlidir). */
   U.revealRange = function (first, last) {

@@ -18,7 +18,6 @@
         onPlayed: () => this.updateFooter()
       });
       // gözlem hatırlatması
-      this.builder.rightSlot.appendChild(h('div.feedback.info', { style: { fontSize: '13px' }, html: '<b>Gözlemin</b>“' + escapeHtml(d.observation || '') + '”' }));
       this.status = h('span.grow');
       this.nextBtn = h('button.btn.primary', { text: 'Modeli kaydet, atom takibine geç →' });
       this.nextBtn.addEventListener('click', () => {

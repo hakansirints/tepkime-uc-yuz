@@ -187,7 +187,7 @@
     };
     const zoomOn = p.opts.zoom !== false;
     const onWheel = (e) => {
-      if (!zoomOn || e.target.closest('.zoomctl')) return;
+      if (!zoomOn) return;
       e.preventDefault();
       Viewer.zoom(p, Math.exp(e.deltaY * 0.0012));
     };
@@ -222,8 +222,15 @@
     el.addEventListener('pointerup', onUp);
     el.addEventListener('pointercancel', onUp);
     el.addEventListener('wheel', onWheel, { passive: false });
-    if (zoomOn) Viewer._zoomCtl(p);
+    // yakınlaştırma düğmeleri kaldırıldı: tekerlek / iki parmak yakınlaştırır, çift tıklama görünümü sıfırlar
+    const onDbl = (e) => { if (!zoomOn) return; e.preventDefault(); Viewer.resetView(p); };
+    if (zoomOn) {
+      if (getComputedStyle(el).position === 'static') el.style.position = 'relative';
+      el.style.touchAction = 'pan-y'; // dikey kaydırma sayfada kalır; iki parmak panelde yakınlaştırır
+      el.addEventListener('dblclick', onDbl);
+    }
     p._unbind = () => {
+      el.removeEventListener('dblclick', onDbl);
       el.removeEventListener('pointerdown', tDown, true);
       el.removeEventListener('pointermove', tMove, true);
       el.removeEventListener('pointerup', tUp, true);
@@ -233,7 +240,6 @@
       el.removeEventListener('pointerup', onUp);
       el.removeEventListener('pointercancel', onUp);
       el.removeEventListener('wheel', onWheel);
-      if (p._zc) { p._zc.remove(); p._zc = null; }
     };
   };
 
@@ -244,31 +250,10 @@
     p.zoomMul = U.clamp((p.zoomMul || 1) * mul, Viewer.ZMIN, Viewer.ZMAX);
     Viewer._syncZoom(p);
   };
-  Viewer._syncZoom = function (p) {
-    if (!p._zc) return;
-    const z = p.zoomMul || 1;
-    p._zc.querySelector('[data-z=in]').disabled = z <= Viewer.ZMIN + 1e-3;
-    p._zc.querySelector('[data-z=out]').disabled = z >= Viewer.ZMAX - 1e-3;
-    p._zc.querySelector('[data-z=reset]').disabled = Math.abs(z - 1) < 0.02 && Math.abs(p.gYaw - (p.opts.yaw || 0)) < 0.02 && Math.abs(p.gPitch - (p.opts.pitch != null ? p.opts.pitch : 0.12)) < 0.02;
-  };
-  Viewer._zoomCtl = function (p) {
-    const el = p.el;
-    if (getComputedStyle(el).position === 'static') el.style.position = 'relative';
-    const mk = (z, txt, title) => U.h('button.zbtn', { type: 'button', 'data-z': z, title, 'aria-label': title, text: txt });
-    const zc = U.h('div.zoomctl', null,
-      mk('in', '+', 'Yakınlaştır'), mk('out', '−', 'Uzaklaştır'), mk('reset', '⟲', 'Görünümü sıfırla'));
-    zc.addEventListener('pointerdown', (e) => e.stopPropagation());
-    zc.addEventListener('click', (e) => {
-      const b = e.target.closest('button');
-      if (!b) return;
-      e.stopPropagation();
-      if (b.dataset.z === 'in') Viewer.zoom(p, 1 / 1.25);
-      else if (b.dataset.z === 'out') Viewer.zoom(p, 1.25);
-      else { p.zoomMul = 1; p.gYaw = p.opts.yaw || 0; p.gPitch = p.opts.pitch != null ? p.opts.pitch : 0.12; Viewer._syncZoom(p); }
-    });
-    el.appendChild(zc);
-    p._zc = zc;
-    Viewer._syncZoom(p);
+  Viewer._syncZoom = function () { /* yakınlaştırma düğmeleri kaldırıldı */ };
+  /** Yakınlaştırma ve döndürmeyi başlangıca al (panele çift tıklama) */
+  Viewer.resetView = function (p) {
+    p.zoomMul = 1; p.gYaw = p.opts.yaw || 0; p.gPitch = p.opts.pitch != null ? p.opts.pitch : 0.12;
   };
 
   Viewer._loop = function () {

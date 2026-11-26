@@ -67,7 +67,7 @@
         const num = String(this.two && key === 'after' ? 2 : r.n);
         strip.querySelector('.n').textContent = num;
         const el = h('div.mpanel' + (aq ? '.aq' : ''), { 'data-region': key },
-          h('div.ptitle', null, h('span.n', { text: num }), r.title, h('span.pctl', null, focusBtn, hideBtn), q ? h('div.m-q', { text: q }) : null),
+          h('div.ptitle', null, h('span.n', { text: num }), h('span.ptxt', { text: r.title }), h('span.pctl', null, focusBtn, hideBtn), q ? h('div.m-q', { text: q }) : null),
           h('div.pempty', { text: '' }),
           strip);
         return el;
@@ -87,10 +87,13 @@
         this.playBtn.addEventListener('click', () => this.playTwo());
         this.slider = h('input', { type: 'range', min: 0, max: 1000, value: 0, style: { width: '140px' }, 'aria-label': 'Zaman' });
         this.slider.addEventListener('input', () => this._seekTwo(this.slider.value / 1000));
-        this.pbtns = h('div.pbtns', null, this.slider, this.playBtn);
+        this.backBtn = h('button.btn.sm.ghost', { text: '↺ Başa dön', title: 'Kartı tepkime öncesi hâline döndür' });
+        this.backBtn.hidden = true;
+        this.backBtn.addEventListener('click', () => { if (this.rearr && this.rearr.t > 0) { this.rearr.pause(); this.rewinding = true; } });
+        this.pbtns = h('div.pbtns', null, this.slider, this.backBtn, this.playBtn);
         this.cap = h('div.pnote.trk-cap');
         this.regEl.before.append(this.pbtns, this.cap);
-        this.arrow = h('div.trk-arrow', { 'aria-hidden': 'true' }, h('span.sh', { text: '→' }), h('small', { text: 'tepkime' }));
+        this.arrow = U.trkArrow();
         this.regionsEl = h('div.three-regions.two-regions', null, this.regEl.before, this.arrow, this.regEl.after);
       } else {
         this.playBtn.addEventListener('click', () => this.playMid());
@@ -103,14 +106,12 @@
       this.counterEl = h('div');
       this.hintEl = h('div.hint-box');
       this.rightSlot = h('div');
+      // korunma kuralları sayaç satırlarının altında küçük bir dipnot
+      const rules = h('div.cnt-rule', { text: 'Atom türleri değişmez · atom sayıları korunur.' });
       const right = h('div.side-card', null,
-        h('h3', { html: '⚖️ Korunma kontrolü' }),
-        h('ul.rules', null,
-          h('li', { text: 'Atom türleri değişmez.' }),
-          h('li', { text: 'Atom sayıları korunur.' }),
-          h('li', { text: 'Suda çözünen maddeler sulu ortamda ayrı iyonlar olarak gösterilir.' }),
-          h('li', { text: 'Katı çökeltiler düzenli kristal yapı olarak gösterilir.' })),
-        o.showCounter === false ? null : h('div', null, h('h3', { html: '🔢 Atom sayacı' }), this.counterEl),
+        o.showCounter === false
+          ? h('div', null, h('h3', { html: '⚖️ Korunma kontrolü' }), rules)
+          : h('div.counter-box', null, h('h3.sr-only', { text: '🔢 Atom sayacı' }), this.counterEl, rules),
         o.hints === false ? null : this.hintEl,
         this.rightSlot);
       this.rightEl = right;
@@ -163,7 +164,7 @@
       const w = { before: fr, mid: '0.8fr', after: fr };
       const keys = Object.keys(this.open);
       const cols = keys.map((k) => (this.open[k] ? w[k] : '42px'));
-      if (this.two) cols.splice(1, 0, '60px'); // ok sütunu
+      if (this.two) cols.splice(1, 0, '84px'); // ok sütunu
       this.regionsEl.style.gridTemplateColumns = cols.join(' ');
       keys.forEach((k) => {
         this.regEl[k].classList.toggle('collapsed', !this.open[k]);
@@ -267,13 +268,18 @@
       if (this.o.showCounter === false) return;
       const cb = T.countAtoms(this.model.before), ca = T.countAtoms(this.model.after);
       const els = T.EL_ORDER.filter((e) => cb[e] || ca[e]);
-      if (!els.length) { this.counterEl.innerHTML = '<p class="muted small">Tanecik ekledikçe atomlar burada sayılır.</p>'; return; }
+      if (!els.length) { this.counterEl.innerHTML = '<p class="muted small" style="margin:0">Tanecik ekledikçe atomlar burada sayılır.</p>'; return; }
+      const showSt = this.o.counterStatus !== false;
+      const mis = [];
       const rows = els.map((e) => {
         const b = cb[e] || 0, a = ca[e] || 0, ok = b === a;
-        const status = this.o.counterStatus === false ? '' : (ok ? '✓' : '≠');
-        return `<tr class="${this.o.counterStatus === false ? '' : (ok ? 'okr' : 'mis')}"><td class="el"><span class="dot" style="background:${U.hex(T.ELEMENTS[e].color)}"></span>${e} <span class="muted" style="font-weight:500;font-size:11px">${T.ELEMENTS[e].name}</span></td><td>${b}</td><td>${a}</td><td class="st">${status}</td></tr>`;
+        if (!ok) mis.push(`${e} ${b}≠${a}`);
+        return `<div class="cnt-r${showSt && !ok ? ' mis' : ''}"><span class="dot" style="background:${U.hex(T.ELEMENTS[e].color)}"></span><span><b>${e}</b> <span class="muted">${T.ELEMENTS[e].name}</span></span><span class="n">${b}</span><span class="ar">→</span><span class="n">${a}</span><span class="st">${showSt ? (ok ? '✓' : '≠') : ''}</span></div>`;
       }).join('');
-      this.counterEl.innerHTML = `<table class="counter-table"><thead><tr><th style="text-align:left">Atom</th><th>Önce</th><th>Sonra</th><th></th></tr></thead><tbody>${rows}</tbody></table>`;
+      const status = !showSt ? '' : (mis.length
+        ? `<div class="cnt-status bad">⚠️ Eşit değil: ${mis.join(', ')}</div>`
+        : '<div class="cnt-status">⚖️ Atomlar korunuyor</div>');
+      this.counterEl.innerHTML = status + `<div class="cnt-rows"><div class="cnt-hd"><span></span><span>Atom</span><span>Önce</span><span></span><span>Sonra</span><span></span></div>${rows}</div>`;
     }
     _renderHints() {
       const r = this.o.reaction;
@@ -289,30 +295,33 @@
         'Formül ipucu: ' + Object.keys(ref).map((s) => `<b>${T.speciesLabel(s)}</b> ×${ref[s]}`).join(', ')
       ];
       const names = ['Yönlendirme', 'Tanecik ipucu', 'Formül ipucu'];
-      this.hintEl.innerHTML = '';
-      this.hintEl.appendChild(h('h3', { html: '💡 Destek (' + (side === 'before' ? 'öncesi' : 'sonrası') + ')' }));
-      // akordeon: aynı anda tek ipucu açık; açık olana tekrar dokununca kapanır.
-      // İpuçları sırayla açılır (bir sonraki, öncekini görmeden kullanılamaz).
+      // tek düğme + 3 nokta: düğme sıradaki ipucunu açar; açılmış noktalara dokununca o ipucu gösterilir.
       this.hintOpen = this.hintOpen || { before: -1, after: -1 };
       const open = this.hintOpen[side];
-      const row = h('div.hint-row');
+      const unlock = (i) => {
+        this.hintLevel[side] = Math.max(this.hintLevel[side], i + 1);
+        T.State.data.hintsUsed[side] = Math.max(T.State.data.hintsUsed[side] || 0, i + 1);
+        T.State.save();
+      };
+      this.hintEl.innerHTML = '';
+      const dots = h('span.hint-dots');
       names.forEach((nm, i) => {
-        const b = h('button.btn.sm' + (i === open ? '.primary' : (i < lv ? '.ghost' : '')), {
-          text: (i + 1) + '. ' + nm, disabled: i > lv ? true : null, 'aria-expanded': String(i === open) });
-        b.addEventListener('click', () => {
-          if (i >= lv) {
-            this.hintLevel[side] = i + 1;
-            T.State.data.hintsUsed[side] = Math.max(T.State.data.hintsUsed[side] || 0, i + 1);
-            T.State.save();
-          }
-          this.hintOpen[side] = this.hintOpen[side] === i ? -1 : i;
-          this._renderHints();
-        });
-        row.appendChild(b);
+        const d = h('button.hint-dot' + (i < lv ? '.on' : '') + (i === open ? '.cur' : ''), {
+          type: 'button', title: (i + 1) + ' · ' + nm, 'aria-label': (i + 1) + '. ipucu: ' + nm,
+          disabled: i < lv ? null : true, 'aria-pressed': String(i === open) });
+        d.addEventListener('click', () => { this.hintOpen[side] = this.hintOpen[side] === i ? -1 : i; this._renderHints(); });
+        dots.appendChild(d);
       });
-      this.hintEl.appendChild(row);
+      const done = lv >= names.length;
+      const btn = h('button.btn.sm' + (done ? '.ghost' : ''), {
+        text: lv === 0 ? 'İpucu al' : done ? 'İpuçları bitti' : `Sonraki ipucu (${lv + 1}/3)`, disabled: done ? true : null });
+      btn.addEventListener('click', () => { unlock(lv); this.hintOpen[side] = lv; this._renderHints(); });
+      this.hintEl.appendChild(h('div.hint-head', null,
+        h('span.hint-lbl', { html: '💡 İpucu · <span class="muted">' + (side === 'before' ? 'öncesi' : 'sonrası') + '</span>' }),
+        dots, btn));
       if (open >= 0 && open < lv) {
-        this.hintEl.appendChild(h('div.feedback.info', { style: { margin: '6px 0 0', fontSize: '13px' }, html: texts[open] }));
+        this.hintEl.appendChild(h('div.feedback.info.hint-txt', null,
+          h('div.hint-k', { text: (open + 1) + ' · ' + names[open] }), h('div', { html: texts[open] })));
       }
     }
     _resetMid() {
@@ -323,10 +332,12 @@
       this.playBtn.disabled = !(tb && ta);
       empty.textContent = tb && ta ? 'Modelin hazır. ▶ Canlandır ile atomların yeniden düzenlenmesini izle.' : 'Her iki bölüme de tanecik ekleyince burada atomların yeniden düzenlenmesini izleyebilirsin.';
     }
-    /* ---- İki kart düzeni: canlandırma Önce kartında oynar, bitince kısa geri sarmayla başa döner ---- */
+    /* ---- İki kart düzeni: canlandırma Önce kartında oynar; bitince son durumda kalır,
+            başa dönüşü öğrenci "↺ Başa dön" ile seçer (model değişirse kendiliğinden döner) ---- */
     get ready() { return !!(Object.keys(this.model.before).length && Object.keys(this.model.after).length); }
     _resetTwo() {
-      clearTimeout(this._backTmr); this.rewinding = false;
+      clearTimeout(this._flashTmr); this.rewinding = false;
+      this.regEl.after.classList.remove('flash-ok');
       if (this.rearr) { this.rearr.dispose(); this.rearr = null; this.panels.before.fit(true); }
       this.groups.before.forEach((g) => { g.visible = true; });
       this.played = false;
@@ -336,8 +347,31 @@
       this.playBtn.disabled = false;
       this.playBtn.textContent = '▶ Canlandır';
       this.playBtn.classList.toggle('pulse', ok);
-      this.arrow.className = 'trk-arrow' + (ok ? ' on' : '');
-      this.cap.textContent = '';
+      if (ok) this.arrow.set('ready', '▶ hazır'); else this.arrow.set('wait', 'model eksik');
+      this._phaseTwo();
+    }
+    /** Önce kartının başlığı canlandırmanın evresini söyler; alt yazı ve "Başa dön" de buna uyar */
+    _phaseTwo() {
+      const R = this.rearr;
+      const ph = !R || !R.group.visible || R.t <= 0 ? 'before' : (R.t >= 0.98 && !R.playing && !this.rewinding ? 'done' : 'mid');
+      if (ph === this._ph) return;
+      this._ph = ph;
+      const P = this.regEl.before;
+      P.classList.toggle('ph-mid', ph === 'mid');
+      P.classList.toggle('ph-done', ph === 'done');
+      P.querySelector('.ptitle .ptxt').textContent = ph === 'before' ? REG.before.title : ph === 'mid' ? 'Tanecikler etkileşirken' : 'Etkileşim tamamlandı';
+      P.querySelector('.ptitle .n').textContent = ph === 'before' ? '1' : ph === 'mid' ? '⟳' : '✓';
+      this.backBtn.hidden = ph === 'before';
+      if (ph === 'before') this.cap.textContent = '';
+      else if (ph === 'mid') this.cap.textContent = this.rewinding ? 'Başa dönülüyor…' : 'Bağlar kopuyor, atomlar yeni düzenine geçiyor…';
+      else this.cap.innerHTML = '<span class="ev">✓ Atomlar yeniden düzenlendi. Sonuç, <b>Tepkime sonrası</b> modelinle aynı.</span>';
+    }
+    /** Sonuç, öğrencinin kurduğu Sonra modeliyle aynı: Sonra kartı kısa süre yeşil parlar */
+    _flashAfter() {
+      const A = this.regEl.after;
+      A.classList.remove('flash-ok'); void A.offsetWidth; A.classList.add('flash-ok');
+      clearTimeout(this._flashTmr);
+      this._flashTmr = setTimeout(() => A.classList.remove('flash-ok'), 1800);
     }
     _ensureRearr() {
       if (this.rearr) return this.rearr;
@@ -363,33 +397,34 @@
     playTwo(onDone) {
       if (!this.ready) return;
       const R = this._ensureRearr();
-      clearTimeout(this._backTmr); this.rewinding = false;
+      this.rewinding = false;
       if (R.t >= 1) R.seek(0);
       this._showAnim(true);
       this.playBtn.classList.remove('pulse');
-      this.arrow.className = 'trk-arrow on';
-      this.cap.textContent = 'Bağlar kopuyor, atomlar yeni düzenine geçiyor…';
+      this.arrow.set('run', 'oynuyor…');
       R.play(() => this._playedTwo(onDone));
+      this._phaseTwo();
     }
     _playedTwo(onDone) {
-      this.cap.innerHTML = '<span class="ev">✓ Atomlar yeniden düzenlendi.</span>';
-      this.arrow.className = 'trk-arrow ok';
+      this.arrow.set('ok', '✓ düzenlendi');
       const first = !this.played;
       this.played = true;
-      this.playBtn.textContent = '↺ Tekrar izle';
+      this.playBtn.textContent = '▶ Tekrar izle';
+      this._phaseTwo();
+      this._flashAfter();
       if (typeof onDone === 'function') onDone();
       if (first && this.o.onPlayed) this.o.onPlayed();
-      this._backTmr = setTimeout(() => { if (this.rearr && this.rearr.t >= 0.98 && !this.rearr.playing) this.rewinding = true; }, 1300);
     }
     _seekTwo(t) {
       if (!this.ready) return;
-      clearTimeout(this._backTmr); this.rewinding = false;
-      if (t <= 0) { if (this.rearr) this._showAnim(false); this.cap.textContent = ''; return; }
+      this.rewinding = false;
+      if (t <= 0) { if (this.rearr) this._showAnim(false); this._phaseTwo(); return; }
       this._showAnim(true);
       const R = this.rearr;
       R.pause();
       R.seek(t);
-      if (t >= 1 && !this.played) this._playedTwo();
+      if (t >= 1) { if (this._ph !== 'done') this._playedTwo(); } else if (this.played) this.arrow.set('ok', '✓ düzenlendi');
+      this._phaseTwo();
     }
     _tickTwo(dt) {
       const R = this.rearr;
@@ -397,11 +432,13 @@
       if (this.rewinding) {
         R.seek(Math.max(0, R.t - dt * 1.6));
         this.slider.value = Math.round(R.t * 1000);
-        if (R.t <= 0) { this.rewinding = false; this._showAnim(false); this.cap.textContent = ''; }
+        if (R.t <= 0) { this.rewinding = false; this._showAnim(false); }
+        this._phaseTwo();
         return;
       }
       R.update(dt);
       if (R.playing) this.slider.value = Math.round(R.t * 1000);
+      this._phaseTwo();
     }
     playMid(onDone, track) {
       if (this.two) return this.playTwo(onDone);
@@ -416,7 +453,7 @@
       return info;
     }
     destroy() {
-      clearTimeout(this._backTmr);
+      clearTimeout(this._flashTmr);
       if (this.rearr) { this.rearr.dispose(); this.rearr = null; }
       Object.values(this.panels).forEach((p) => V().removePanel(p));
       this.el.remove();

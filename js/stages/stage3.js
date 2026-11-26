@@ -17,12 +17,15 @@
       this.ti = 0;
       this.results = [];
       const mk = (title, sub, n, reg) => h('div.mpanel.aq', null,
-        h('div.ptitle', null, h('span.n.r-' + reg, { text: n }), title, h('span.psub', { text: sub })), h('div.pempty'));
+        h('div.ptitle', null, h('span.n.r-' + reg, { text: n }), h('span.ptxt', { text: title }), h('span.psub', { text: sub })), h('div.pempty'));
       this.pBefore = mk('Önce', '· karıştırmadan önce', '1', 'before');
       this.pAfter = mk('Sonra', '· tepkime bitince', '2', 'after');
       this.playBtn = h('button.btn.sm.primary', { text: '▶ Oynat' });
+      this.backBtn = h('button.btn.sm.ghost', { text: '↺ Başa dön', title: 'Kartı tepkime öncesi hâline döndür' });
+      this.backBtn.hidden = true;
+      this.backBtn.addEventListener('click', () => { if (this.rearr && this.rearr.t > 0) { this.rearr.pause(); this.rewinding = true; } });
       this.slider = h('input', { type: 'range', min: 0, max: 1000, value: 0, style: { width: '140px' }, 'aria-label': 'Zaman' });
-      this.pbtns = h('div.pbtns', null, this.slider, this.playBtn);
+      this.pbtns = h('div.pbtns', null, this.slider, this.backBtn, this.playBtn);
       this.pbtns.hidden = true; // atom işaretlenince görünür
       this.pBefore.appendChild(this.pbtns);
       this.capB = h('div.pnote.trk-cap');
@@ -30,7 +33,7 @@
       this.pBefore.appendChild(this.capB);
       this.pAfter.appendChild(this.capA);
       // Önce → Sonra oku: canlandırma sırasında sarı, görev bitince yeşil
-      this.arrow = h('div.trk-arrow', { 'aria-hidden': 'true' }, h('span.sh', { text: '→' }), h('small', { text: 'tepkime' }));
+      this.arrow = U.trkArrow();
       this.side = h('div.side-card.trk-side');
       body.appendChild(h('div.grid-track.track-a', null, h('div.track-main', null, this.pBefore, this.arrow, this.pAfter), this.side));
       this.footer = h('div.ws-footer', null, h('span.grow', { html: 'Atomların izini sürerek <b>atomların yok olmadığını, yeniden düzenlendiğini</b> göreceksin.' }));
@@ -42,13 +45,14 @@
       this.playBtn.addEventListener('click', () => this.play());
       this.slider.addEventListener('input', () => {
         if (!this.rearr) return;
-        this.rewinding = false; clearTimeout(this._backTmr);
+        this.rewinding = false;
         this.rearr.pause();
         const t = this.slider.value / 1000;
         this.showAnim(t > 0);
         this.rearr.seek(t);
-        this.paintCaps();
         if (t >= 1 && this.step === 2) this.onPlayed();
+        this.paintCaps();
+        this._phase();
       });
       this.buildStatic();
       this.startTask();
@@ -75,36 +79,58 @@
       this.rearr.group.visible = on;
       this.bGroups.forEach((g) => { g.visible = !on; });
     },
+    /** Önce kartının başlığı canlandırmanın evresini söyler:
+        Önce (başta) → Tanecikler etkileşirken (oynarken / kaydırıcı ortada) → Etkileşim tamamlandı (sonda) */
+    _phase() {
+      const R = this.rearr;
+      const ph = !R || !R.group.visible || R.t <= 0 ? 'before' : (R.t >= 0.98 && !R.playing && !this.rewinding ? 'done' : 'mid');
+      if (ph === this._ph) return;
+      this._ph = ph;
+      const P = this.pBefore;
+      P.classList.toggle('ph-mid', ph === 'mid');
+      P.classList.toggle('ph-done', ph === 'done');
+      P.querySelector('.ptxt').textContent = ph === 'before' ? 'Önce' : ph === 'mid' ? 'Tanecikler etkileşirken' : 'Etkileşim tamamlandı';
+      P.querySelector('.psub').textContent = ph === 'before' ? '· karıştırmadan önce' : '';
+      P.querySelector('.ptitle .n').textContent = ph === 'before' ? '1' : ph === 'mid' ? '⟳' : '✓';
+      this.backBtn.hidden = ph === 'before';
+    },
+    /** Kart duruma göre ok çipi (canlandırma dururken) */
+    _restArrow() {
+      if (this.step === 2) this.arrow.set('ready', '▶ hazır');
+      else if (this.step === 3) this.arrow.set('ready', 'izlendi');
+      else if (this.step >= 4) this.arrow.set('ok', '✓ aynı atom');
+    },
     _tick(dt) {
       const R = this.rearr;
       if (!R) return;
       if (this.rewinding) {
-        // canlandırma bitti: kart kısa bir geri sarmayla başlangıç hâline döner
+        // "↺ Başa dön": kart kısa bir geri sarmayla tepkime öncesi hâline döner
         R.seek(Math.max(0, R.t - dt * 1.6));
         this.slider.value = Math.round(R.t * 1000);
         if (R.t <= 0) {
           this.rewinding = false;
           this.showAnim(false);
-          this.arrow.classList.remove('on');
-          if (this.step === 2) { this.step = 3; this.renderSide(); this._afterFirstPlay(); }
-          else if (this.step === 3) this.arrow.classList.remove('on');
+          this._restArrow();
           this.paintCaps();
         }
+        this._phase();
         return;
       }
       R.update(dt);
       if (R.playing) this.slider.value = Math.round(R.t * 1000);
+      this._phase();
     },
     startTask() {
       const t = this.tasks[this.ti];
       this.step = 1;
       this.chosenB = null;
       this.mapInfo = null;
-      this.rewinding = false; clearTimeout(this._backTmr);
+      this.rewinding = false;
       if (this.rearr) { this.rearr.pause(); this.rearr.untrack(); this.rearr.seek(0); this.showAnim(false); this.slider.value = 0; }
+      this._phase();
       this.pbtns.hidden = true;
       this.playBtn.textContent = '▶ Oynat';
-      this.arrow.className = 'trk-arrow';
+      this.arrow.set('wait', 'atomu seç');
       this.pAfter.classList.remove('trk-done');
       this.clearMarks();
       this.renderSide();
@@ -130,14 +156,22 @@
       this.side.appendChild(h('div.trk-title', null, `${cap(t.name)} atomunun izini `,
         h('span.nw', null, 'sür.', h('span.wt-dot', { style: { background: U.hex(T.ELEMENTS[t.el].color) } }))));
       if (t.spectator) this.side.appendChild(h('p.small.muted', { style: { margin: '-4px 0 2px' }, text: 'Bu atom bir iyonun içinde: tepkimede değişip değişmediğine bak.' }));
-      const ol = h('ul.track-steps');
-      steps.forEach((s, i) => {
-        const li = h('li', { 'data-n': String(i + 1), html: s });
-        if (i + 1 < this.step) li.classList.add('done');
-        if (i + 1 === this.step) li.classList.add('now');
-        ol.appendChild(li);
-      });
-      this.side.appendChild(ol);
+      // Tek adım (B modeli): 3 parçalı ilerleme + yalnızca o anki adım büyük + hangi kartta + "Sıradaki"
+      const cur = this.step - 1; // 0..2; 3 = bitti
+      const bar = h('div.trk-bar', { role: 'progressbar', 'aria-valuemin': '0', 'aria-valuemax': '3', 'aria-valuenow': String(Math.min(cur, 3)) });
+      [0, 1, 2].forEach((i) => bar.appendChild(h('i' + (i < cur ? '.d' : i === cur ? '.c' : ''))));
+      this.side.appendChild(bar);
+      if (cur <= 2) {
+        const reg = cur === 2
+          ? '<span class="sn r-after">2</span>Sonra kartında'
+          : '<span class="sn r-before">1</span>Önce kartında';
+        this.side.appendChild(h('div.trk-now', null,
+          h('div.trk-stp', { text: `Adım ${cur + 1}/3` }),
+          h('div.trk-big', { html: steps[cur] }),
+          h('span.trk-reg', { html: reg })));
+        this.side.appendChild(h('div.trk-next', { html: cur < 2
+          ? 'Sıradaki: <b>' + steps[cur + 1].replace(/<[^>]+>/g, '') + '</b>' : 'Son adım.' }));
+      }
       this.fbEl = h('div');
       this.side.appendChild(this.fbEl);
       const leg = h('div.legend.trk-keys');
@@ -161,8 +195,8 @@
         if (this._played && R && R.t >= 0.98) b = '<span class="ev">✓ Atomlar yeniden düzenlendi. Şimdi <b>Sonra</b> kartına bak.</span>';
       } else if (this.step === 3) {
         const moving = R && (R.playing || R.t > 0);
-        b = !moving ? 'Tekrar izlemek için <b>↺ Tekrar izle</b>.'
-          : R.t >= 0.98 && !R.playing ? '<span class="ev">✓ Atomlar yeniden düzenlendi.</span>' : 'Sarı halkalı atomu gözünle takip et…';
+        b = !moving ? 'Tekrar izlemek için <b>▶ Tekrar izle</b>.'
+          : R.t >= 0.98 && !R.playing && !this.rewinding ? '<span class="ev">✓ Atomlar yeniden düzenlendi. Sarı halkalı atom nerede?</span>' : 'Sarı halkalı atomu gözünle takip et…';
         a = `Aynı ${t.name} atomu şimdi hangi tanecikte? <b>Dokun.</b>`;
       } else { b = ''; a = this._doneCap || ''; }
       this.capB.innerHTML = b;
@@ -231,6 +265,7 @@
       this.step = 2;
       this._played = false;
       this.pbtns.hidden = false;
+      this.arrow.set('ready', '▶ hazır');
       this.renderSide();
       // oynatma çubuğu belirdi: kadraj alttaki çubuk ve yazı için yer açsın
       requestAnimationFrame(() => this.vb.fit(false, this.rearr.fitBoth()));
@@ -240,23 +275,24 @@
     play() {
       if (!this.rearr) return;
       this.playBtn.classList.remove('pulse');
-      this.rewinding = false; clearTimeout(this._backTmr);
+      this.rewinding = false;
       if (this.rearr.t >= 1) this.rearr.seek(0);
       this.showAnim(true);
-      this.arrow.classList.add('on');
+      this.arrow.set('run', 'oynuyor…');
       this.rearr.play(() => this.onPlayed());
       this.paintCaps();
     },
-    /** Canlandırma sona ulaştı: sonuç bir an görünür, sonra kart geri sarılır */
+    /** Canlandırma sona ulaştı: kart son durumda kalır (başa dönüşü öğrenci "↺ Başa dön" ile seçer) */
     onPlayed() {
       this._played = true;
+      if (this.step === 2) { this.step = 3; this.renderSide(); this._afterFirstPlay(); }
+      this._restArrow();
       this.paintCaps();
-      clearTimeout(this._backTmr);
-      this._backTmr = setTimeout(() => { if (this.rearr && this.rearr.t >= 0.98 && !this.rearr.playing) this.rewinding = true; }, 1300);
+      this._phase();
     },
     /** İlk izlemeden sonra: sıra Sonra kartında */
     _afterFirstPlay() {
-      this.playBtn.textContent = '↺ Tekrar izle';
+      this.playBtn.textContent = '▶ Tekrar izle';
       if (this.mapInfo && this.mapInfo.lost) {
         this.fb('bad', 'Atom kayboldu mu?', 'İşaretli atom tepkime sonrasında hiçbir taneciğe gitmedi ve kayboldu. Gerçekte <b>atomlar yok olamaz</b>! Modelinin tepkime sonrası bölümünde bu atomu içeren bir tanecik eksik. Bunu 4. aşamada test edip düzelteceksin.',
           [{ text: '← Modelini düzelt', onclick: () => T.App.go(2) }, { text: 'Devam et', cls: '.primary', onclick: () => this.finishTask(false) }]);
@@ -284,8 +320,7 @@
           : 'Atom yok olmadı, yeni atom oluşmadı; atomlar <b>yeniden düzenlendi</b>.';
         this._doneCap = `<span class="ev"><b>${lb}</b> içindeki ${t.name}, başlangıçta <b>${lb0}</b> içindeydi.</span>`;
         this.step = 4;
-        this.arrow.className = 'trk-arrow ok';
-        this.arrow.querySelector('small').textContent = 'aynı atom';
+        this.arrow.set('ok', '✓ aynı atom');
         this.pAfter.classList.add('trk-done');
         this.renderSide();
         this.fb('ok', title, txt, [{ text: this.ti + 1 < this.tasks.length ? 'Sonraki görev →' : 'Aşamayı tamamla →', cls: '.success', onclick: () => this.finishTask(true) }]);
@@ -293,7 +328,7 @@
         T.Audio.error();
         const has = T.SPECIES[g.userData.sid].atoms.some((a) => a.el === t.el);
         this.fb('warn', 'Tekrar izle', has
-          ? `<b>${T.speciesLabel(g.userData.sid)}</b> taneciğinde de ${t.name} var ama işaretli atom buraya gitmedi. <b>↺ Tekrar izle</b> ile sarı halkayı takip et.`
+          ? `<b>${T.speciesLabel(g.userData.sid)}</b> taneciğinde de ${t.name} var ama işaretli atom buraya gitmedi. <b>▶ Tekrar izle</b> ile sarı halkayı takip et.`
           : `<b>${T.speciesLabel(g.userData.sid)}</b> taneciğinde hiç ${t.name} atomu yok. İşaretli atomun nereye gittiğini tekrar izle.`);
       }
     },
@@ -301,7 +336,6 @@
       this.results.push(ok);
       S.data.trackLog = this.results; S.save();
       this._doneCap = '';
-      this.arrow.querySelector('small').textContent = 'tepkime';
       if (this.ti + 1 < this.tasks.length) { this.ti++; this.startTask(); return; }
       T.App.complete(3);
       this.side.innerHTML = '';
@@ -310,7 +344,7 @@
       const nb = h('button.btn.success.block.pulse.trk-acts.in-strip', { text: 'Modelimi test et →' });
       nb.addEventListener('click', () => T.App.go(4));
       this.side.appendChild(nb);
-      this.arrow.className = 'trk-arrow ok';
+      this.arrow.set('ok', '✓ tamamlandı');
       this.capB.innerHTML = ''; this.capA.innerHTML = '';
       const go4 = h('button.btn.sm.success', { text: 'Modelimi test et →' });
       go4.addEventListener('click', () => T.App.go(4));
