@@ -122,7 +122,7 @@
     if (rect.height > 0) {
       const tEl = p.el.querySelector(':scope > .ptitle');
       if (tEl && tEl.offsetParent) hTop = Math.max(0, tEl.getBoundingClientRect().bottom - rect.top - 8);
-      p.el.querySelectorAll(':scope > .pnote, :scope > .pbtns').forEach((b) => {
+      p.el.querySelectorAll(':scope > .pnote, :scope > .pbtns, :scope > .psubs').forEach((b) => {
         if (b.offsetParent && b.textContent.trim()) hBot = Math.max(hBot, rect.bottom - b.getBoundingClientRect().top - 8);
       });
       const maxCut = rect.height * 0.4;

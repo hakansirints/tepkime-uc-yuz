@@ -62,9 +62,16 @@
         const q = key === 'before' ? (o.lockBefore ? null : 'Karıştırmadan önce kaplarda hangi tanecikler vardı?')
           : key === 'mid' ? 'Bağlar kırılır, atomlar yeniden düzenlenir. ▶ Canlandır ile izle.'
             : 'Tepkime bitince kapta hangi tanecikler var?';
+        // öğrenci hangi maddeleri modellediğini bilsin: yalnızca günlük adları (formül sonraki aşamalarda kendisi kurar)
+        const rx = o.reaction;
+        const subs = key === 'before' && rx ? h('div.psubs', { title: 'Karıştırılan maddeler' },
+          h('span.ps-l', { text: 'Kaplarda' }),
+          h('span.ps-i', null, h('i', { text: rx.fixed.solid ? '🪨' : '🧪' }), rx.fixed.name),
+          h('span.ps-i', null, h('i', { text: '⚗️' }), rx.added.name)) : null;
         const el = h('div.mpanel' + (aq ? '.aq' : ''), { 'data-region': key },
           h('div.ptitle', null, h('span.n', { text: String(r.n) }), r.title, h('span.pctl', null, focusBtn, hideBtn), q ? h('div.m-q', { text: q }) : null),
           h('div.pempty', { text: '' }),
+          subs,
           strip);
         return el;
       };
@@ -268,22 +275,28 @@
       const names = ['Yönlendirme', 'Tanecik ipucu', 'Formül ipucu'];
       this.hintEl.innerHTML = '';
       this.hintEl.appendChild(h('h3', { html: '💡 Destek (' + (side === 'before' ? 'öncesi' : 'sonrası') + ')' }));
+      // akordeon: aynı anda tek ipucu açık; açık olana tekrar dokununca kapanır.
+      // İpuçları sırayla açılır (bir sonraki, öncekini görmeden kullanılamaz).
+      this.hintOpen = this.hintOpen || { before: -1, after: -1 };
+      const open = this.hintOpen[side];
       const row = h('div.hint-row');
       names.forEach((nm, i) => {
-        const b = h('button.btn.sm' + (i < lv ? '.ghost' : ''), { text: (i + 1) + '. ' + nm, disabled: i > lv ? true : null });
+        const b = h('button.btn.sm' + (i === open ? '.primary' : (i < lv ? '.ghost' : '')), {
+          text: (i + 1) + '. ' + nm, disabled: i > lv ? true : null, 'aria-expanded': String(i === open) });
         b.addEventListener('click', () => {
           if (i >= lv) {
             this.hintLevel[side] = i + 1;
             T.State.data.hintsUsed[side] = Math.max(T.State.data.hintsUsed[side] || 0, i + 1);
             T.State.save();
           }
+          this.hintOpen[side] = this.hintOpen[side] === i ? -1 : i;
           this._renderHints();
         });
         row.appendChild(b);
       });
       this.hintEl.appendChild(row);
-      for (let i = 0; i < lv; i++) {
-        this.hintEl.appendChild(h('div.feedback.info', { style: { margin: '6px 0 0', fontSize: '13px' }, html: texts[i] }));
+      if (open >= 0 && open < lv) {
+        this.hintEl.appendChild(h('div.feedback.info', { style: { margin: '6px 0 0', fontSize: '13px' }, html: texts[open] }));
       }
     }
     _resetMid() {

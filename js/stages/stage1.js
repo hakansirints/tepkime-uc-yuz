@@ -380,6 +380,9 @@
         T.App.renderStepper();
       } else T.Audio.error();
       this.setMainButton();
+      // dönüt ve altındaki düğme ekranın dışında kaldıysa görünür olacak kadar kaydır
+      const fb = U.$('#obs-feedback'), btn = U.$('#btn-check-obs');
+      requestAnimationFrame(() => U.revealRange(fb, btn.offsetParent ? btn : fb));
     }
   };
   T.Stage1 = Stage1;

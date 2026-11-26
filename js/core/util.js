@@ -93,6 +93,26 @@ window.TUY = window.TUY || {};
     el.classList.remove('hidden');
   };
 
+  /** Kaydırılabilir kapta `first`ten `last`a kadar olan alan görünmüyorsa yumuşakça kaydır.
+   *  İkisi birden sığmazsa `first`in üstü görünür kalır (dönüt metni düğmeden önemlidir). */
+  U.revealRange = function (first, last) {
+    last = last || first;
+    let sc = first.parentElement;
+    while (sc && sc !== document.body) {
+      const cs = getComputedStyle(sc);
+      if (/(auto|scroll)/.test(cs.overflowY) && sc.scrollHeight > sc.clientHeight + 1) break;
+      sc = sc.parentElement;
+    }
+    if (!sc || sc === document.body) { first.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); return; }
+    const box = sc.getBoundingClientRect(), pad = 10;
+    const top = first.getBoundingClientRect().top - box.top + sc.scrollTop - pad;
+    const bottom = last.getBoundingClientRect().bottom - box.top + sc.scrollTop + pad;
+    let y = sc.scrollTop;
+    if (bottom > y + sc.clientHeight) y = bottom - sc.clientHeight;
+    if (top < y) y = top;
+    if (y !== sc.scrollTop) sc.scrollTo({ top: y, behavior: 'smooth' });
+  };
+
   /** Element rengini CSS hex olarak döndür */
   U.hex = (n) => '#' + n.toString(16).padStart(6, '0');
 

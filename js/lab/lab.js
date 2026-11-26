@@ -41,10 +41,12 @@
     say(15);
 
     const scene = new THREE.Scene();
-    scene.background = makeBackdrop();
     // Odak modu sisi: baştan sahnede (yoğunluk 0) — sonradan eklemek tüm gölgelendiricileri yeniden derletir
-    scene.fog = new THREE.FogExp2(0x2c3439, 0); // koyu stüdyo arka planıyla aynı ton
+    scene.fog = new THREE.FogExp2(0x2c3439, 0); // stüdyo arka planıyla aynı ton (temaya göre değişir)
     Lab.scene = scene;
+    applyTheme();
+    // tema değişince (ayarlar ya da sistem) arka plan da değişir — makroskobik panellerdeki gibi
+    new MutationObserver(applyTheme).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
     const camera = new THREE.PerspectiveCamera(40, window.innerWidth / window.innerHeight, 0.02, 40);
     Lab.camera = camera;
     await tick();
@@ -164,20 +166,37 @@
   };
   function tick() { return new Promise((r) => setTimeout(r, 16)); }
 
-  /* Stüdyo arka planı: koyu, yumuşak kenar karartması; ışık masada toplanır, dikkat kaplarda kalır.
+  /* Stüdyo arka planı: yumuşak kenar karartması; ışık masada toplanır, dikkat kaplarda kalır.
+     Koyu temada koyu gri stüdyo, açık temada makroskobik panellerdeki gibi beyazdan açık griye-maviye.
      Tek küçük doku (oda modeli yerine), ek çizim yok. */
-  function makeBackdrop() {
+  const BACKDROP = {
+    dark: { stops: ['#5d6a72', '#2c3439', '#14181b'], fog: 0x2c3439 },
+    light: { stops: ['#ffffff', '#e4eaf2', '#c3cedd'], fog: 0xe4eaf2 }
+  };
+  function makeBackdrop(mode) {
     const c = document.createElement('canvas');
     c.width = c.height = 512;
     const x = c.getContext('2d');
     const g = x.createRadialGradient(256, 300, 30, 256, 300, 380);
-    g.addColorStop(0, '#5d6a72');
-    g.addColorStop(0.55, '#2c3439');
-    g.addColorStop(1, '#14181b');
+    const s = BACKDROP[mode].stops;
+    g.addColorStop(0, s[0]);
+    g.addColorStop(0.55, s[1]);
+    g.addColorStop(1, s[2]);
     x.fillStyle = g; x.fillRect(0, 0, 512, 512);
     const t = new THREE.CanvasTexture(c);
     t.colorSpace = THREE.SRGBColorSpace;
     return t;
+  }
+  function applyTheme() {
+    const scene = Lab.scene;
+    if (!scene) return;
+    const mode = document.documentElement.getAttribute('data-theme') === 'light' ? 'light' : 'dark';
+    if (Lab._bgMode === mode) return;
+    Lab._bgMode = mode;
+    if (scene.background && scene.background.dispose) scene.background.dispose();
+    scene.background = makeBackdrop(mode);
+    if (scene.fog) scene.fog.color.setHex(BACKDROP[mode].fog);
+    if (Lab.invalidate) Lab.invalidate();
   }
 
   Lab.resize = function () {
