@@ -627,6 +627,35 @@ html.lab-busy #lab-dock .dock-hint { display: none; }
 .cnt-rule { font-size: 11.5px; color: var(--muted); margin: 6px 2px 0; line-height: 1.35; }
 .side-card > div:first-child > h3 + .cnt-rule { margin-top: 0; }
 
+/* Aşama 4 — Test kartı (A modeli: kontrol listesi + tek düğme) */
+.t4-side { display: flex; flex-direction: column; gap: 10px; }
+.t4-side > h3 { margin: 0; }
+.t4-stat { font-weight: 750; font-size: 13.5px; padding: 9px 11px; border-radius: var(--radius-sm); line-height: 1.3; }
+.t4-stat.idle { background: var(--fill-2); color: var(--muted); }
+.t4-stat.run { background: rgba(10,132,255,.1); color: var(--accent); }
+.t4-stat.ok { background: var(--ok-bg); color: var(--ok); }
+.t4-stat.bad { background: var(--bad-bg); color: var(--bad); }
+.t4-chk { display: flex; flex-direction: column; }
+.t4-row { display: grid; grid-template-columns: 22px minmax(0,1fr); gap: 9px; align-items: center; padding: 8px 2px; font-size: 13.3px; }
+.t4-row + .t4-row { border-top: 1px solid var(--line); }
+.t4-row .ic { width: 20px; height: 20px; border-radius: 50%; border: 2px solid var(--line); display: grid; place-items: center; font-size: 11px; font-weight: 900; color: #fff; box-sizing: border-box; }
+.t4-row.p .ic { background: var(--ok); border-color: var(--ok); }
+.t4-row.f .ic { background: var(--bad); border-color: var(--bad); }
+.t4-row.w .ic { border-color: var(--accent); border-top-color: transparent; animation: t4spin .9s linear infinite; }
+.t4-row.f .tx { color: var(--bad); font-weight: 650; }
+.t4-row small { display: block; color: var(--muted); font-size: 11.5px; font-weight: 500; line-height: 1.3; margin-top: 1px; }
+@keyframes t4spin { to { transform: rotate(360deg); } }
+.t4-note { margin: 0; font-size: 12.5px; color: var(--muted); line-height: 1.4; }
+.t4-note b { color: var(--text); }
+.t4-act { margin-top: auto; display: flex; flex-direction: column; gap: 6px; align-items: stretch; }
+.t4-link { align-self: center; background: none; border: 0; padding: 2px 4px; color: var(--muted); font: inherit; font-size: 12.5px; cursor: pointer; text-decoration: underline; text-underline-offset: 2px; }
+.t4-link:hover { color: var(--text); }
+.t4-red { margin-left: auto; display: inline-flex; align-items: center; gap: 6px; font-size: 11.5px; font-weight: 700; color: var(--bad); background: var(--bad-bg); padding: 3px 9px; border-radius: 999px; white-space: nowrap; }
+.t4-red[hidden] { display: none; }
+.t4-red i { width: 10px; height: 10px; border-radius: 50%; border: 2px solid var(--bad); box-sizing: border-box; }
+html.phone-l .t4-red { font-size: 10.5px; padding: 2px 7px; }
+html.phone-l .t4-side { gap: 7px; }
+
 /* İpucu — tek düğme + 3 nokta */
 .hint-box { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--line); }
 .hint-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }

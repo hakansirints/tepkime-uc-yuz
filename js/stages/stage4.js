@@ -13,32 +13,47 @@
       this.cleanup();
       body.innerHTML = '';
       const r = S.reaction;
+      // kırmızı halka açıklaması yalnızca kayıp / yoktan çıkan atom varsa görünür
+      this.redEl = h('span.t4-red', { hidden: true }, h('i'), 'Kırmızı halka: yok olan ya da yoktan çıkan atom');
       this.panelEl = h('div.mpanel', null,
-        h('div.ptitle', null, h('span.n', { text: '▶' }), 'Modelinin çalıştırılması', h('span.tag', { text: 'Kırmızı halkalı atomlar: yok olan ya da yoktan ortaya çıkan atomlar' })),
+        h('div.ptitle', null, h('span.n', { text: '▶' }), h('span.ptxt', { text: 'Modelinin çalıştırılması' }), this.redEl),
         h('div.pempty', { text: '“Modeli çalıştır” düğmesine bas.' }));
-      this.side = h('div.side-card');
+      this.side = h('div.side-card.t4-side');
       body.appendChild(h('div.grid-track', null, this.panelEl, this.side));
       this.panel = V().addPanel(this.panelEl, { fitPad: 1.08 });
       this.panel.onUpdate((dt) => { if (this.rearr) this.rearr.update(dt); });
 
-      this.critEl = h('ul.rules');
-      this.countEl = h('div');
+      // A modeli: başlık · tek satır sonuç · kontrol listesi · (kısa açıklama) · tek ana düğme + küçük bağlantı
+      this.statEl = h('div.t4-stat');
+      this.critEl = h('div.t4-chk');
       this.fbEl = h('div');
-      this.runBtn = h('button.btn.primary.block', { text: '▶ Modeli çalıştır ve test et' });
+      this.countEl = this.critEl; // eski adla erişen öğretici adımları için
+      this.actEl = h('div.t4-act');
+      this.runBtn = h('button.btn.primary.block', { text: '▶ Modeli çalıştır' });
       this.runBtn.addEventListener('click', () => this.run());
-      this.side.appendChild(h('h3', { html: '🧪 Test ölçütleri' }));
+      this.side.appendChild(h('h3', { html: '🧪 Test' }));
+      this.side.appendChild(this.statEl);
       this.side.appendChild(this.critEl);
-      this.side.appendChild(this.runBtn);
       this.side.appendChild(this.fbEl);
-      this.side.appendChild(this.countEl);
+      this.side.appendChild(this.actEl);
       this.renderCriteria(null);
       this.showStart();
       T.App.task({ target: this.side, text: 'Modelini çalıştır ve test et', hint: 'Sağdaki <b>▶ Modeli çalıştır</b> düğmesine bas; sonra hangi ölçütlerin geçtiğine bak.' });
       if (S.data.done[4]) {
-        this.fbEl.appendChild(h('div.feedback.ok', { html: '<b>Bu aşamayı tamamladın</b>Modelin daha önce doğrulandı. İstersen yeniden çalıştırabilirsin.' }));
-        this.fbEl.appendChild(this.nextButton());
+        this.setStat('ok', '✓ Bu aşamayı tamamladın');
+        this.setActions(this.nextButton(), this.rerunLink());
+      } else {
+        this.setStat('idle', 'Henüz test edilmedi');
+        this.setActions(this.runBtn);
       }
       void r;
+    },
+    setStat(kind, text) { this.statEl.className = 't4-stat ' + kind; this.statEl.textContent = text; },
+    setActions(...els) { this.actEl.innerHTML = ''; els.forEach((e) => e && this.actEl.appendChild(e)); },
+    rerunLink() {
+      this.runBtn = h('button.t4-link', { text: '↺ Yeniden çalıştır' });
+      this.runBtn.addEventListener('click', () => this.run());
+      return this.runBtn;
     },
     /* Açılışta modelin başlangıç hâlini (tepkime öncesi) göster; canlandırma düğmeyle başlar */
     showStart() {
@@ -49,60 +64,78 @@
       this.panel.fit(true, this.rearr.fitBoth());
       this.panelEl.querySelector('.pempty').textContent = '';
     },
+    /** res: null (boş), 'run' (çalışıyor: daireler döner) ya da checkModel sonucu */
     renderCriteria(res) {
-      const labels = ['Atom türleri korunuyor.', 'Atom sayıları korunuyor.', 'Sulu iyonlar ayrı, katı çökeltiler kristal olarak gösteriliyor.', 'Kimyasal türler ve tanecik sayıları tepkimeye uygun.'];
+      const names = ['Atom türleri', 'Atom sayıları', 'İyon / kristal gösterimi', 'Türler ve sayılar'];
+      const full = ['Atom türleri korunuyor.', 'Atom sayıları korunuyor.', 'Sulu iyonlar ayrı, katı çökeltiler kristal olarak gösteriliyor.', 'Kimyasal türler ve tanecik sayıları tepkimeye uygun.'];
+      const done = res && res !== 'run' && res.fb && res.fb.title !== 'Model eksik';
       this.critEl.innerHTML = '';
-      labels.forEach((l, i) => {
-        const li = h('li', { text: l });
-        if (res) li.classList.add(res.criteria[i].pass ? 'pass' : 'fail');
-        this.critEl.appendChild(li);
+      names.forEach((nm, i) => {
+        const c = done ? res.criteria[i] : null;
+        const st = res === 'run' ? 'w' : c ? (c.pass ? 'p' : 'f') : '';
+        const row = h('div.t4-row' + (st ? '.' + st : ''), { title: full[i] },
+          h('span.ic', { 'aria-hidden': 'true', text: st === 'p' ? '✓' : st === 'f' ? '✗' : '' }),
+          h('span.tx', null, nm, st === 'f' ? h('small', { html: this._why(c.key, res) }) : null),
+          h('span.sr-only', { text: st === 'p' ? 'geçti' : st === 'f' ? 'geçmedi' : '' }));
+        this.critEl.appendChild(row);
       });
+    },
+    /** Geçmeyen ölçüt için kısa neden */
+    _why(key, res) {
+      const c = res.counts, nm = (e) => T.ELEMENTS[e].name;
+      if (key === 'types') {
+        const extra = c.els.filter((e) => c.after[e] && !c.before[e]);
+        const miss = c.els.filter((e) => c.before[e] && !c.after[e]);
+        return extra.length ? 'Sonrada yeni atom: ' + extra.map(nm).join(', ') : 'Sonrada kaybolan: ' + miss.map(nm).join(', ');
+      }
+      if (key === 'counts') return (c.mismatch || []).map((e) => `${e}: önce ${c.before[e] || 0}, sonra ${c.after[e] || 0}`).join(' · ');
+      if (key === 'rep') return 'Çözünen madde iyon, çökelti kristal olmalı';
+      return 'Tanecik türlerini ya da sayılarını kontrol et';
     },
     run() {
       const m = S.data.model;
-      this.runBtn.disabled = true;
       this.fbEl.innerHTML = '';
-      this.countEl.innerHTML = '';
-      this.renderCriteria(null);
+      this.redEl.hidden = true;
+      this.renderCriteria('run');
+      this.setStat('run', 'Model çalışıyor… atomları izle');
+      const busy = h('button.btn.primary.block', { text: 'Çalışıyor…', disabled: true });
+      this.runBtn = busy;
+      this.setActions(busy);
       this.panelEl.querySelector('.pempty').textContent = '';
       if (this.rearr) this.rearr.dispose();
       this.rearr = new T.Rearranger(this.panel, m.before, m.after, { duration: 6 });
       this.panel.fit(true, this.rearr.fitBoth());
       S.data.testRuns = (S.data.testRuns || 0) + 1; S.save();
-      this.fbEl.appendChild(h('div.feedback.info', { html: '<b>Model çalışıyor…</b>Atomların nereye gittiğini izle.' }));
       T.App.task({ target: this.panelEl, text: 'Atomların nereye gittiğini izle', hint: 'Kırmızı halkalı atom var mı? Varsa o atom yok oluyor ya da yoktan ortaya çıkıyor demektir.' });
       this.rearr.play(() => this.showResult());
     },
     showResult() {
       const r = S.reaction, m = S.data.model;
       const res = T.Eval.checkModel(m, { before: r.before, after: r.after });
-      this.runBtn.disabled = false;
-      this.runBtn.textContent = '▶ Yeniden çalıştır';
       this.renderCriteria(res);
+      const failN = res.criteria.filter((c) => !c.pass).length;
+      const incomplete = res.fb.title === 'Model eksik';
+      this.redEl.hidden = res.criteria[0].pass && res.criteria[1].pass;
+      // kısa açıklama (öğreticinin yönlendiren sorusu) — kutusuz, küçük yazı
       this.fbEl.innerHTML = '';
-      this.fbEl.appendChild(h('div.feedback.' + res.fb.kind, { html: '<b>' + (res.pass ? '✓ ' : '') + res.fb.title + '</b>' + res.fb.text }));
-      // sayaç tablosu
-      const c = res.counts;
-      const rows = c.els.map((e) => {
-        const b = c.before[e] || 0, a = c.after[e] || 0, ok = b === a;
-        return `<tr class="${ok ? 'okr' : 'mis'}"><td class="el"><span class="dot" style="background:${U.hex(T.ELEMENTS[e].color)}"></span>${e}</td><td>${b}</td><td>${a}</td><td class="st">${ok ? '✓' : '✗'}</td></tr>`;
-      }).join('');
-      this.countEl.innerHTML = `<h3 style="margin-top:12px">🔢 Atom sayımı</h3><table class="counter-table"><thead><tr><th style="text-align:left">Atom</th><th>Önce</th><th>Sonra</th><th></th></tr></thead><tbody>${rows}</tbody></table>`;
+      if (!res.pass) this.fbEl.appendChild(h('p.t4-note', { html: res.fb.text }));
       if (res.pass) {
+        this.setStat('ok', '✓ Testi geçti');
         T.Audio.success();
         T.App.complete(4);
-        this.fbEl.appendChild(this.nextButton());
+        this.setActions(this.nextButton(), this.rerunLink());
         T.App.task({ target: this.side, text: 'Modelin testi geçti', hint: 'Sağdaki <b>Üç gösterime geç</b> düğmesiyle devam et.' });
       } else {
+        this.setStat('bad', incomplete ? '✗ Model eksik' : `✗ ${failN} ölçüt geçmedi`);
         T.Audio.error();
-        T.App.task({ target: this.side, text: 'Modelinde sorun var: hatayı bul', hint: 'Kırmızı ölçütlere ve atom sayımına bak, sonra <b>✎ Modeli düzenle</b> düğmesine bas.' });
-        const edit = h('button.btn.block', { text: '✎ Modeli düzenle', style: { marginTop: '6px' } });
+        T.App.task({ target: this.side, text: 'Modelinde sorun var: hatayı bul', hint: 'Kırmızı ✗ ölçütlere ve altlarındaki nedene bak, sonra <b>✎ Modeli düzenle</b> düğmesine bas.' });
+        const edit = h('button.btn.primary.block', { text: '✎ Modeli düzenle' });
         edit.addEventListener('click', () => this.showEdit());
-        this.fbEl.appendChild(edit);
+        this.setActions(edit, this.rerunLink());
       }
     },
     nextButton() {
-      const b = h('button.btn.success.block.pulse', { text: 'Üç gösterime geç →', style: { marginTop: '6px' } });
+      const b = h('button.btn.success.block.pulse', { text: 'Üç gösterime geç →' });
       b.addEventListener('click', () => T.App.go(5));
       return b;
     },

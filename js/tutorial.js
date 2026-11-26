@@ -143,7 +143,7 @@
       check: () => !!S.data.done[4],
       auto: async () => { S4().run(); await until(() => !!S.data.done[4], 15000); } },
     { stage: 4, title: 'Sonucu oku', target: () => S4().countEl,
-      text: 'Bütün ölçütler ✓ ve atom sayıları eşit: modelin <b>doğru</b>.<br><br>Model yanlış olsaydı ✗ işaretleri ve <b>✎ Modeli düzenle</b> düğmesi çıkardı; modelini düzeltip yeniden test ederdin.' },
+      text: 'Dört ölçütün hepsi ✓: modelin <b>doğru</b>.<br><br>Model yanlış olsaydı geçmeyen ölçüt kırmızı ✗ olur, altında kısa nedeni yazardı (örneğin “H: önce 2, sonra 1”). <b>✎ Modeli düzenle</b> ile düzeltip yeniden test ederdin.' },
     { stage: 4, title: 'Üç gösterime geç', target: () => byText('#ws-body button', /Üç gösterime geç/),
       text: '<b>Üç gösterime geç →</b> düğmesine bas.',
       check: () => cur() === 5, autoNext: true,
