@@ -464,6 +464,33 @@ html.lab-busy #lab-dock .dock-hint { display: none; }
 #ws-task .wt-bars i { width: 22px; height: 6px; border-radius: 3px; background: var(--fill-2); }
 #ws-task .wt-bars i.done { background: var(--ok); }
 #ws-task .wt-bars i.on { background: var(--accent); }
+/* adım göstergesi: ① Dokun → ② İzle → ③ Seç */
+#ws-task .wt-steps { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; margin: 5px 0 4px; }
+#ws-task .wt-steps:empty { display: none; }
+#ws-task .ws-s { display: inline-flex; align-items: center; gap: 6px; height: 27px; padding: 0 11px 0 4px; border-radius: 999px; font-size: 12.5px; font-weight: 650;
+  color: var(--muted); background: var(--fill); border: 1px solid var(--line); }
+#ws-task .ws-s b { width: 20px; height: 20px; border-radius: 50%; display: grid; place-items: center; font-size: 11px; font-weight: 800; color: #fff; background: var(--fill-2); }
+#ws-task .ws-s:not(.on):not(.done) b { color: var(--muted); }
+#ws-task .ws-s.on { color: var(--text); background: var(--glass-strong); border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+#ws-task .ws-s.on b { background: var(--accent); }
+#ws-task .ws-s.done { color: var(--ok); }
+#ws-task .ws-s.done b { background: var(--ok); }
+#ws-task .ws-ar { color: var(--muted); opacity: .6; font-size: 12px; }
+#ws-task .wt-dot { display: inline-block; width: 12px; height: 12px; border-radius: 50%; vertical-align: -1px; margin-left: 4px; box-shadow: inset -2px -3px 4px rgba(0,0,0,.25); }
+/* şeritteki dönüt (yanlış seçim vb.) */
+#ws-task .wt-fb.warn b, #ws-task .wt-fb.bad b { color: var(--danger, #d93025); }
+#ws-task .wt-fb.warn, #ws-task .wt-fb.bad { color: var(--text); }
+#ws-task .wt-acts { display: flex; gap: 6px; flex: none; }
+#ws-task .wt-acts:empty { display: none; }
+#ws-task .wt-ic { color: #fff; font-weight: 800; transition: background .3s; }
+/* görev tamamlandı: yeşil şerit */
+#ws-task { transition: background .3s, border-color .3s; }
+#ws-task.ok { background: color-mix(in srgb, var(--ok) 13%, transparent); border-color: color-mix(in srgb, var(--ok) 50%, transparent); }
+#ws-task.ok .wt-ic { background: var(--ok); }
+#ws-task.ok .wt-kicker { color: var(--ok); }
+#ws-task.ok .wt-kicker::after { background: var(--ok); }
+#ws-task.ok.flash { animation: wtFlashOk 1.1s var(--ease); }
+@keyframes wtFlashOk { 0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--ok) 55%, transparent); transform: scale(1.012); } 100% { box-shadow: 0 0 0 12px transparent; transform: none; } }
 #ws-task.flash { animation: wtFlash 1.1s var(--ease); }
 @keyframes wtFlash { 0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 55%, transparent); transform: scale(1.012); } 100% { box-shadow: 0 0 0 12px transparent; transform: none; } }
 /* çalışılacak alan */
@@ -513,15 +540,6 @@ html.lab-busy #lab-dock .dock-hint { display: none; }
 .mpanel .ptitle .tag { margin-left: auto; font-size: 11px; font-weight: 600; color: var(--muted); }
 .mpanel .pnote { position: absolute; left: 12px; right: 12px; bottom: 9px; font-size: 12px; color: var(--muted); z-index: 1; pointer-events: none; line-height: 1.35; }
 .mpanel .pempty { position: absolute; inset: 0; display: grid; place-items: center; text-align: center; color: var(--muted); font-size: 13px; padding: 30px; pointer-events: none; }
-/* "Tepkime öncesi" bölümünün altında karıştırılan maddelerin günlük adları */
-.mpanel .psubs { position: absolute; left: 10px; right: 10px; bottom: 9px; z-index: 2; display: flex; flex-wrap: wrap; align-items: center; gap: 5px; pointer-events: none; }
-.mpanel .psubs .ps-l { font-size: 11px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--muted); margin-right: 2px; }
-.mpanel .psubs .ps-i { display: inline-flex; align-items: center; gap: 5px; min-width: 0; padding: 3px 10px 3px 7px; border-radius: var(--pill); font-size: 12.5px; font-weight: 650; line-height: 1.25;
-  background: var(--glass-strong); border: 1px solid var(--glass-border); box-shadow: inset 0 1px 0 var(--glass-hi); }
-.mpanel .psubs .ps-i i { font-style: normal; font-size: 13px; }
-.mpanel.collapsed .psubs { display: none; }
-/* telefonda Kontrol sekmesi: dar panelde tanecikleri sıkıştırmasın (adlar Öncesi sekmesinde görünür) */
-html.phone-l .grid-build.m-t-check .mpanel .psubs { display: none; }
 .mpanel .pbtns { position: absolute; left: 50%; transform: translateX(-50%); bottom: 12px; display: flex; align-items: center; justify-content: center; gap: 8px; z-index: 2; max-width: calc(100% - 20px); }
 
 /* Tanecik havuzu */
@@ -612,11 +630,58 @@ html.phone-l .grid-build.m-t-check .mpanel .psubs { display: none; }
 .grid-build { flex: 1; min-height: 0; display: grid; grid-template-columns: 250px 1fr 290px; gap: 10px; }
 .build-center { display: grid; grid-template-rows: 1fr auto; gap: 8px; min-height: 0; }
 .three-regions { display: grid; grid-template-columns: 1fr 0.8fr 1fr; gap: 8px; min-height: 0; }
+/* 2. aşama (C2): Önce → Sonra, aradaki ok; Canlandır Önce kartında (3. aşamayla aynı dil) */
+.three-regions.two-regions { grid-template-columns: minmax(0, 1fr) 60px minmax(0, 1fr); gap: 0; }
+.two-regions .mpanel .pbtns[hidden] { display: none; }
+/* dar kartta kaydırıcı küçülür, düğme hep sığar */
+.two-regions .mpanel .pbtns { width: calc(100% - 20px); }
+.two-regions .mpanel .pbtns input[type=range] { width: auto !important; flex: 1 1 60px; min-width: 0; max-width: 160px; }
+.two-regions .mpanel .pbtns .btn { flex: none; }
+.two-regions .mpanel .trk-cap { bottom: 58px; text-align: center; font-size: 12.5px; }
+.two-regions .mpanel .trk-cap:empty { display: none; }
+.two-regions .mpanel .trk-cap .ev { color: var(--ok); font-weight: 650; }
 .region-col { display: grid; grid-template-rows: 1fr auto; gap: 6px; min-height: 0; }
 .chips-row { display: grid; grid-template-columns: 1fr 0.8fr 1fr; gap: 8px; }
 
 .grid-track { flex: 1; min-height: 0; display: grid; grid-template-columns: 1fr 300px; gap: 10px; }
 .track-main { display: grid; grid-template-columns: 1fr 1.15fr 1fr; gap: 8px; min-height: 0; }
+/* 3. aşama (A2, öğretmenin tasarımı): solda görev kartı · Önce → Sonra. Canlandırma Önce kartında oynar.
+   Telefonda görev kartı "Görev" sekmesi olarak kalır (sekme sırası DOM'daki gibi: Önce, Sonra, Görev). */
+html:not(.phone-l) .grid-track.track-a { grid-template-columns: 290px minmax(0, 1fr); }
+html:not(.phone-l) .grid-track.track-a > .side-card { order: -1; }
+html:not(.phone-l) .grid-track.track-a .track-main { grid-template-columns: minmax(0, 1fr) 60px minmax(0, 1fr); gap: 0; }
+.track-a .mpanel .pbtns[hidden] { display: none; }
+.trk-side .trk-title .nw { white-space: nowrap; }
+.track-a .mpanel .ptitle .psub { font-size: 12px; font-weight: 600; color: var(--muted); }
+.track-a .mpanel .trk-cap { bottom: 58px; text-align: center; font-size: 12.5px; }
+.track-a .mpanel .trk-cap:empty { display: none; }
+.track-a .mpanel .pbtns[hidden] + .trk-cap, .track-a .mpanel:not(:has(.pbtns)) .trk-cap { bottom: 14px; }
+.track-a .mpanel .trk-cap .ev { color: var(--ok); font-weight: 650; }
+.track-a .mpanel.trk-done { border-color: color-mix(in srgb, var(--ok) 55%, transparent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--ok) 16%, transparent), inset 0 1px 0 var(--glass-hi); }
+/* Önce → Sonra oku */
+.trk-arrow { align-self: center; justify-self: center; display: flex; flex-direction: column; align-items: center; gap: 4px; color: var(--muted); pointer-events: none; }
+.trk-arrow .sh { width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; font-size: 20px; font-weight: 800; background: var(--fill); border: 1px solid var(--line); transition: .3s var(--ease); }
+.trk-arrow small { font-size: 10.5px; font-weight: 700; letter-spacing: .03em; }
+.trk-arrow.on { color: #e0a000; }
+.trk-arrow.on .sh { background: #ffb020; color: #fff; border-color: transparent; box-shadow: 0 0 0 6px rgba(255,176,32,.22); animation: trkNudge 1s ease-in-out infinite; }
+.trk-arrow.ok { color: var(--ok); }
+.trk-arrow.ok .sh { background: var(--ok); color: #fff; border-color: transparent; }
+@keyframes trkNudge { 50% { transform: translateX(4px); } }
+@media (prefers-reduced-motion: reduce) { .trk-arrow.on .sh { animation: none; } }
+/* görev kartı */
+.trk-side { display: flex; flex-direction: column; gap: 8px; }
+.trk-side h3 { margin: 0; font-size: 11px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.trk-side .trk-title { font-size: 20px; font-weight: 750; line-height: 1.22; letter-spacing: -.01em; color: var(--macro-ink); }
+.trk-side .trk-title .wt-dot { display: inline-block; width: 13px; height: 13px; border-radius: 50%; margin-left: 6px; vertical-align: 1px; box-shadow: inset -2px -3px 4px rgba(0,0,0,.25); }
+.trk-side .track-steps { margin: 0; }
+.trk-side .feedback { margin: 0; font-size: 13px; }
+.trk-acts { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px; }
+html:not(.phone-l) .trk-side .in-strip { display: none; } /* bu düğme masaüstünde yeşil görev şeridinde */
+.trk-keys { margin-top: auto; padding-top: 10px; border-top: 1px solid var(--line); gap: 6px 14px; font-size: 12px; }
+.trk-keys b { color: var(--text); }
+.trk-keys i { width: 12px; height: 12px; box-shadow: inset -2px -3px 4px rgba(0,0,0,.25); }
+.trk-keys .tk i { background: transparent; box-shadow: none; outline: 2.5px solid #ffd84a; outline-offset: -1px; }
+html.phone-l .trk-arrow, html.phone-l #ws-task .wt-steps, html.phone-l #ws-task .wt-acts { display: none; }
 
 /* Üç gösterim */
 .grid-three { flex: 1; min-height: 0; display: grid; grid-template-columns: 1fr 1.25fr 1fr; gap: 10px; }

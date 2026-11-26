@@ -19,6 +19,8 @@
       this.o = opts;
       this.model = opts.model;
       this.target = opts.lockBefore ? 'after' : (opts.startTarget || 'before');
+      // twoCard: "Etkileşirken" kartı yok; Önce → Sonra arasında ok, canlandırma Önce kartında oynar (Aşama 2)
+      this.two = !!opts.twoCard;
       this.hintLevel = { before: 0, after: 0 };
       this.panels = {};
       this.groups = { before: [], after: [] };
@@ -33,7 +35,7 @@
         h('div.pool-hint', { html: 'Bir karta <b>tıkla</b>: seçili bölüme eklenir. Ya da kartı bölüme <b>sürükle</b>.' }),
         this.switchEl = o.lockBefore ? null : h('div.target-switch', null,
           h('button.btn.sm.ghost', { 'data-t': 'before', title: 'Tıkladığın kartlar “Tepkime öncesi” bölümüne eklenir' }, h('span.sn.r-before', { text: '1' }), 'Öncesine'),
-          h('button.btn.sm.ghost', { 'data-t': 'after', title: 'Tıkladığın kartlar “Tepkime sonrası” bölümüne eklenir' }, h('span.sn.r-after', { text: '3' }), 'Sonrasına')),
+          h('button.btn.sm.ghost', { 'data-t': 'after', title: 'Tıkladığın kartlar “Tepkime sonrası” bölümüne eklenir' }, h('span.sn.r-after', { text: this.two ? '2' : '3' }), 'Sonrasına')),
         this.gridEl = h('div.pool-grid', { style: { marginTop: '8px' } }));
       if (this.switchEl) this.switchEl.querySelectorAll('button').forEach((b) => b.addEventListener('click', () => this.setTarget(b.dataset.t)));
 
@@ -62,21 +64,16 @@
         const q = key === 'before' ? (o.lockBefore ? null : 'Karıştırmadan önce kaplarda hangi tanecikler vardı?')
           : key === 'mid' ? 'Bağlar kırılır, atomlar yeniden düzenlenir. ▶ Canlandır ile izle.'
             : 'Tepkime bitince kapta hangi tanecikler var?';
-        // öğrenci hangi maddeleri modellediğini bilsin: yalnızca günlük adları (formül sonraki aşamalarda kendisi kurar)
-        const rx = o.reaction;
-        const subs = key === 'before' && rx ? h('div.psubs', { title: 'Karıştırılan maddeler' },
-          h('span.ps-l', { text: 'Kaplarda' }),
-          h('span.ps-i', null, h('i', { text: rx.fixed.solid ? '🪨' : '🧪' }), rx.fixed.name),
-          h('span.ps-i', null, h('i', { text: '⚗️' }), rx.added.name)) : null;
+        const num = String(this.two && key === 'after' ? 2 : r.n);
+        strip.querySelector('.n').textContent = num;
         const el = h('div.mpanel' + (aq ? '.aq' : ''), { 'data-region': key },
-          h('div.ptitle', null, h('span.n', { text: String(r.n) }), r.title, h('span.pctl', null, focusBtn, hideBtn), q ? h('div.m-q', { text: q }) : null),
+          h('div.ptitle', null, h('span.n', { text: num }), r.title, h('span.pctl', null, focusBtn, hideBtn), q ? h('div.m-q', { text: q }) : null),
           h('div.pempty', { text: '' }),
-          subs,
           strip);
         return el;
       };
-      this.regEl = { before: mk('before', true), mid: mk('mid', false), after: mk('after', true) };
-      this.open = { before: true, mid: true, after: true };
+      this.regEl = this.two ? { before: mk('before', true), after: mk('after', true) } : { before: mk('before', true), mid: mk('mid', false), after: mk('after', true) };
+      this.open = this.two ? { before: true, after: true } : { before: true, mid: true, after: true };
       ['before', 'after'].forEach((k) => {
         const el = this.regEl[k];
         el.addEventListener('dragover', (e) => { if (k === 'before' && this.o.lockBefore) return; e.preventDefault(); el.classList.add('drop-on'); });
@@ -85,10 +82,21 @@
         el.addEventListener('click', (e) => { if (e.target === el || e.target.classList.contains('pempty')) { if (!(k === 'before' && this.o.lockBefore)) this.setTarget(k); } });
       });
       this.playBtn = h('button.btn.sm.primary', { text: '▶ Canlandır' });
-      this.playBtn.addEventListener('click', () => this.playMid());
-      this.regEl.mid.appendChild(h('div.pbtns', null, this.playBtn));
-
-      this.regionsEl = h('div.three-regions', null, this.regEl.before, this.regEl.mid, this.regEl.after);
+      if (this.two) {
+        // Önce kartında: kaydırıcı + Canlandır (iki bölüm de dolunca görünür), üstünde kısa alt yazı
+        this.playBtn.addEventListener('click', () => this.playTwo());
+        this.slider = h('input', { type: 'range', min: 0, max: 1000, value: 0, style: { width: '140px' }, 'aria-label': 'Zaman' });
+        this.slider.addEventListener('input', () => this._seekTwo(this.slider.value / 1000));
+        this.pbtns = h('div.pbtns', null, this.slider, this.playBtn);
+        this.cap = h('div.pnote.trk-cap');
+        this.regEl.before.append(this.pbtns, this.cap);
+        this.arrow = h('div.trk-arrow', { 'aria-hidden': 'true' }, h('span.sh', { text: '→' }), h('small', { text: 'tepkime' }));
+        this.regionsEl = h('div.three-regions.two-regions', null, this.regEl.before, this.arrow, this.regEl.after);
+      } else {
+        this.playBtn.addEventListener('click', () => this.playMid());
+        this.regEl.mid.appendChild(h('div.pbtns', null, this.playBtn));
+        this.regionsEl = h('div.three-regions', null, this.regEl.before, this.regEl.mid, this.regEl.after);
+      }
       const center = h('div.build-center', null, this.regionsEl);
 
       // sağ kart
@@ -130,8 +138,11 @@
         });
         this.panels[k].onUpdate((dt, t) => this._bob(k, t));
       });
-      this.panels.mid = V().addPanel(this.regEl.mid, { fitPad: 1.1 });
-      this.panels.mid.onUpdate((dt) => { if (this.rearr) this.rearr.update(dt); });
+      if (this.two) this.panels.before.onUpdate((dt) => this._tickTwo(dt));
+      else {
+        this.panels.mid = V().addPanel(this.regEl.mid, { fitPad: 1.1 });
+        this.panels.mid.onUpdate((dt) => { if (this.rearr) this.rearr.update(dt); });
+      }
       this.setTarget(this.target);
       if (o.hints !== false) this._renderHints();
     }
@@ -148,10 +159,13 @@
       this._applyLayout();
     }
     _applyLayout() {
-      const w = { before: '1fr', mid: '0.8fr', after: '1fr' };
-      const cols = ['before', 'mid', 'after'].map((k) => (this.open[k] ? w[k] : '42px'));
+      const fr = this.two ? 'minmax(0,1fr)' : '1fr';
+      const w = { before: fr, mid: '0.8fr', after: fr };
+      const keys = Object.keys(this.open);
+      const cols = keys.map((k) => (this.open[k] ? w[k] : '42px'));
+      if (this.two) cols.splice(1, 0, '60px'); // ok sütunu
       this.regionsEl.style.gridTemplateColumns = cols.join(' ');
-      ['before', 'mid', 'after'].forEach((k) => {
+      keys.forEach((k) => {
         this.regEl[k].classList.toggle('collapsed', !this.open[k]);
         const only = Object.keys(this.open).every((x) => this.open[x] === (x === k));
         const fb = this.regEl[k].querySelector('.pbtn');
@@ -223,9 +237,11 @@
       this._asp = this._asp || {};
       this._asp[k] = asp;
       const pos = Mol.layout(gs, { gap: 0.7, aspect: asp, jitter: true });
-      gs.forEach((g, i) => { g.position.copy(pos[i]); g.userData.home = pos[i].clone(); g.userData.ph = Math.random() * 6.28; p.root.add(g); });
+      // canlandırma Önce kartında oynuyorsa (iki kart düzeni) yeni tanecikler gizli kalır
+      const hide = this.two && k === 'before' && this.rearr && this.rearr.group.visible;
+      gs.forEach((g, i) => { g.position.copy(pos[i]); g.userData.home = pos[i].clone(); g.userData.ph = Math.random() * 6.28; if (hide) g.visible = false; p.root.add(g); });
       this.groups[k] = gs;
-      p.fit();
+      if (hide) p.fit(true, this.rearr.fitBoth()); else p.fit();
       const empty = this.regEl[k].querySelector('.pempty');
       empty.textContent = ids.length ? '' : (k === 'before' ? 'Boş. Havuzdan tepkime öncesindeki tanecikleri ekle.' : 'Boş. Havuzdan tepkime sonrasındaki tanecikleri ekle.');
     }
@@ -300,13 +316,95 @@
       }
     }
     _resetMid() {
+      if (this.two) return this._resetTwo();
       if (this.rearr) { this.rearr.dispose(); this.rearr = null; }
       const tb = Object.keys(this.model.before).length, ta = Object.keys(this.model.after).length;
       const empty = this.regEl.mid.querySelector('.pempty');
       this.playBtn.disabled = !(tb && ta);
       empty.textContent = tb && ta ? 'Modelin hazır. ▶ Canlandır ile atomların yeniden düzenlenmesini izle.' : 'Her iki bölüme de tanecik ekleyince burada atomların yeniden düzenlenmesini izleyebilirsin.';
     }
+    /* ---- İki kart düzeni: canlandırma Önce kartında oynar, bitince kısa geri sarmayla başa döner ---- */
+    get ready() { return !!(Object.keys(this.model.before).length && Object.keys(this.model.after).length); }
+    _resetTwo() {
+      clearTimeout(this._backTmr); this.rewinding = false;
+      if (this.rearr) { this.rearr.dispose(); this.rearr = null; this.panels.before.fit(true); }
+      this.groups.before.forEach((g) => { g.visible = true; });
+      this.played = false;
+      const ok = this.ready;
+      this.pbtns.hidden = !ok;
+      this.slider.value = 0;
+      this.playBtn.disabled = false;
+      this.playBtn.textContent = '▶ Canlandır';
+      this.playBtn.classList.toggle('pulse', ok);
+      this.arrow.className = 'trk-arrow' + (ok ? ' on' : '');
+      this.cap.textContent = '';
+    }
+    _ensureRearr() {
+      if (this.rearr) return this.rearr;
+      const p = this.panels.before;
+      this.rearr = new T.Rearranger(p, this.model.before, this.model.after, { duration: 5.5 });
+      this.rearr.group.visible = false;
+      return this.rearr;
+    }
+    /** Önce kartında durağan tanecikler ↔ canlandırma. Kapatınca canlandırma kaldırılır
+        (görüntüleyici kadrajı gizli grupları da sayar). */
+    _showAnim(on) {
+      if (on) {
+        const R = this._ensureRearr();
+        if (!R.group.visible) this.panels.before.fit(false, R.fitBoth());
+        R.group.visible = true;
+        this.groups.before.forEach((g) => { g.visible = false; });
+      } else {
+        if (this.rearr) { this.rearr.dispose(); this.rearr = null; }
+        this.groups.before.forEach((g) => { g.visible = true; });
+        this.panels.before.fit(false);
+      }
+    }
+    playTwo(onDone) {
+      if (!this.ready) return;
+      const R = this._ensureRearr();
+      clearTimeout(this._backTmr); this.rewinding = false;
+      if (R.t >= 1) R.seek(0);
+      this._showAnim(true);
+      this.playBtn.classList.remove('pulse');
+      this.arrow.className = 'trk-arrow on';
+      this.cap.textContent = 'Bağlar kopuyor, atomlar yeni düzenine geçiyor…';
+      R.play(() => this._playedTwo(onDone));
+    }
+    _playedTwo(onDone) {
+      this.cap.innerHTML = '<span class="ev">✓ Atomlar yeniden düzenlendi.</span>';
+      this.arrow.className = 'trk-arrow ok';
+      const first = !this.played;
+      this.played = true;
+      this.playBtn.textContent = '↺ Tekrar izle';
+      if (typeof onDone === 'function') onDone();
+      if (first && this.o.onPlayed) this.o.onPlayed();
+      this._backTmr = setTimeout(() => { if (this.rearr && this.rearr.t >= 0.98 && !this.rearr.playing) this.rewinding = true; }, 1300);
+    }
+    _seekTwo(t) {
+      if (!this.ready) return;
+      clearTimeout(this._backTmr); this.rewinding = false;
+      if (t <= 0) { if (this.rearr) this._showAnim(false); this.cap.textContent = ''; return; }
+      this._showAnim(true);
+      const R = this.rearr;
+      R.pause();
+      R.seek(t);
+      if (t >= 1 && !this.played) this._playedTwo();
+    }
+    _tickTwo(dt) {
+      const R = this.rearr;
+      if (!R) return;
+      if (this.rewinding) {
+        R.seek(Math.max(0, R.t - dt * 1.6));
+        this.slider.value = Math.round(R.t * 1000);
+        if (R.t <= 0) { this.rewinding = false; this._showAnim(false); this.cap.textContent = ''; }
+        return;
+      }
+      R.update(dt);
+      if (R.playing) this.slider.value = Math.round(R.t * 1000);
+    }
     playMid(onDone, track) {
+      if (this.two) return this.playTwo(onDone);
       if (this.rearr) this.rearr.dispose();
       const empty = this.regEl.mid.querySelector('.pempty');
       empty.textContent = '';
@@ -318,6 +416,8 @@
       return info;
     }
     destroy() {
+      clearTimeout(this._backTmr);
+      if (this.rearr) { this.rearr.dispose(); this.rearr = null; }
       Object.values(this.panels).forEach((p) => V().removePanel(p));
       this.el.remove();
     }

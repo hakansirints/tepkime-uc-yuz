@@ -230,7 +230,9 @@
     /**
      * Görev şeridi: her aşamada sayfa başlığının altında aynı yerde duran tek görev cümlesi.
      * o: {text, hint?, step?:[i,n], target?: Element}  —  null: şeridi gizle
-     * target verilirse o alan vurgulanır ve "Burada çalış" etiketi alır.
+     * target verilirse o alan vurgu çerçevesiyle işaretlenir.
+     * İsteğe bağlı: steps:{names:[…], i} (adım göstergesi), kind:'ok' (yeşil "tamamlandı" şeridi),
+     * kicker (üst küçük yazı), actions:[Element] (şeridin sağındaki düğmeler).
      */
     task(o) {
       const box = U.$('#ws-task');
@@ -240,15 +242,31 @@
         this._taskTarget = null;
       }
       if (!o) { box.classList.add('hidden'); this._taskKey = ''; return; }
+      const ok = o.kind === 'ok';
       U.$('#wt-text').innerHTML = o.text;
       U.$('#wt-hint').innerHTML = o.hint || '';
+      U.$('#wt-kick').textContent = o.kicker || 'Görevin';
+      U.$('#wt-ic').textContent = ok ? '✓' : '🎯';
       U.$('#wt-step').textContent = o.step ? ' · ' + o.step[0] + ' / ' + o.step[1] : '';
       const bars = U.$('#wt-bars');
       bars.innerHTML = '';
-      if (o.step) for (let i = 1; i <= o.step[1]; i++) bars.appendChild(U.h('i' + (i < o.step[0] ? '.done' : i === o.step[0] ? '.on' : '')));
+      // tamamlanan görevin parçası yeşil, sıradaki mavi
+      if (o.step) for (let i = 1; i <= o.step[1]; i++) bars.appendChild(U.h('i' + (i < o.step[0] || (ok && i === o.step[0]) ? '.done' : i === o.step[0] ? '.on' : '')));
+      // adım göstergesi: ✓ biten · vurgulu etkin · soluk sıradaki
+      const stEl = U.$('#wt-steps');
+      stEl.innerHTML = '';
+      if (o.steps) o.steps.names.forEach((nm, i) => {
+        if (i) stEl.appendChild(U.h('span.ws-ar', { text: '→', 'aria-hidden': 'true' }));
+        const cls = i < o.steps.i ? '.done' : i === o.steps.i ? '.on' : '';
+        stEl.appendChild(U.h('span.ws-s' + cls, null, U.h('b', { text: i < o.steps.i ? '✓' : String(i + 1) }), nm));
+      });
+      const acts = U.$('#wt-acts');
+      acts.innerHTML = '';
+      (o.actions || []).forEach((b) => acts.appendChild(b));
+      box.classList.toggle('ok', ok);
       box.classList.remove('hidden');
-      // görev değişince şerit bir kez parlar
-      const key = (o.step ? o.step.join('/') : '') + '|' + o.text;
+      // görev değişince şerit bir kez parlar (tamamlanınca yeşil nabız)
+      const key = (o.step ? o.step.join('/') : '') + '|' + (o.kind || '') + '|' + o.text;
       if (key !== this._taskKey) {
         this._taskKey = key;
         box.classList.remove('flash'); void box.offsetWidth; box.classList.add('flash');
@@ -257,12 +275,8 @@
       // hedef henüz sayfaya eklenmediyse bir sonraki karede yeniden dene
       if (t && !t.isConnected && !o._retry) { requestAnimationFrame(() => { if (this._taskKey === key) this.task(Object.assign({}, o, { _retry: true })); }); return; }
       if (t && t.isConnected) {
+        // yalnızca vurgu çerçevesi; "Burada çalış" etiketi kaldırıldı
         t.classList.add('work-here');
-        const tag = U.h('span.here-tag', { text: o.tag || 'Burada çalış' });
-        const pt = t.querySelector(':scope > .ptitle');
-        if (o.tag === false || t.matches('textarea,input,select,button,.three-regions')) { /* form öğesine etiket eklenemez: yalnızca vurgu */ }
-        else if (pt) { const ctl = pt.querySelector('.pctl'); pt.insertBefore(tag, ctl); }
-        else { if (getComputedStyle(t).position === 'static') t.style.position = 'relative'; t.appendChild(tag); }
         this._taskTarget = t;
       }
     },

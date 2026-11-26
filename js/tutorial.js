@@ -68,9 +68,9 @@
 
     /* ===== AŞAMA 2 — MODELLE ===== */
     { stage: 2, title: 'Aşama 2 · Modelini kur', target: () => $('.grid-build'),
-      text: 'Bu aşamada tepkimenin <b>tanecik modelini</b> sen kuruyorsun:<br>• <b>Solda</b> tanecik havuzu,<br>• <b>Ortada</b> üç bölüm: <span class="sn r-before">1</span>tepkime öncesi, <span class="sn r-mid">2</span>etkileşirken, <span class="sn r-after">3</span>tepkime sonrası,<br>• <b>Sağda</b> korunma kontrolü ve atom sayacı.' },
+      text: 'Bu aşamada tepkimenin <b>tanecik modelini</b> sen kuruyorsun:<br>• <b>Solda</b> tanecik havuzu,<br>• <b>Ortada</b> iki bölüm: <span class="sn r-before">1</span>tepkime öncesi → <span class="sn r-after">2</span>tepkime sonrası,<br>• <b>Sağda</b> korunma kontrolü ve atom sayacı.' },
     { stage: 2, title: 'Hangi bölüme ekleyeceksin?', target: () => S2().builder && S2().builder.switchEl,
-      text: '<b><span class="sn r-before">1</span>Öncesine</b> seçiliyken tıkladığın kartlar “Tepkime öncesi” bölümüne eklenir. <b><span class="sn r-after">3</span>Sonrasına</b> seçiliyse “Tepkime sonrası” bölümüne.' },
+      text: '<b><span class="sn r-before">1</span>Öncesine</b> seçiliyken tıkladığın kartlar “Tepkime öncesi” bölümüne eklenir. <b><span class="sn r-after">2</span>Sonrasına</b> seçiliyse “Tepkime sonrası” bölümüne.' },
     { stage: 2, title: 'Tepkime öncesini kur', target: () => S2().builder && S2().builder.gridEl,
       text: `Kaplarda gümüş nitrat ve sodyum klorür <b>çözeltileri</b> vardı. Suda çözünen tuzlar suda <b>iyonlarına ayrılır</b>.
         <br><br>Havuzda şu kartlara <b>birer kez</b> tıkla: <b>Ag⁺</b>, <b>NO₃⁻</b>, <b>Na⁺</b>, <b>Cl⁻</b>.
@@ -80,7 +80,7 @@
     { stage: 2, title: 'Takılırsan: destek düğmeleri', target: () => S2().builder && S2().builder.hintEl,
       text: 'Ne koyacağından emin değilsen <b>💡 Destek</b> düğmelerini sırayla kullan. Her düğme biraz daha fazla ipucu verir. Önce kendin düşünmeyi dene!' },
     { stage: 2, title: 'Şimdi tepkime sonrası', target: () => S2().builder && S2().builder.switchEl,
-      text: '<b><span class="sn r-after">3</span>Sonrasına</b> düğmesine bas.',
+      text: '<b><span class="sn r-after">2</span>Sonrasına</b> düğmesine bas.',
       check: () => S2().builder && S2().builder.target === 'after',
       auto: async () => { S2().builder.setTarget('after'); } },
     { stage: 2, title: 'Tepkime sonrasını kur', target: () => S2().builder && S2().builder.gridEl,
@@ -91,8 +91,8 @@
     { stage: 2, title: 'Atom sayacını oku', target: () => S2().builder && S2().builder.counterEl,
       text: 'Atom sayacı her atomu <b>önce</b> ve <b>sonra</b> sayar. Her satırda iki sayı eşitse ✓ görünür: atomlar <b>korunmuş</b> demektir.' },
     { stage: 2, title: 'Modelini canlandır', target: () => S2().builder && S2().builder.playBtn,
-      text: 'Ortadaki <b>▶ Canlandır</b> düğmesine bas ve atomların <b>yeniden düzenlenmesini</b> izle.',
-      check: () => S2().builder && !!S2().builder.rearr,
+      text: '<b><span class="sn r-before">1</span>Tepkime öncesi</b> kartındaki <b>▶ Canlandır</b> düğmesine bas ve atomların <b>yeniden düzenlenmesini</b> izle. Bitince kart başlangıç hâline döner; kaydırıcıyla da ileri geri sarabilirsin.',
+      check: () => S2().builder && (!!S2().builder.rearr || S2().builder.played),
       auto: async () => { S2().builder.playMid(); } },
     { stage: 2, title: 'Bölümleri büyüt ya da gizle', target: () => S2().builder && S2().builder.regEl.before.querySelector('.pctl'),
       text: 'Bir bölümün köşesindeki <b>⤢</b> düğmesi o bölümü büyütür, <b>−</b> düğmesi gizler. Gizlenen bölüm ince bir şeride dönüşür; şeride tıklayınca geri gelir.' },
@@ -103,25 +103,25 @@
 
     /* ===== AŞAMA 3 — ATOM TAKİBİ ===== */
     { stage: 3, title: 'Aşama 3 · Atomun izini sür', target: () => $('.track-main'),
-      text: 'Burada tek bir atomu seçip tepkime boyunca nereye gittiğini izleyeceksin. Paneller: <b>1 Önce</b>, <b>2 Atom hareket ederken</b>, <b>3 Sonra</b>. Görevin her aşamada üstteki mavi <b>Görevin</b> şeridinde yazar; çalışacağın alan da vurgulanır.' },
+      text: 'Burada tek bir atomu seçip tepkime boyunca nereye gittiğini izleyeceksin. Solda <b>görev kartı</b> ve adımlar, sağda <b>1 Önce → 2 Sonra</b> kartları var. Canlandırma Önce kartında oynar. Çalışacağın kart vurgulanır.' },
     { stage: 3, title: 'Gümüş atomunu seç', target: () => S3().pBefore,
-      text: '<b>Önce</b> panelinde gümüş (Ag) atomu içeren taneciğe, yani <b>Ag⁺</b> iyonuna dokun. Atom sarı halkayla işaretlenir. <span class="muted">Renk anahtarı sağdaki kartın altında.</span>',
+      text: '<b>Önce</b> panelinde gümüş (Ag) atomu içeren taneciğe, yani <b>Ag⁺</b> iyonuna dokun. Atom sarı halkayla işaretlenir. <span class="muted">Renk anahtarı görev kartının altında.</span>',
       check: () => S3().ti > 0 || S3().step >= 2,
       auto: async () => { const st = S3(), el = st.tasks[st.ti].el; const g = st.bGroups.find((x) => T.SPECIES[x.userData.sid].atoms.some((a) => a.el === el)); st.pickBefore({ group: g }); } },
     { stage: 3, title: 'Atomu izle', target: () => S3().playBtn,
-      text: '<b>▶ Oynat</b> düğmesine bas ve sarı halkalı atomu gözünle takip et. Kaydırıcıyla ileri geri sarabilirsin.',
+      text: 'Önce kartında beliren <b>▶ Oynat</b> düğmesine bas ve sarı halkalı atomu gözünle takip et. Kaydırıcıyla ileri geri sarabilirsin. Bitince kart başlangıç hâline döner.',
       check: () => S3().ti > 0 || S3().step >= 3,
       auto: async () => { S3().play(); await until(() => S3().step >= 3, 15000); } },
     { stage: 3, title: 'Atom şimdi nerede?', target: () => S3().pAfter,
-      text: '<b><span class="sn r-after">3</span>Sonra</b> panelinde gümüş atomunun bulunduğu taneciğe dokun. İpucu: beyaz katının içinde.',
+      text: '<b><span class="sn r-after">2</span>Sonra</b> kartında gümüş atomunun bulunduğu taneciğe dokun. İpucu: beyaz katının içinde.',
       check: () => S3().ti > 0 || S3().step >= 4,
       auto: async () => { const st = S3(); const i = st.mapInfo.afterIndex; const g = st.aGroups.find((x) => x.userData.index === i) || st.aGroups[i]; st.pickAfter({ group: g }); } },
     { stage: 3, title: 'İkinci görev: sodyum iyonu', target: () => S3().side,
-      text: 'Doğru! Gümüş atomu yok olmadı, <b>AgCl(k)</b> kristaline geçti. Sağdaki <b>Sonraki görev →</b> düğmesine bas.',
+      text: 'Doğru! Gümüş atomu yok olmadı, <b>AgCl(k)</b> kristaline geçti. Üstteki yeşil şeritte (telefonda Görev sekmesinde) <b>Sonraki görev →</b> düğmesine bas.',
       check: () => S3().ti > 0 || !!S.data.done[3],
       auto: async () => { S3().finishTask(true); } },
     { stage: 3, title: 'Sodyumu sen izle', target: () => S3().side,
-      text: 'Aynı üç adımı <b>sodyum (Na)</b> için yap: <span class="sn r-before">1</span>Önce panelinde <b>Na⁺</b>’ya dokun → <b>▶ Oynat</b> → <span class="sn r-after">3</span>Sonra panelinde sodyumu bul.<br><br>Sodyum iyonu tepkimede <b>hiç değişmez</b>; çözeltide serbest kalır.',
+      text: 'Aynı üç adımı <b>sodyum (Na)</b> için yap: <span class="sn r-before">1</span>Önce kartında <b>Na⁺</b>’ya dokun → <b>▶ Oynat</b> → <span class="sn r-after">2</span>Sonra kartında sodyumu bul.<br><br>Sodyum iyonu tepkimede <b>hiç değişmez</b>; çözeltide serbest kalır.',
       check: () => !!S.data.done[3],
       auto: async () => {
         const st = S3();
@@ -130,7 +130,7 @@
         if (st.step < 4) { const i = st.mapInfo.afterIndex; const g = st.aGroups.find((x) => x.userData.index === i) || st.aGroups[i]; st.pickAfter({ group: g }); await wait(600); }
         st.finishTask(true);
       } },
-    { stage: 3, title: 'Modelini test etmeye geç', target: () => byText('#ws-body button', /Modelimi test et/),
+    { stage: 3, title: 'Modelini test etmeye geç', target: () => Array.from(document.querySelectorAll('#ws-task button, #ws-body button')).find((e) => /Modelimi test et/.test(e.textContent) && e.offsetParent),
       text: 'Atomların yok olmadığını, <b>yeniden düzenlendiğini</b> gördün. <b>Modelimi test et →</b> düğmesine bas.',
       check: () => cur() === 4, autoNext: true,
       auto: async () => { T.App.go(4); } },

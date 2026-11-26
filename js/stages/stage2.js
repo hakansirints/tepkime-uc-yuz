@@ -13,7 +13,9 @@
         pool: shuffle(r.pool, r.no),
         model: d.model,
         showCounter: true,
-        onChange: () => { S.save(); this.updateFooter(); }
+        twoCard: true,
+        onChange: () => { S.save(); this.updateFooter(); },
+        onPlayed: () => this.updateFooter()
       });
       // gözlem hatırlatması
       this.builder.rightSlot.appendChild(h('div.feedback.info', { style: { fontSize: '13px' }, html: '<b>Gözlemin</b>“' + escapeHtml(d.observation || '') + '”' }));
@@ -42,9 +44,11 @@
       if (!nb) T.App.task({ step: [1, 3], target: R.before, text: 'Tepkime öncesindeki tanecikleri yerleştir',
         hint: 'Havuzdan kartları <b><span class="sn r-before">1</span>Tepkime öncesi</b> bölümüne ekle. Karıştırmadan önce kaplarda hangi tanecikler vardı?' });
       else if (!na) T.App.task({ step: [2, 3], target: R.after, text: 'Tepkime sonrasındaki tanecikleri yerleştir',
-        hint: 'Havuzun üstünden <b><span class="sn r-after">3</span>Sonrasına</b> seçeneğini seç, oluşan ve ortamda kalan tanecikleri ekle.' });
-      else T.App.task({ step: [3, 3], target: R.mid, text: 'Modelini canlandır, sonra kaydet',
-        hint: '<b>▶ Canlandır</b> ile atomların yeniden düzenlenmesini izle. Hazırsan sağ alttaki <b>Modeli kaydet</b> düğmesine bas.' });
+        hint: 'Havuzun üstünden <b><span class="sn r-after">2</span>Sonrasına</b> seçeneğini seç, oluşan ve ortamda kalan tanecikleri ekle.' });
+      else if (!this.builder.played) T.App.task({ step: [3, 3], target: R.before, text: 'Modelini canlandır, sonra kaydet',
+        hint: '<b><span class="sn r-before">1</span>Tepkime öncesi</b> kartındaki <b>▶ Canlandır</b> ile atomların yeniden düzenlenmesini izle.' });
+      else T.App.task({ step: [3, 3], kind: 'ok', kicker: 'Görev tamamlandı', text: 'Modelin canlandırıldı.',
+        hint: 'Hazırsan sağ alttaki <b>Modeli kaydet</b> düğmesine bas. Modelini değiştirmek istersen havuzu kullanmaya devam edebilirsin.' });
     },
     leave() { if (this.builder) { this.builder.destroy(); this.builder = null; } }
   };

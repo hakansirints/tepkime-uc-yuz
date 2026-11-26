@@ -185,15 +185,17 @@
         </div>
       </div>
       <div id="ws-task" class="hidden" role="status" aria-live="polite">
-        <span class="wt-ic" aria-hidden="true">🎯</span>
+        <span class="wt-ic" id="wt-ic" aria-hidden="true">🎯</span>
         <div class="wt-main">
           <div class="wt-line">
-            <span class="wt-kicker">Görevin<span id="wt-step"></span></span>
+            <span class="wt-kicker"><span id="wt-kick">Görevin</span><span id="wt-step"></span></span>
             <span class="wt-text" id="wt-text"></span>
           </div>
+          <div class="wt-steps" id="wt-steps"></div>
           <div class="wt-hint" id="wt-hint"></div>
         </div>
         <div class="wt-bars" id="wt-bars" aria-hidden="true"></div>
+        <div class="wt-acts" id="wt-acts"></div>
       </div>
       <div id="ws-body"></div>
     </div>

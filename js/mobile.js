@@ -52,7 +52,7 @@
     if (pt) {
       const n = $('.n', pt);
       let t = '';
-      pt.childNodes.forEach((c) => { if (c.nodeType === 3) t += c.textContent; else if (c.classList && !c.classList.contains('n') && !c.classList.contains('here-tag') && !c.classList.contains('pctl') && !c.classList.contains('tag') && !c.classList.contains('m-q')) t += c.textContent; });
+      pt.childNodes.forEach((c) => { if (c.nodeType === 3) t += c.textContent; else if (c.classList && !c.classList.contains('n') && !c.classList.contains('here-tag') && !c.classList.contains('pctl') && !c.classList.contains('tag') && !c.classList.contains('m-q') && !c.classList.contains('psub')) t += c.textContent; });
       t = t.trim().replace(/^Tepkime /, '').replace(/^Tanecikler /, '');
       t = cap(t);
       if (/^Etkileşirken/.test(t)) t = 'Etkileşim';
@@ -73,12 +73,15 @@
   }
 
   // sekme etiketi: "1 · Öncesi" → renkli numara rozeti + ad
-  function tabHtml(b, lb) {
+  function tabHtml(b, lb, s) {
     const m = lb.match(/^([123]) · (.*)$/);
     if (!m) { b.textContent = lb; return; }
     b.textContent = '';
     const sn = document.createElement('span');
-    sn.className = 'sn ' + ['r-before', 'r-mid', 'r-after'][+m[1] - 1];
+    // renk bölümden gelir (iki kart düzeninde "2" Sonrası olabilir), yoksa numaradan
+    const n = s && $(':scope > .ptitle > .n', s);
+    const rc = s && s.dataset.region ? 'r-' + s.dataset.region : (n && Array.from(n.classList).find((c) => /^r-/.test(c)));
+    sn.className = 'sn ' + (rc || ['r-before', 'r-mid', 'r-after'][+m[1] - 1]);
     sn.textContent = m[1];
     b.append(sn, m[2]);
   }
@@ -151,11 +154,11 @@
     if (fromUser) {
       const s = secs[i], tr = s.closest('.three-regions');
       if (tr) {
-        const idx = $$(':scope > .mpanel', tr).indexOf(s);
+        const reg = s.dataset.region;
         const gb = tr.closest('.grid-build');
         const sw = gb && $$('.pool .target-switch button', gb);
-        if (sw && sw.length >= 2 && (idx === 0 || idx === 2)) {
-          const b = sw[idx === 0 ? 0 : 1];
+        if (sw && sw.length >= 2 && (reg === 'before' || reg === 'after')) {
+          const b = sw[reg === 'before' ? 0 : 1];
           if (!b.classList.contains('on')) b.click();
         }
       }
@@ -184,7 +187,7 @@
         const b = document.createElement('button');
         b.type = 'button';
         b.setAttribute('role', 'tab');
-        tabHtml(b, labelOf(s));
+        tabHtml(b, labelOf(s), s);
         b.addEventListener('click', () => show(k, true));
         tabsEl.appendChild(b);
       });
@@ -203,8 +206,7 @@
         // havuz hedefi değişince ilgili sekmeye geç
         $$('.target-switch button', pool).forEach((tb, k) => tb.addEventListener('click', () => {
           const tr = $('.three-regions', pool.parentElement);
-          const ps = tr ? $$(':scope > .mpanel', tr) : [];
-          const want = ps[k === 0 ? 0 : 2];
+          const want = tr ? $(':scope > .mpanel[data-region=' + (k === 0 ? 'before' : 'after') + ']', tr) : null;
           const i = secs.indexOf(want);
           if (i >= 0 && i !== cur) show(i, false);
         }));
