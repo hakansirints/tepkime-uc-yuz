@@ -1322,3 +1322,19 @@ html.phone-l.m-typing textarea.m-typing-el { min-height: 120px; }
 /* klavye açıkken defter, telefonun gerçekten gösterdiği alana (visual viewport) oturur */
 html.phone-l.m-typing[style*="--vvh"] #notebook { top: calc(var(--vvt) + 4px); bottom: auto; height: calc(var(--vvh) - 8px); max-height: none; }
 html.phone-l.m-typing[style*="--vvh"] textarea.m-typing-el { min-height: 64px; max-height: calc(var(--vvh) * .45); }
+
+/* =====================================================================
+   Tam ekran (js/fullscreen.js): Android ⛶ düğmesi ve iPhone "Ana Ekrana Ekle" ipucu
+   ===================================================================== */
+#btn-fullscreen { font-size: 16px; line-height: 1; }
+#a2hs-card { position: fixed; z-index: 130; left: 50%; bottom: calc(12px + var(--sb)); transform: translate(-50%, 20px); opacity: 0; pointer-events: none;
+  width: min(460px, calc(100vw - 24px - var(--sl) - var(--sr))); display: flex; align-items: flex-start; gap: 10px; padding: 10px 10px 10px 12px; border-radius: 18px;
+  background: var(--glass-strong); border: 1px solid var(--glass-border); color: var(--text); box-shadow: 0 14px 40px rgba(0,0,0,.25);
+  -webkit-backdrop-filter: blur(24px) saturate(1.6); backdrop-filter: blur(24px) saturate(1.6); transition: opacity .35s var(--ease), transform .35s var(--ease); }
+#a2hs-card.show { opacity: 1; transform: translate(-50%, 0); pointer-events: auto; }
+#a2hs-card .a2-ic { font-size: 22px; line-height: 1.2; }
+#a2hs-card .a2-txt { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; font-size: 13px; line-height: 1.35; }
+#a2hs-card .a2-txt > b { font-size: 13.5px; }
+#a2hs-card .a2-share { display: inline-grid; place-items: center; width: 20px; height: 20px; border-radius: 6px; background: var(--accent); color: #fff; font-size: 12px; font-weight: 800; vertical-align: -4px; }
+#a2hs-card .a2-note { font-size: 11.5px; color: var(--muted); }
+#a2hs-card .a2-x { flex: none; width: 30px; height: 30px; border-radius: 50%; border: 0; background: var(--fill); color: var(--text); font-size: 13px; cursor: pointer; }

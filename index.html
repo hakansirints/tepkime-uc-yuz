@@ -6,6 +6,14 @@
   <title>Tepkimenin Üç Yüzü</title>
   <meta name="description" content="Gözlemden modele, modelden sembolik gösterime: 7 aşamalı sanal kimya laboratuvarı.">
   <meta name="theme-color" content="#05070c">
+  <!-- Ana ekrana eklenince adres çubuğu olmadan, tam ekran açılır (iPhone: Paylaş → Ana Ekrana Ekle; Android: Yükle) -->
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" type="image/png" href="icons/icon-192.png">
+  <link rel="apple-touch-icon" href="icons/icon-180.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Üç Yüz">
   <script>
     /* Tema: kayıtlı tercih yoksa sistem tercihini izle (ilk boyamadan önce uygulanır) */
     (function () {
@@ -240,6 +248,7 @@
   <script src="js/tutorial.js"></script>
   <script src="js/app.js"></script>
 <script src="js/mobile.js"></script>
+<script src="js/fullscreen.js"></script>
 <script src="js/dev.js"></script><!-- TEST MODU: yayından önce bu satırı ve js/dev.js'i sil -->
 
 </body>
