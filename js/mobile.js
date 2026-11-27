@@ -374,6 +374,33 @@
     setTimeout(() => vp.setAttribute('content', c), 30);
   }
 
+  /* ---------- Görev şeridi: telefonda kesilen metin dokununca balonda tam görünür ---------- */
+  let tip = null;
+  function closeTip() { if (tip) { tip.remove(); tip = null; } }
+  document.addEventListener('click', (e) => {
+    if (!on) return;
+    const wt = e.target.closest && e.target.closest('#topbar #ws-task');
+    if (tip) { closeTip(); return; } // açıkken herhangi bir dokunuş kapatır
+    if (wt) openTip(wt);
+  }, true);
+  function openTip(wt) {
+    wt = wt || $('#topbar #ws-task');
+    if (!on || !wt) return;
+    closeTip();
+    const tx = $('.wt-text', wt), hn = $('.wt-hint', wt);
+    if (!tx || !tx.textContent.trim()) return;
+    tip = document.createElement('div');
+    tip.className = 'm-wt-tip';
+    tip.setAttribute('role', 'status');
+    tip.innerHTML = '<b>' + tx.innerHTML + '</b>' + (hn && hn.textContent.trim() ? '<span>' + hn.innerHTML + '</span>' : '');
+    document.body.appendChild(tip);
+    const r = wt.getBoundingClientRect(), w = Math.min(window.innerWidth - 16, 440);
+    tip.style.width = w + 'px';
+    tip.style.top = Math.round(r.bottom + 6) + 'px';
+    tip.style.left = Math.round(Math.max(8, Math.min(r.left + r.width / 2 - w / 2, window.innerWidth - w - 8))) + 'px';
+  }
+  window.addEventListener('resize', closeTip);
+
   /* ---------- Aç / kapat ---------- */
   let mo = null;
   function apply() {
@@ -410,5 +437,5 @@
   if (mq.addEventListener) mq.addEventListener('change', apply); else mq.addListener(apply);
   window.addEventListener('orientationchange', () => setTimeout(apply, 200));
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', apply); else apply();
-  T.Mobile = { apply, show: (i) => show(i, true), get on() { return on; } };
+  T.Mobile = { apply, show: (i) => show(i, true), openTip: () => openTip(), closeTip, get on() { return on; } };
 })();

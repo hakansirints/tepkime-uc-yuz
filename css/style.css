@@ -786,6 +786,60 @@ html.phone-l .trk-arrow, html.phone-l #ws-task .wt-steps, html.phone-l #ws-task 
 .eq-cat { font-size: 12px; color: var(--muted); display: block; text-align: center; margin-bottom: -4px; padding: 1px 6px; }
 .sel-info { min-height: 58px; text-align: center; font-size: 14px; max-width: 420px; line-height: 1.45; }
 
+/* Aşama 5 — sade düzen: kart içi küçük etiketler, köşede Önce/Sonra, soru Sembolik kartta */
+.grid-three.s5 { grid-template-columns: 1fr 1.15fr 1fr; }
+.s5 .rep-col { position: relative; gap: 0; }
+.s5 .rep-col > .rep-h { position: absolute; left: 12px; top: 10px; z-index: 3; padding: 0; background: none; border-radius: 0; text-align: left;
+  display: flex; align-items: center; gap: 6px; font-size: 11px; letter-spacing: .07em; pointer-events: none; }
+.s5 .rep-col > .rep-h::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
+.s5 .rep-col > .mpanel, .s5 .rep-col > .sym-panel { flex: 1; }
+.s5 .sym-panel { padding: 36px 16px 16px; gap: 12px; }
+.s5-ms { position: absolute; right: 6px; top: 6px; z-index: 3; padding: 3px; }
+.s5-ms .btn.sm { flex: none; min-width: auto; padding: 3px 11px; font-size: 12px; }
+.s5-prog { display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 12.5px; color: var(--muted); }
+.s5-prog .dots { display: flex; gap: 4px; }
+.s5-prog .dots i { width: 7px; height: 7px; border-radius: 50%; background: var(--line-strong, var(--line)); transition: background .2s; }
+.s5-prog .dots i.on { background: var(--ok); }
+.s5 .sel-info { font-size: 13.5px; min-height: 0; }
+.s5-nm { font-size: 16px; font-weight: 700; margin-bottom: 3px; }
+.s5-nm span { color: var(--muted); font-weight: 600; font-size: .85em; }
+.s5-ln { color: var(--muted); margin-top: 2px; }
+.s5-ln b { color: var(--text); }
+.s5-info1 { display: inline-flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 2px 6px; padding: 4px 12px; border-radius: var(--pill);
+  background: var(--fill); font-size: 12.5px; color: var(--muted); line-height: 1.35; }
+.s5-info1 b { color: var(--text); }
+.s5-info1 .sep { opacity: .5; }
+.s5-prog[hidden] { display: none; }
+/* Aşama 5 — soru: Sembolik kartın altında çerçeveli blok (model B) */
+.s5-q { margin-top: auto; align-self: stretch; display: flex; flex-direction: column; gap: 7px; padding: 10px 12px; border-radius: var(--radius-md);
+  background: var(--accent-soft); border: 1.5px solid color-mix(in srgb, var(--accent) 30%, transparent); text-align: left; }
+.s5-q[hidden] { display: none; }
+.s5-q.done { background: var(--ok-bg); border-color: color-mix(in srgb, var(--ok) 30%, transparent); }
+.s5-qk { color: var(--accent); font-size: 10.5px; font-weight: 800; letter-spacing: .05em; text-transform: uppercase; }
+.s5-q.done .s5-qk { color: var(--ok); }
+.s5-qt { font-weight: 700; font-size: 14px; line-height: 1.3; }
+.s5-q .s5-opts { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 5px; }
+.s5-q .opt { min-width: 0; text-align: center; padding: 7px 2px; border-radius: 10px; font-size: 14px; }
+.s5-q .opt:disabled { cursor: default; }
+.s5-q .opt.right { color: var(--ok); }
+.s5-q .opt.wrong { animation: s5shake .3s; }
+.s5-q.done .s5-opts { display: none; }
+@keyframes s5shake { 25% { transform: translateX(-3px); } 75% { transform: translateX(3px); } }
+.s5-fb { font-size: 12.5px; line-height: 1.38; padding: 6px 9px; border-radius: 9px; background: var(--bad-bg); }
+.s5-fb[hidden] { display: none; }
+.s5-fb .x { color: var(--bad); }
+.s5-show { border: 0; margin-left: 6px; padding: 3px 10px; border-radius: var(--pill); background: var(--warn); color: #fff; font: inherit; font-size: 12px; font-weight: 750; cursor: pointer; }
+.s5-next { align-self: stretch; }
+/* telefon: aynı düzen, daha sıkı */
+html.phone-l .s5 .sym-panel { padding: 8px 10px; gap: 6px; }
+html.phone-l .s5-q { padding: 6px 8px; gap: 5px; border-radius: 12px; }
+html.phone-l .s5-qt { font-size: 12.5px; }
+html.phone-l .s5-q .opt { padding: 5px 2px; font-size: 13px; }
+html.phone-l .s5-fb { font-size: 11.5px; padding: 4px 8px; }
+html.phone-l .s5-info1 { font-size: 11.5px; padding: 3px 10px; }
+html.phone-l .s5-q .s5-next { padding: 6px 10px; }
+html.phone-l .s5-ms .btn.sm { padding: 2px 9px; font-size: 11px; }
+
 /* Temsil değiştir */
 .grid-tasks { flex: 1; min-height: 0; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
 .task-tabs { display: flex; gap: 8px; }
@@ -796,6 +850,49 @@ html.phone-l .trk-arrow, html.phone-l #ws-task .wt-steps, html.phone-l #ws-task 
 .task-tab.done b::after { content: " ✓"; color: var(--ok); }
 .qmark { flex: 1; border-radius: var(--radius-md); border: 2px dashed var(--line-strong); display: flex; flex-direction: column; align-items: stretch; justify-content: center; padding: 14px; gap: 10px; background: var(--fill); min-height: 0; overflow-y: auto; }
 .qmark .big-q { font-size: 44px; text-align: center; color: var(--muted); font-weight: 800; line-height: 1; }
+/* Aşama 6 — "verilen · verilen · ?" şeridi ve görev sekmelerindeki üçlü simge */
+.task-tab { display: flex; align-items: center; gap: 10px; }
+.s6-tt { min-width: 0; flex: 1; }
+.s6-tri { display: flex; gap: 3px; flex: none; }
+.s6-tri i { width: 16px; height: 16px; border-radius: 5px; display: grid; place-items: center; font-style: normal; font-size: 10px; font-weight: 800; background: var(--fill-2); color: var(--muted); }
+.s6-tri i.q { background: var(--purple); color: #fff; }
+.s6-tri i.d { background: var(--ok); color: #fff; }
+.s6-strip { flex: none; display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.s6-chip { display: flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 12px; border: 1px solid var(--line); background: var(--fill); font-size: 12.5px; min-width: 0; }
+.s6-chip .dot { width: 8px; height: 8px; border-radius: 50%; flex: none; }
+.s6-chip.mac .dot { background: var(--macro-ink); } .s6-chip.mic .dot { background: var(--accent); } .s6-chip.sym .dot { background: var(--sym-ink); }
+.s6-chip .d { color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.s6-chip .st { margin-left: auto; font-size: 11px; font-weight: 750; color: var(--muted); white-space: nowrap; }
+.s6-chip.q { border: 1.5px dashed var(--purple); background: color-mix(in srgb, var(--purple) 10%, transparent); }
+.s6-chip.q .st { color: var(--purple); }
+.s6-chip.q.done { border-style: solid; border-color: var(--ok); background: var(--ok-bg); }
+.s6-chip.q.done .st { color: var(--ok); }
+/* Görev 1 — Kristal yap */
+.s6-crys { margin-top: 8px; display: flex; flex-direction: column; gap: 5px; }
+.s6-crys-note { margin: 0; font-size: 12px; line-height: 1.38; color: var(--muted); }
+.s6-crys-note b { color: var(--text); }
+.s6-crys-note.shake { animation: s5shake .3s; color: var(--bad); }
+.cnt-status.idle { background: var(--fill); color: var(--muted); }
+/* Görev 2 — gözlemi yaz */
+.qmark.s6-pred { justify-content: flex-start; border-style: dashed; border-color: color-mix(in srgb, var(--purple) 55%, transparent); gap: 8px; }
+.qmark.s6-done { justify-content: flex-start; border-style: solid; border-color: color-mix(in srgb, var(--ok) 45%, transparent); }
+.s6-qt { font-weight: 700; font-size: 14px; }
+.s6-ta { width: 100%; min-height: 76px; resize: vertical; border-radius: 10px; border: 1px solid var(--line); background: var(--glass-strong); color: var(--text); font: inherit; font-size: 14px; padding: 9px 10px; }
+.s6-ta[hidden], .s6-crit[hidden], .s6-chk[hidden], .s6-alt[hidden], .s6-opts[hidden] { display: none; }
+.s6-crit { display: flex; gap: 6px; flex-wrap: wrap; }
+.s6-crit span { font-size: 11.5px; font-weight: 700; padding: 3px 9px; border-radius: var(--pill); background: var(--fill); color: var(--muted); }
+.s6-crit span.y { background: var(--ok-bg); color: var(--ok); }
+.s6-crit span.n { background: var(--warn-bg); color: var(--warn); }
+.s6-crit span.opt { border: 1px dashed var(--line); }
+.s6-row { display: flex; gap: 10px; align-items: center; }
+.s6-row .s6-chk { flex: 1; }
+.s6-alt { border: 0; background: none; color: var(--accent); font: inherit; font-size: 12.5px; font-weight: 650; cursor: pointer; padding: 4px; }
+html.phone-l .s6-strip { display: none; }
+html.phone-l .task-tab { gap: 6px; }
+html.phone-l .s6-tri i { width: 13px; height: 13px; font-size: 9px; border-radius: 4px; }
+html.phone-l .s6-ta { min-height: 52px; font-size: 13px; padding: 6px 8px; }
+html.phone-l .qmark.s6-pred { gap: 5px; padding: 8px; }
+html.phone-l .s6-qt { font-size: 12.5px; }
 .opt-list { display: grid; gap: 7px; }
 .opt { text-align: left; padding: 10px 14px; border-radius: var(--radius-sm); border: 1px solid var(--line); background: var(--glass-strong); cursor: pointer; font-size: 14px; transition: .2s var(--ease); }
 .opt:hover { border-color: var(--accent); }
@@ -1278,6 +1375,14 @@ html.phone-l #topbar #ws-task { flex: 1 1 auto; min-width: 0; margin: 0; padding
 html.phone-l.m-lab #topbar #ws-task { display: none; }
 html.phone-l #topbar #ws-task .wt-text { font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 html.phone-l #topbar #ws-task .wt-bars i { width: 12px; height: 4px; }
+html.phone-l #topbar #ws-task { cursor: pointer; }
+/* uzun görev metni (ör. 5. aşama sorusu): iki satır */
+html.phone-l #topbar #ws-task.wt-2l .wt-text { white-space: normal; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; font-size: 11.5px; line-height: 1.17; }
+/* dokununca tam metin balonu */
+.m-wt-tip { position: fixed; z-index: 400; padding: 9px 12px; border-radius: 14px; background: var(--glass-strong); border: 1px solid var(--line);
+  box-shadow: 0 10px 30px rgba(0,0,0,.18); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); font-size: 13px; line-height: 1.35; color: var(--text); }
+.m-wt-tip b { display: block; font-weight: 700; }
+.m-wt-tip span { display: block; margin-top: 4px; color: var(--muted); font-size: 12px; }
 html.phone-l .top-actions { gap: 4px; flex: none; }
 html.phone-l .stage-counter { display: none; }
 html.phone-l .tut-link { padding: 0 10px; height: 32px; font-size: 12.5px; }

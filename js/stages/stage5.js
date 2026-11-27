@@ -1,4 +1,4 @@
-﻿/* AŞAMA 5 — Üç gösterim: makroskobik, tanecik (mikroskobik) ve sembolik gösterim birbirine bağlı.
+/* AŞAMA 5 — Üç gösterim: makroskobik, tanecik (mikroskobik) ve sembolik gösterim birbirine bağlı.
    Bir gösterimde bir öğe seçilince diğer iki gösterimde karşılığı vurgulanır. */
 (function (T) {
   'use strict';
@@ -33,19 +33,12 @@
     p.root.add(shaft); p.root.add(head);
     const lb = Mol.label('Tepkime öncesi', { h: 0.38, bg: 'rgba(30,60,100,0.85)' }); lb.position.set(0, offB.y + B.top + 0.4, 0); p.root.add(lb);
     const la = Mol.label('Tepkime sonrası', { h: 0.38, bg: 'rgba(30,60,100,0.85)' }); la.position.set(0, offA.y + A.top + 0.4, 0); p.root.add(la);
-    // vurgu halesi
-    const haloMat = new THREE.MeshBasicMaterial({ color: 0xffd84a, transparent: true, opacity: 0.22, depthWrite: false, side: THREE.BackSide });
-    groups.forEach((g) => {
-      const halo = new THREE.Mesh(new THREE.SphereGeometry(g.userData.radius + 0.28, 32, 20), haloMat);
-      halo.userData.ghost = true; halo.userData.noPick = true; halo.visible = false;
-      g.add(halo); g.userData.halo = halo;
-    });
+    // vurgu (Mol.setHighlight/setDim): seçilen tanecik yumuşakça %7 büyür, nabız yok
     p.onUpdate((dt, t) => {
-      haloMat.opacity = 0.2 + Math.sin(t * 5) * 0.08;
       groups.forEach((g, i) => {
         if (T.SPECIES[g.userData.sid].kind !== 'crystal') g.rotation.y = Math.sin(t * 0.5 + i) * 0.4;
-        g.scale.setScalar(g.userData.hl ? 1.06 + Math.sin(t * 6) * 0.04 : 1);
-        g.userData.halo.visible = !!g.userData.hl;
+        const s = g.scale.x, want = g.userData.hl ? 1.07 : 1;
+        if (Math.abs(want - s) > 0.001) g.scale.setScalar(s + (want - s) * Math.min(1, dt * 10));
       });
     });
     const box = new THREE.Box3();
@@ -73,7 +66,7 @@
     const terms = eqTerms(r);
     const term = (t) => {
       const b = h('button.eq-term', { title: onPick ? 'Dokun: diğer gösterimlerde karşılığını gör' : '' },
-        t.c > 1 ? h('span.c', { text: String(t.c) }) : null, t.f, h('span.st', { text: '(' + t.s + ')' }));
+        t.c > 1 ? h('span.c', { text: String(t.c) }) : null, t.f, h('span.st', { text: '(' + t.s + ')', title: '(' + t.s + '): ' + (STATE_TEXT[t.s] || '') }));
       if (onPick) b.addEventListener('click', () => onPick(t)); else b.disabled = true;
       termEls[t.key] = b;
       return b;
@@ -104,27 +97,25 @@
 
       this.macroEl = h('div.mpanel', null, h('div.pempty', { text: '' }));
       this.microEl = h('div.mpanel.aq', null, h('div.pempty', { text: '' }));
-      this.macroBtns = h('div.target-switch', null,
-        h('button.btn.sm.ghost', { 'data-s': 'before', text: 'Karıştırmadan önce' }),
-        h('button.btn.sm.ghost', { 'data-s': 'after', text: 'Karıştırdıktan sonra' }));
+      // Önce / Sonra seçimi makro kartın sağ üst köşesinde küçük bir anahtar
+      this.macroBtns = h('div.target-switch.s5-ms', null,
+        h('button.btn.sm.ghost', { 'data-s': 'before', text: 'Önce', title: 'Karıştırmadan önce' }),
+        h('button.btn.sm.ghost', { 'data-s': 'after', text: 'Sonra', title: 'Karıştırdıktan sonra' }));
       this.macroBtns.querySelectorAll('button').forEach((b) => b.addEventListener('click', () => this.setMacroState(b.dataset.s)));
       this.eqEl = h('div.equation');
-      this.infoEl = h('div.sel-info', { html: 'Denklemdeki bir <b>terime</b>, kaptaki bir <b>bölgeye</b> ya da bir <b>taneciğe</b> dokun.' });
-      this.quizEl = h('div');
-      this.progressEl = h('div.small.muted', { style: { marginTop: '8px' } });
+      this.infoEl = h('div.sel-info', { html: 'Bir terime, kaptaki bir bölgeye ya da bir taneciğe dokun.' });
+      this.progressEl = h('div.s5-prog');
+      // Soru: Sembolik kartın altında çerçeveli blok (soru aşamasına kadar gizli)
+      this.quizEl = h('div.s5-q', { hidden: true });
+      this.wrongs = 0;
 
-      const colMacro = h('div.rep-col', null,
-        h('div.rep-h.macro', null, h('b', { text: '👁 Makroskobik' }), h('span', { text: 'Gözle görülen' })),
-        this.macroBtns, this.macroEl);
-      const colMicro = h('div.rep-col', null,
-        h('div.rep-h.micro', null, h('b', { text: '⚛ Tanecik' }), h('span', { text: 'Atomlar, iyonlar, moleküller' })),
-        this.microEl);
-      const colSym = h('div.rep-col', null,
-        h('div.rep-h.sym', null, h('b', { text: '✎ Sembolik' }), h('span', { text: 'Kimyasal denklem' })),
-        h('div.sym-panel', null, this.eqEl, this.infoEl,
-          h('div.legend', { html: '<b>Fiziksel hâl sembolleri:</b> (k) katı · (s) sıvı · (g) gaz · (suda) sulu çözelti' }),
-          this.progressEl, this.quizEl));
-      body.appendChild(h('div.grid-three', null, colMacro, colMicro, colSym));
+      // Sade başlıklar: kartın sol üstünde renkli noktalı küçük etiket (rep-h; telefonda sekme adı da buradan)
+      const lbl = (cls, t) => h('div.rep-h.' + cls, null, h('b', { text: t }));
+      const colMacro = h('div.rep-col', null, lbl('macro', 'Makroskobik'), this.macroBtns, this.macroEl);
+      const colMicro = h('div.rep-col', null, lbl('micro', 'Tanecik'), this.microEl);
+      const colSym = h('div.rep-col', null, lbl('sym', 'Sembolik'),
+        h('div.sym-panel', null, this.eqEl, this.progressEl, this.infoEl, this.quizEl));
+      body.appendChild(h('div.grid-three.s5', null, colMacro, colMicro, colSym));
 
       this.macroPanel = V().addPanel(this.macroEl, {
         near: 0.005, minDist: 0.1, labelRoom: 0, fitPad: 1.05,
@@ -169,34 +160,35 @@
       if (this.macro.state !== want) this.setMacroState(want);
       this.macro.highlight(t.m || null);
       const sp = t.sp || [];
-      this.microGroups.forEach((g) => {
-        const on = g.userData.side === t.side && sp.indexOf(g.userData.sid) >= 0;
-        if (!!g.userData.hl !== on) Mol.setHighlight(g, on, 0xffc400);
-      });
+      this.focusMicro((g) => g.userData.side === t.side && sp.indexOf(g.userData.sid) >= 0);
       this.infoEl.innerHTML = this.describe(t);
       this.renderProgress();
     },
 
+    /* Sade bilgi: ad + Hâl + Kapta. Soru çıkınca (quizShown) tek satırlık hap olur. */
     describe(t) {
-      const MT = T.MACRO_TEXT;
-      if (t.onlyMacro) return `<b>${MT[t.m] || t.m}</b><br>Bu bölge denklemde ayrı bir terimle gösterilmez.`;
-      if (t.onlyMicro) return `<b>${T.speciesLabel(t.sp[0])}</b> — ${T.SPECIES[t.sp[0]].name}<br>Bu tanecik denklemde ayrı bir terim olarak yazılmaz.`;
-      const parts = (t.sp || []).map((s) => '<b>' + T.speciesLabel(s) + '</b> (' + T.SPECIES[s].name.toLocaleLowerCase('tr-TR') + ')').join(' ve ');
-      let txt = `<div style="font-size:16px;font-weight:700;margin-bottom:4px">${t.c > 1 ? t.c + ' ' : ''}${t.f} ${t.cat ? '' : '<span class="muted">(' + t.s + ')</span>'}</div>`;
-      if (t.cat) return txt + `<b>Katalizör:</b> tepkimeyi hızlandırır ama harcanmaz; bu yüzden okun üstüne yazılır. Tanecik modelinde ${parts} hem öncesinde hem sonrasında aynen bulunur.`;
-      txt += `<div>Hâl: <b>${STATE_TEXT[t.s]}</b> · ${t.side === 'r' ? 'tepkimeye giren' : 'tepkimede oluşan / ortamda kalan'} madde</div>`;
-      txt += `<div style="margin-top:4px">⚛ Tanecik gösteriminde: ${parts}.</div>`;
-      if (t.s === 'suda' && t.sp.length > 1) txt += '<div class="small muted" style="margin-top:4px">Sulu çözeltide bu madde tek bir “paket” değil, ayrı iyonlar hâlinde bulunur. Denklemde ise formülüyle yazılır.</div>';
-      if (t.s === 'k' && /\(k\)$/.test(t.sp[0])) txt += '<div class="small muted" style="margin-top:4px">Katı, düzenli bir kristal yapıdır: iyonlar sıra sıra dizilir.</div>';
-      if (t.c > 1) txt += `<div class="small muted" style="margin-top:4px">Katsayı ${t.c}: bu birimden ${t.c} tane vardır. Katsayılar atom sayılarının iki tarafta eşit olmasını sağlar.</div>`;
-      if (t.m) txt += `<div style="margin-top:4px">👁 Kapta: <b>${MT[t.m] || t.m}</b></div>`;
+      const MT = T.MACRO_TEXT, one = this.quizShown;
+      const pill = (parts) => `<div class="s5-info1">${parts.join('<span class="sep">·</span>')}</div>`;
+      if (t.onlyMacro) return one ? pill([`<b>${MT[t.m] || t.m}</b>`, 'denklemde ayrı terim yok'])
+        : `<div class="s5-nm">${MT[t.m] || t.m}</div><div class="s5-ln">Bu bölge denklemde ayrı bir terimle gösterilmez.</div>`;
+      if (t.onlyMicro) return one ? pill([`<b>${T.speciesLabel(t.sp[0])}</b>`, 'denklemde ayrı terim yok'])
+        : `<div class="s5-nm">${T.speciesLabel(t.sp[0])} <span>${T.SPECIES[t.sp[0]].name}</span></div><div class="s5-ln">Bu tanecik denklemde ayrı bir terim olarak yazılmaz.</div>`;
+      const name = `${t.c > 1 ? t.c + ' ' : ''}${t.f}`;
+      if (t.cat) return one ? pill([`<b>${name}</b>`, 'katalizör'])
+        : `<div class="s5-nm">${name}</div><div class="s5-ln"><b>Katalizör:</b> tepkimeyi hızlandırır ama harcanmaz; bu yüzden okun üstüne yazılır.</div>`;
+      const kap = t.m ? (MT[t.m] || t.m) : null;
+      if (one) return pill([`<b>${name} (${t.s})</b>`, t.s === 'suda' ? 'sulu çözelti' : STATE_TEXT[t.s]].concat(kap ? [`Kapta: <b>${kap}</b>`] : []));
+      let txt = `<div class="s5-nm">${name} <span>(${t.s})</span></div>`;
+      txt += `<div class="s5-ln">Hâl: <b>${STATE_TEXT[t.s]}</b> · ${t.side === 'r' ? 'tepkimeye giren' : 'tepkimede oluşan / ortamda kalan'} madde</div>`;
+      if (kap) txt += `<div class="s5-ln">👁 Kapta: <b>${kap}</b></div>`;
       return txt;
     },
 
     renderProgress() {
       const keys = Object.keys(this.termEls || {});
       const n = keys.filter((k) => this.seen.has(k)).length;
-      this.progressEl.innerHTML = `İncelenen terim: <b>${n} / ${keys.length}</b>` + (n < keys.length ? ' — denklemdeki bütün terimlere dokun.' : ' ✓');
+      this.progressEl.innerHTML = `<span>${n < keys.length ? 'Terimlere dokun' : 'Terimler incelendi'}</span><span class="dots" aria-label="${n} / ${keys.length} terim incelendi">`
+        + keys.map((k) => `<i class="${this.seen.has(k) ? 'on' : ''}"></i>`).join('') + '</span>';
       if (!this.quizShown && n < keys.length && !S.data.done[5]) {
         T.App.task({ target: this.eqEl.parentNode, step: [1, 2], text: `Denklemdeki bütün terimlere dokun (${n} / ${keys.length})`,
           hint: 'Dokunduğun terim kapta ve tanecik modelinde de vurgulanır. Üç gösterimin aynı şeyi nasıl anlattığına bak.' });
@@ -204,50 +196,114 @@
       if ((n >= keys.length || S.data.done[5]) && !this.quizShown) this.showQuiz();
     },
 
+    /* Soru: Sembolik kartın altında çerçeveli blok. Bilgi tek satıra iner, ilerleme noktaları gizlenir.
+       İpucu iki basamaklı: 1. yanlışta cevabın kaptaki bölgesinin adı, 2. yanlıştan sonra "Bana göster". */
     showQuiz() {
       this.quizShown = true;
+      this.wrongs = 0;
       const r = this.r, q = r.quiz;
       const el = this.quizEl;
+      const phone = () => T.Mobile && T.Mobile.on;
       el.innerHTML = '';
-      el.appendChild(h('h3', { style: { marginTop: '12px' }, html: '❓ Gösterimleri birleştir' }));
-      el.appendChild(h('p', { style: { margin: '4px 0 8px' }, text: q.q }));
+      el.hidden = false;
+      el.classList.remove('done');
+      this.progressEl.hidden = true;
+      this.infoEl.innerHTML = this.sel ? this.describe(this.sel) : '';
       const opts = [];
       Object.keys(r.after).concat(Object.keys(r.before)).forEach((s) => { if (opts.indexOf(s) < 0) opts.push(s); });
       let list = opts.slice(0, 5);
       if (list.indexOf(q.ans) < 0) list[0] = q.ans;
       list = T.shuffleSeed(list, r.no + 3);
-      const fb = h('div');
-      const wrap = h('div.opt-list');
-      const next = () => { const nb = h('button.btn.success.block.pulse', { text: 'Temsil değiştirmeye geç →', style: { marginTop: '6px' } }); nb.addEventListener('click', () => T.App.go(6)); return nb; };
+      // cevabın denklemdeki terimi ve kaptaki bölgesi (ipucu bunu söyler)
+      const ansT = eqTerms(r).find((t) => t.side === 'p' && (t.sp || []).indexOf(q.ans) >= 0);
+      const region = ansT && ansT.m ? (T.MACRO_TEXT[ansT.m] || ansT.m) : null;
+      const hint = region
+        ? `Sonra kabında <b>“${region}”</b> bölgesine dokun; tanecik kartında halkayla işaretlenen tanecik cevaptır.`
+        : 'Okun sağındaki terimlere dokun; tepkimeden önce olmayan, yeni oluşan tanecik hangisi?';
+      const kick = h('div.s5-qk', { text: 'Soru' });
+      const qtxt = h('div.s5-qt', { text: q.q });
+      const wrap = h('div.opt-list.s5-opts', { role: 'group', 'aria-label': 'Seçenekler' });
+      const fb = h('div.s5-fb', { hidden: true, 'aria-live': 'polite' });
+      el.append(kick, qtxt, wrap, fb);
+      const next = () => { const nb = h('button.btn.success.pulse.s5-next', { text: 'Temsil değiştirmeye geç →' }); nb.addEventListener('click', () => T.App.go(6)); return nb; };
+      const markDone = (b) => {
+        b.classList.add('right');
+        wrap.querySelectorAll('.opt').forEach((x) => { x.disabled = true; x.classList.remove('wrong'); });
+        el.classList.add('done');
+        kick.textContent = '✓ Doğru bağlantı · ' + T.speciesLabel(q.ans);
+        qtxt.textContent = 'Aynı tepkimeyi üç farklı yolla gösterebiliyorsun.';
+        fb.hidden = true;
+        el.appendChild(next());
+      };
       list.forEach((s) => {
-        const b = h('button.opt', null, h('b', { text: T.speciesLabel(s) }), ' ', h('span.muted', { text: T.SPECIES[s].name }));
+        const b = h('button.opt', { title: T.SPECIES[s].name }, h('b', { text: T.speciesLabel(s) }));
         b.addEventListener('click', () => {
           wrap.querySelectorAll('.opt').forEach((x) => x.classList.remove('wrong'));
-          fb.innerHTML = '';
           if (s === q.ans) {
-            b.classList.add('right');
-            wrap.querySelectorAll('.opt').forEach((x) => { x.disabled = true; });
             T.Audio.success();
-            fb.appendChild(h('div.feedback.ok', { html: '<b>✓ Doğru bağlantı</b>Gözle gördüğün değişimi taneciklerle ve formüllerle ilişkilendirdin. Aynı tepkimeyi üç farklı yolla gösterebiliyorsun.' }));
-            fb.appendChild(next());
+            markDone(b);
             T.App.complete(5);
-            T.App.task({ target: el, step: [2, 2], text: 'Doğru bağlantı!', hint: '<b>Temsil değiştirmeye geç</b> düğmesiyle devam et.' });
+            T.App.task({ target: el, step: [2, 2], text: 'Doğru bağlantı!', hint: 'Gözle gördüğün değişimi taneciklerle ve formüllerle ilişkilendirdin. <b>Temsil değiştirmeye geç</b> düğmesiyle devam et.' });
           } else {
+            void b.offsetWidth; // sallanma her yanlışta yeniden oynasın
             b.classList.add('wrong');
             T.Audio.error();
-            fb.appendChild(h('div.feedback.warn', { html: '<b>Tekrar düşün</b>Kapta o değişimi gösteren bölgeye dokun. Tanecik gösteriminde hangi tanecikler parlıyor? Denklemde hangi terim seçiliyor?' }));
+            this.wrongs++;
+            fb.hidden = false;
+            fb.innerHTML = `<b class="x">${this.wrongs > 1 ? '✗ Yine olmadı.' : '✗ Tekrar düşün.'}</b> ${hint}`;
+            if (this.wrongs > 1 && ansT) {
+              const sb = h('button.s5-show', { type: 'button', text: '👁 Bana göster' });
+              sb.addEventListener('click', () => this.showAnswer(ansT, q.ans));
+              fb.appendChild(sb);
+            }
+            T.App.task({ target: el, step: [2, 2], text: phone() ? '✗ Tekrar düşün' : 'Gösterimleri birleştir', hint });
           }
         });
         wrap.appendChild(b);
       });
-      el.appendChild(wrap);
-      el.appendChild(fb);
-      T.App.task({ target: el, step: [2, 2], text: q.q, hint: 'Doğru taneciği seçeneklerden seç. Emin değilsen kaptaki bölgeye dokunup hangi taneciğin parladığına bak.' });
-      if (S.data.done[5]) fb.appendChild(next());
-      el.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+      if (S.data.done[5]) {
+        const rb = Array.from(wrap.querySelectorAll('.opt')).find((x) => x.textContent === T.speciesLabel(q.ans));
+        if (rb) markDone(rb);
+        T.App.task({ target: el, step: [2, 2], text: 'Doğru bağlantı!', hint: '<b>Temsil değiştirmeye geç</b> düğmesiyle devam et.' });
+      } else {
+        T.App.task({ target: el, step: [2, 2], text: phone() ? '❓ Soruyu cevapla' : 'Gösterimleri birleştir',
+          hint: 'Sembolik karttaki soruyu cevapla. Takılırsan ipucu kapta hangi bölgeye bakacağını söyler.' });
+        // telefonda soru Sembolik sekmesinde: kullanıcı başka sekmedeyse oraya geç
+        if (phone()) this.phoneTab('Sembolik');
+      }
+      window.dispatchEvent(new Event('resize'));
+    },
+
+    /* "Bana göster": kap Sonra'ya geçer, cevabın bölgesi ve yalnızca cevap taneciği parlar; seçimi öğrenci yapar */
+    showAnswer(t, ans) {
+      this.sel = null;
+      Object.keys(this.termEls).forEach((k) => this.termEls[k].classList.remove('sel'));
+      this.setMacroState('after');
+      this.macro.highlight(t.m || null);
+      this.focusMicro((g) => g.userData.side === 'p' && g.userData.sid === ans);
+      this.infoEl.innerHTML = `<div class="s5-info1">👁 Kapta işaretli:<b>${T.MACRO_TEXT[t.m] || t.m}</b><span class="sep">·</span>tanecik kartına bak</div>`;
+      T.Audio.click();
+      if (T.Mobile && T.Mobile.on) this.phoneTab('Tanecik');
+    },
+
+    /* Odak + ince halka: eşleşenler halkalı, diğerleri soluk; hiçbiri eşleşmezse hepsi normal */
+    focusMicro(match) {
+      const on = this.microGroups.map((g) => !!match(g));
+      const any = on.some(Boolean);
+      this.microGroups.forEach((g, i) => {
+        if (!!g.userData.hl !== on[i]) Mol.setHighlight(g, on[i]);
+        Mol.setDim(g, any && !on[i]);
+      });
+    },
+
+    phoneTab(name) {
+      const b = Array.from(document.querySelectorAll('.m-tabs button')).find((x) => x.textContent.indexOf(name) >= 0);
+      if (b && !b.classList.contains('on')) b.click();
     },
 
     leave() {
+      if (T.Mobile && T.Mobile.closeTip) T.Mobile.closeTip();
+      this.quizShown = false;
       if (this.macro) { this.macro.dispose(); this.macro = null; }
       if (this.macroPanel) { V().removePanel(this.macroPanel); this.macroPanel = null; }
       if (this.microPanel) { V().removePanel(this.microPanel); this.microPanel = null; }

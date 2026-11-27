@@ -153,13 +153,13 @@
     { stage: 5, title: 'Aşama 5 · Tepkimenin üç yüzü', target: () => $('.grid-three'),
       text: 'Aynı tepkime üç şekilde gösterilir:<br>👁 <b>Makroskobik</b>: kapta gözle görülen,<br>⚛ <b>Tanecik</b>: atomlar, iyonlar, moleküller,<br>✎ <b>Sembolik</b>: kimyasal denklem.<br>Formüller ilk kez burada açılır.' },
     { stage: 5, title: 'Önce ve sonra', target: () => S5().macroBtns,
-      text: 'Bu düğmelerle kabın <b>karıştırmadan önceki</b> ve <b>sonraki</b> hâli arasında geçiş yapabilirsin.' },
+      text: 'Makroskobik kartın köşesindeki <b>Önce / Sonra</b> düğmeleriyle kabın karıştırmadan önceki ve sonraki hâli arasında geçiş yapabilirsin.' },
     { stage: 5, title: 'Gösterimleri bağla', target: () => S5().eqEl,
-      text: 'Denklemdeki <b>her terime</b> dokun. Dokunduğun terimin karşılığı kapta ve tanecik modelinde aynı anda parlar.<br><br>Örneğin <b>AgCl(k)</b>’ye dokun: kaptaki beyaz katı ve modeldeki kristal vurgulanır. Dört terimin hepsine dokun.',
+      text: 'Denklemdeki <b>her terime</b> dokun. Dokunduğun terimin karşılığı kapta ve tanecik modelinde aynı anda halkayla işaretlenir.<br><br>Örneğin <b>AgCl(k)</b>’ye dokun: kaptaki beyaz katı ve modeldeki kristal vurgulanır. Dört terimin hepsine dokun.',
       check: () => S5().termEls && Object.keys(S5().termEls).every((k) => S5().seen.has(k)),
       auto: async () => { for (const k of Object.keys(S5().termEls)) { S5().termEls[k].click(); await wait(900); } } },
     { stage: 5, title: 'Soruyu cevapla', target: () => S5().quizEl,
-      text: 'Üç gösterimi birleştir: <b>beyaz katıyı hangi tanecik oluşturur?</b> Doğru seçeneğe tıkla.',
+      text: 'Soru Sembolik kartın altında. Üç gösterimi birleştir: <b>beyaz katıyı hangi tanecik oluşturur?</b> Doğru formüle tıkla. Yanılırsan ipucu kapta hangi bölgeye dokunacağını söyler.',
       check: () => !!S.data.done[5],
       auto: async () => { const b = byText('.opt', new RegExp('^' + T.speciesLabel('AgCl(k)').replace(/[()]/g, '\\$&')), S5().quizEl); if (b) b.click(); } },
     { stage: 5, title: 'Temsil değiştirmeye geç', target: () => byText('#ws-body button', /Temsil değiştirmeye geç/),
@@ -171,8 +171,8 @@
     { stage: 6, title: 'Aşama 6 · Eksik gösterimi üret', target: () => S6().tabsEl,
       text: 'Burada <b>üç görev</b> var. Her görevde iki gösterim verilir, <b>eksik olan üçüncüsünü</b> sen üretirsin. Görevler farklı tepkimelerle gelir.<br><span class="muted">Öğreticideki görevler gerçek etkinliktekilerden farklıdır.</span>' },
     { stage: 6, title: 'Görev 1 · Tanecik modelini kur', target: () => S6().area,
-      text: `Kalsiyum klorür + gümüş nitrat: deneyin sonucu ve denklem verildi; <b>öncesi</b> hazır. Denklemde <b>2 AgCl(k)</b> var, demek ki iki tane AgCl kristali oluşur.
-        <br><br><b><span class="sn r-after">3</span>Tepkime sonrası</b> bölümüne <b>2 × AgCl(k)</b>, <b>1 × Ca²⁺</b>, <b>2 × NO₃⁻</b> ekle ve <b>✓ Modelimi kontrol et</b>’e bas.`,
+      text: `Kalsiyum klorür + gümüş nitrat: deneyin sonucu ve denklem verildi. Üstteki şeritte <b>? sen üret</b> yazan gösterim, bu görevde senin üreteceğin: <b>tanecik modeli</b>.
+        <br><br><b>Öncesi</b> ve çözeltide kalan <b>Ca²⁺, NO₃⁻</b> iyonları hazır. Denklemde <b>2 AgCl(k)</b> var: <b><span class="sn r-after">3</span>Tepkime sonrası</b> bölümüne <b>2 × Ag⁺</b> ve <b>2 × Cl⁻</b> ekle, <b>⬚ Kristal yap</b> ile kristale dönüştür, sonra <b>✓ Modelimi kontrol et</b>’e bas.`,
       check: () => S.data.tasks6.micro && S.data.tasks6.micro.ok,
       auto: async () => {
         if (S6().idx !== 0) { S6().show(0); await wait(300); }
@@ -181,13 +181,12 @@
       } },
     { stage: 6, title: 'Görev 2 · Gözlemi tahmin et', target: () => (S6().idx === 1 ? S6().area : byText('#ws-body button', /Sıradaki göreve geç/) || S6().tabsEl),
       text: `<b>Sıradaki göreve geç →</b> düğmesine bas.<br><br>Kalsiyum nitrat + potasyum karbonat: bu kez <b>tanecik modeli ve denklem</b> verildi. Kapta ne gözlenir?
-        <br><br>İpucu: Modelde ve denklemde <b>(k)</b> ile gösterilen bir ürün var → kapta <b>katı</b> görürsün. Doğru cümleyi seç.`,
+        <br><br>İpucu: Modelde ve denklemde <b>(k)</b> ile gösterilen bir ürün var → kapta <b>katı</b> görürsün. Tahminini <b>kendi cümlenle yaz</b>, katının rengini de belirt ve <b>Tahminimi kontrol et</b>’e bas.`,
       check: () => S.data.tasks6.macro && S.data.tasks6.macro.ok,
       auto: async () => {
         if (S6().idx !== 1) { S6().show(1); await wait(400); }
-        const want = T.macroSentence(S6().r);
-        const b = Array.from(S6().area.querySelectorAll('.opt')).find((x) => x.textContent === want);
-        if (b) b.click();
+        const ta = S6().area.querySelector('.s6-ta');
+        if (ta) { ta.value = T.macroSentence(S6().r); fire(ta, 'input'); await wait(300); byText('button', /Tahminimi kontrol et/, S6().area).click(); }
       } },
     { stage: 6, title: 'Görev 3 · Denklemi tamamla', target: () => (S6().idx === 2 ? S6().area : byText('#ws-body button', /Sıradaki göreve geç/) || S6().tabsEl),
       text: `<b>Sıradaki göreve geç →</b> düğmesine bas.<br><br>Potasyum karbonat + hidroklorik asit: deney ve model verildi. Her terimin <b>katsayısını</b> ve <b>hâlini</b> seç:

@@ -1,7 +1,8 @@
 /* ============================================================
    TEST MODU — yalnızca geliştirme ve deneme için. Bu dosya yüklü olduğu sürece hep açıktır.
-   Üst barda turuncu 🧪 düğmesi çıkar. Basınca bulunduğun aşamanın
-   işlemlerini seçtiğin tepkimeye göre DOĞRU yapar ve sonucu gösterir.
+   ⚙️ menüsünün altında "Geliştirici" bölümü çıkar:
+   🧪 Bu aşamayı çöz → bulunduğun aşamanın işlemlerini seçtiğin tepkimeye göre DOĞRU yapar.
+   ↺ Bu aşamayı sıfırla → tamamlanmış aşamanın yanıtlarını siler (1–2. aşamada sonrakileri kilitler).
    Sonraki aşamaya kendin geçersin; aşama atlama yoktur.
 
    YAYINDAN ÖNCE KALDIRMAK: bu dosyayı sil ve index.html'deki
@@ -122,9 +123,8 @@
           await wait(400);
           byText('button', /Modelimi kontrol et/, b.rightSlot).click();
         } else if (keys[i] === 'macro') {
-          const want = T.macroSentence(st.r);
-          const o = Array.from(st.area.querySelectorAll('.opt')).find((x) => x.textContent === want);
-          if (o) o.click();
+          const ta = st.area.querySelector('.s6-ta');
+          if (ta) { ta.value = T.macroSentence(st.r); fire(ta, 'input'); await wait(300); byText('button', /Tahminimi kontrol et/, st.area).click(); }
         } else {
           const terms = T.eqTerms(st.r).filter((t) => !t.cat);
           const els = st.area.querySelectorAll('.eq-fill .term');
@@ -159,38 +159,91 @@
     }
   };
 
-  /* ---------- düğme ve görünüm ---------- */
+  /* ---------- tek aşamayı sıfırla ---------- */
+  const STAGE_NAMES = { 1: 'Gözlem', 2: 'Modelle', 3: 'Atom Takibi', 4: 'Test Et', 5: 'Üç Gösterim', 6: 'Temsil Değiştir', 7: 'Bozuk Model' };
+  function resetStage(n) {
+    const d = S().data;
+    if (n === 1) {
+      d.observation = ''; d.obsTries = 0;
+      if (T.Stage1) T.Stage1.passed = false;
+      const fb = $('#obs-feedback'); if (fb) fb.classList.add('hidden');
+    } else if (n === 2) {
+      d.model = { before: {}, after: {} }; d.hintsUsed = { before: 0, after: 0 };
+    } else if (n === 3) d.trackLog = [];
+    else if (n === 4) d.testRuns = 0;
+    else if (n === 6) d.tasks6 = {};
+    else if (n === 7) { d.justification = ''; delete d.s7; }
+    d.done = d.done || {};
+    d.done[n] = false;
+    if (n <= 2) { for (let k = n + 1; k <= 7; k++) d.done[k] = false; d.maxStage = n; }
+    S().save();
+    T.App.renderStepper();
+    T.App.go(n, true);
+    toast('↺ ' + n + '. aşama sıfırlandı.');
+  }
+  function askReset() {
+    const n = T.App.current || 1, U = T.U;
+    if (T.Tutorial && T.Tutorial.active) { toast('Öğretici açıkken aşama sıfırlanamaz.'); return; }
+    if (!(S().data.done || {})[n]) { toast('Bu aşama henüz tamamlanmadı.'); return; }
+    const lock = n <= 2 ? ' ' + (n + 1) + '–7. aşamalar yeniden kilitlenecek.' : ' Diğer aşamalar etkilenmez.';
+    const close = U.modal(U.h('div', null,
+      U.h('h2', { text: n + '. aşamayı sıfırla?' }),
+      U.h('p', { text: '“' + STAGE_NAMES[n] + '” aşamasındaki yanıtların silinir ve aşama yeniden başlar.' + lock }),
+      U.h('div.modal-actions', null,
+        U.h('button.btn.ghost', { text: 'Vazgeç', onclick: () => close() }),
+        U.h('button.btn.primary', { text: 'Sıfırla', onclick: () => { close(); resetStage(n); } }))));
+  }
+
+  /* ---------- ⚙️ menüsünde "Geliştirici" bölümü ---------- */
   const css = document.createElement('style');
   css.textContent = `
-    #dev-test { width: 38px; height: 38px; padding: 0; border-radius: 50%; border: 0; cursor: pointer; display: grid; place-items: center;
-      background: #f97316; color: #fff; font-size: 17px; line-height: 1; box-shadow: 0 0 0 2px rgba(249,115,22,.35); }
-    #dev-test:disabled { opacity: .6; cursor: progress; animation: devPulse 1s ease-in-out infinite; }
-    @keyframes devPulse { 50% { transform: scale(.9); } }
-    @media (max-height: 560px), (max-width: 900px) { #dev-test { width: 32px; height: 32px; font-size: 15px; } }
+    .sm-dev-h { padding: 4px 10px 2px; font-size: 10.5px; font-weight: 750; letter-spacing: .06em; text-transform: uppercase; color: #ea580c; }
+    #dev-test .sm-ic { background: rgba(249,115,22,.16); }
+    #dev-test.busy { cursor: progress; opacity: .7; }
+    .sm-item:disabled { opacity: .45; cursor: not-allowed; background: none; }
   `;
   document.head.appendChild(css);
 
-  function mount() {
-    const acts = $('#topbar .top-actions');
-    if (!acts || $('#dev-test')) return;
+  function item(id, ic, lbl, cls) {
     const b = document.createElement('button');
-    b.id = 'dev-test';
-    b.type = 'button';
-    b.title = 'Test: bu aşamanın işlemlerini doğru cevaplarla yapar';
-    b.setAttribute('aria-label', b.title);
-    b.textContent = '🧪';
-    b.addEventListener('click', async () => {
-      if (b.disabled) return;
+    b.className = 'sm-item' + (cls ? ' ' + cls : '');
+    b.id = id; b.type = 'button'; b.setAttribute('role', 'menuitem');
+    b.innerHTML = '<span class="sm-ic" aria-hidden="true">' + ic + '</span><span class="sm-lbl">' + lbl + '</span>';
+    return b;
+  }
+  function closeMenu() {
+    const m = $('#settings-menu'), s = $('#btn-settings');
+    if (m) m.classList.add('hidden');
+    if (s) { s.classList.remove('on'); s.setAttribute('aria-expanded', 'false'); }
+  }
+  function mount() {
+    const menu = $('#settings-menu');
+    if (!menu || $('#dev-test')) return;
+    const sep = document.createElement('div'); sep.className = 'sm-sep'; sep.setAttribute('role', 'separator');
+    const head = document.createElement('div'); head.className = 'sm-dev-h'; head.textContent = 'Geliştirici';
+    const test = item('dev-test', '🧪', 'Bu aşamayı çöz (test)');
+    const reset = item('dev-reset', '↺', 'Bu aşamayı sıfırla', 'danger');
+    let busy = false;
+    test.addEventListener('click', async () => {
+      if (busy) return;
       const n = T.App.current || 1;
+      closeMenu();
       if (T.Tutorial && T.Tutorial.active) { toast('🧪 Test: öğretici açıkken çalışmaz.'); return; }
       if (n > 1 && !S().data.reaction) { toast('🧪 Test: önce tepkime seç.'); return; }
-      b.disabled = true;
+      busy = true; test.classList.add('busy'); test.querySelector('.sm-lbl').textContent = 'Test çalışıyor…';
       try { await SOLVE[n](); }
       catch (e) { console.error('[test]', e); toast('🧪 Test hata verdi: ' + e.message); }
-      finally { b.disabled = false; }
+      finally { busy = false; test.classList.remove('busy'); test.querySelector('.sm-lbl').textContent = 'Bu aşamayı çöz (test)'; }
     });
-    const set = $('.settings-wrap', acts);
-    acts.insertBefore(b, set || null);
+    reset.addEventListener('click', () => { closeMenu(); askReset(); });
+    menu.append(sep, head, test, reset);
+    // menü her açıldığında: sıfırlama yalnızca tamamlanmış aşamada etkin
+    const sb = $('#btn-settings');
+    if (sb) sb.addEventListener('click', () => {
+      const n = T.App.current || 1;
+      reset.disabled = !(S().data.done || {})[n];
+      reset.title = reset.disabled ? 'Bu aşama henüz tamamlanmadı' : n + '. aşamanın yanıtlarını siler';
+    });
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', mount); else mount();
   T.Dev = { solve: (n) => SOLVE[n || T.App.current]() };

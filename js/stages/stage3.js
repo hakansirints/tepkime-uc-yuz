@@ -307,7 +307,7 @@
       const ok = g.userData.index === target || g.userData.sid === this.aIds[target];
       if (ok) {
         T.Audio.success();
-        Mol.setHighlight(g, true, 0x34d399);
+        Mol.setHighlight(g, true, Mol.HL_TRACK);
         const idx = T.SPECIES[g.userData.sid].atoms.findIndex((a) => a.el === t.el);
         if (idx >= 0) Mol.markAtom(g.userData.atoms[idx], 0xffd84a);
         const lb = T.speciesLabel(g.userData.sid), lb0 = T.speciesLabel(this.bIds[this.chosenB]);

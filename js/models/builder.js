@@ -269,14 +269,16 @@
       const cb = T.countAtoms(this.model.before), ca = T.countAtoms(this.model.after);
       const els = T.EL_ORDER.filter((e) => cb[e] || ca[e]);
       if (!els.length) { this.counterEl.innerHTML = '<p class="muted small" style="margin:0">Tanecik ekledikçe atomlar burada sayılır.</p>'; return; }
-      const showSt = this.o.counterStatus !== false;
+      // counterIdle: öğrenci henüz bir şey eklemediyse kırmızı uyarı yerine gri, nötr durum
+      const idle = !!(this.o.counterIdle && this.o.counterIdle(this.model));
+      const showSt = this.o.counterStatus !== false && !idle;
       const mis = [];
       const rows = els.map((e) => {
         const b = cb[e] || 0, a = ca[e] || 0, ok = b === a;
         if (!ok) mis.push(`${e} ${b}≠${a}`);
         return `<div class="cnt-r${showSt && !ok ? ' mis' : ''}"><span class="dot" style="background:${U.hex(T.ELEMENTS[e].color)}"></span><span><b>${e}</b> <span class="muted">${T.ELEMENTS[e].name}</span></span><span class="n">${b}</span><span class="ar">→</span><span class="n">${a}</span><span class="st">${showSt ? (ok ? '✓' : '≠') : ''}</span></div>`;
       }).join('');
-      const status = !showSt ? '' : (mis.length
+      const status = idle ? '<div class="cnt-status idle">Henüz tanecik eklemedin</div>' : !showSt ? '' : (mis.length
         ? `<div class="cnt-status bad">⚠️ Eşit değil: ${mis.join(', ')}</div>`
         : '<div class="cnt-status">⚖️ Atomlar korunuyor</div>');
       this.counterEl.innerHTML = status + `<div class="cnt-rows"><div class="cnt-hd"><span></span><span>Atom</span><span>Önce</span><span></span><span>Sonra</span><span></span></div>${rows}</div>`;

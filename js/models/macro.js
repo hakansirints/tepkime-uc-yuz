@@ -20,7 +20,7 @@
       this.root.add(bench);
       this.state = null;
       this.items = {};
-      this.hlRing = new THREE.Mesh(new THREE.TorusGeometry(1, 0.035, 10, 64), new THREE.MeshBasicMaterial({ color: 0xffd84a, transparent: true, opacity: 0.95, depthTest: false }));
+      this.hlRing = new THREE.Mesh(new THREE.TorusGeometry(1, 0.022, 10, 80), new THREE.MeshBasicMaterial({ color: 0x0a84ff, transparent: true, opacity: 0.95, depthTest: false }));
       this.hlRing.renderOrder = 60; this.hlRing.visible = false; this.hlRing.userData.noFit = true; this.hlRing.userData.noPick = true;
       this.root.add(this.hlRing);
       this.hlLabel = null;
@@ -132,7 +132,7 @@
       this.hlRing.visible = true;
       this.hlRing.position.copy(a.pos);
       this.hlRing.scale.setScalar(a.r);
-      const lbl = Mol.label(KEY_TEXT[key] || key, { h: 0.018, bg: 'rgba(60,45,0,0.88)', color: '#ffe680', border: '#ffd84a' });
+      const lbl = Mol.label(KEY_TEXT[key] || key, { h: 0.016, bg: '#0a84ff', color: '#ffffff' });
       lbl.position.copy(a.pos).add(new THREE.Vector3(0, a.r + 0.016, 0.02));
       lbl.userData.noFit = true;
       this.hlLabel = lbl;
@@ -152,7 +152,7 @@
       if (it.smoke) it.smoke.update(dt);
       if (this.hlRing.visible) {
         this.hlRing.lookAt(this.panel.camera.position);
-        this.hlRing.material.opacity = 0.6 + Math.sin(t * 5) * 0.35;
+        this.hlRing.material.opacity = 0.8 + Math.sin(t * 2.4) * 0.15; // yavaş, hafif nefes
       }
     }
     pickKey(hit) {

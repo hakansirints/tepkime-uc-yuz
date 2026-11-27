@@ -115,37 +115,77 @@
       lbl.position.set(0, -rad - 0.38, 0.4);
       g.add(lbl);
       g.userData.label = lbl;
+      g.userData.labelH = opts.labelH || 0.5;
     }
     return g;
   };
 
-  /** Vurgulama: parlama + nabız */
+  /* Vurgulama (B+A): element rengi hiç değişmez. Seçilen taneciğin çevresinde kameraya dönük
+     ince bir halka çıkar, etiket rozeti vurgu rengine döner. Diğerlerini soluklaştırmak için Mol.setDim. */
+  Mol.HL = 0x0a84ff;       // seçim (mavi)
+  Mol.HL_TRACK = 0x1fa24a; // atom takibi doğru sonuç (yeşil)
+  const _q = new THREE.Quaternion();
+  function faceCamera(renderer, scene, camera) {
+    // halka, grubun dönüşünden bağımsız olarak hep kameraya bakar
+    this.parent.getWorldQuaternion(_q);
+    this.quaternion.copy(_q.invert().multiply(camera.quaternion));
+    this.updateMatrixWorld(true);
+  }
+  const hexCss = (c) => '#' + new THREE.Color(c).getHexString();
   Mol.setHighlight = function (g, on, color) {
-    g.userData.hl = on ? (color || 0xffd84a) : null;
-    g.userData.atoms.forEach((m) => {
+    const col = color || Mol.HL;
+    g.userData.hl = on ? col : null;
+    let ring = g.userData.hlRing;
+    if (on && !ring) {
+      ring = new THREE.Mesh(new THREE.TorusGeometry(g.userData.radius + 0.24, 0.032, 8, 80),
+        new THREE.MeshBasicMaterial({ transparent: true, opacity: 0.95, depthTest: false, depthWrite: false }));
+      ring.renderOrder = 45;
+      ring.userData.ghost = true; ring.userData.noPick = true; ring.userData.noFit = true; ring.userData.hlRing = true;
+      ring.onBeforeRender = faceCamera;
+      g.add(ring);
+      g.userData.hlRing = ring;
+    }
+    if (ring) { ring.visible = !!on; if (on) ring.material.color.set(col); }
+    // etiket rozeti: seçiliyken vurgu renginde
+    const lbl = g.userData.label;
+    if (lbl) {
+      let hl = g.userData.labelHl;
+      if (on && (!hl || hl.userData.col !== col)) {
+        if (hl) g.remove(hl);
+        hl = Mol.label(T.speciesLabel(g.userData.sid), { h: g.userData.labelH || 0.5, bg: hexCss(col), color: '#ffffff' });
+        hl.position.copy(lbl.position); hl.userData.col = col; hl.userData.noFit = true;
+        g.add(hl); g.userData.labelHl = hl;
+      }
+      if (hl) hl.visible = !!on;
+      lbl.visible = !on;
+    }
+  };
+  /** Soluklaştır: odak dışında kalan tanecik saydamlaşır (dokunulabilir kalır) */
+  Mol.setDim = function (g, on) {
+    on = !!on;
+    if (!!g.userData.dim === on) return;
+    g.userData.dim = on;
+    g.traverse((o) => {
+      if (!o.material || o.userData.hlRing || o === g.userData.labelHl) return;
       if (on) {
-        if (!m.userData.hlMat) {
-          m.userData.hlMat = m.material.clone();
+        if (!o.userData.dimMat || o.userData.dimBase !== o.material) {
+          const m = o.material.clone();
+          m.transparent = true; m.opacity = (o.material.opacity == null ? 1 : o.material.opacity) * 0.28; m.depthWrite = false;
+          o.userData.dimMat = m; o.userData.dimBase = o.material;
         }
-        m.userData.hlMat.emissive = new THREE.Color(color || 0xffc400);
-        m.userData.hlMat.emissiveIntensity = 0.55;
-        m.material = m.userData.hlMat;
-      } else {
-        m.material = Mol.atomMaterial(m.userData.el);
+        o.material = o.userData.dimMat;
+      } else if (o.userData.dimBase) {
+        o.material = o.userData.dimBase;
       }
     });
   };
-  /** Tek atomu işaretle (atom takibi) */
+  /** Tek atomu işaretle (atom takibi): ince halka; atomun rengi değişmez */
   Mol.markAtom = function (mesh, color) {
-    const ring = new THREE.Mesh(new THREE.TorusGeometry(1.35, 0.09, 12, 48), new THREE.MeshBasicMaterial({ color: color || 0xffd84a, transparent: true, opacity: 0.95, depthTest: false }));
+    const ring = new THREE.Mesh(new THREE.TorusGeometry(1.4, 0.07, 10, 56), new THREE.MeshBasicMaterial({ color: color || 0xffd84a, transparent: true, opacity: 0.95, depthTest: false }));
     ring.renderOrder = 40;
-    ring.userData.ring = true;
+    ring.userData.ring = true; ring.userData.noPick = true; ring.userData.ghost = true;
+    ring.onBeforeRender = faceCamera;
     mesh.add(ring);
-    const glow = mesh.material.clone();
-    // hafif parlama: atom kendi element rengini korusun (izlenen H sarıya dönmesin)
-    glow.emissive = new THREE.Color(color || 0xffc400); glow.emissiveIntensity = 0.28;
-    mesh.userData.prevMat = mesh.material;
-    mesh.material = glow;
     return ring;
   };
 
